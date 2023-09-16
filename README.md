@@ -1,4 +1,4 @@
-![Unsealed Project](https://github.com/feryandi/unsealed/tree/main/docs/assets/unsealed.png)
+![Unsealed Project](https://raw.githubusercontent.com/feryandi/unsealed/main/docs/assets/unsealed.png)
 
 # Unsealed Project
 Seal Online file reader project. 
@@ -10,11 +10,11 @@ Seal Online adalah game online yang sangat populer di Indonesia. Tetapi jika dib
 
 ## Demo
 
-![Festive Piya](https://github.com/feryandi/unsealed/tree/main/docs/assets/festive_piya.gif)
+![Festive Piya](https://raw.githubusercontent.com/feryandi/unsealed/main/docs/assets/festive_piya.gif)
 
-![Dark Queen Ant](https://github.com/feryandi/unsealed/tree/main/docs/assets/dark_queen_ant.gif)
+![Dark Queen Ant](https://raw.githubusercontent.com/feryandi/unsealed/main/docs/assets/dark_queen_ant.gif)
 
-![Movie Projector](https://github.com/feryandi/unsealed/tree/main/docs/assets/movie_projector.png)
+![Movie Projector](https://raw.githubusercontent.com/feryandi/unsealed/main/docs/assets/movie_projector.gif)
 
 
 ## Roadmap
