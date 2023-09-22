@@ -100,7 +100,29 @@ class GLTF:
         rotation = [rot[1], rot[2], rot[3], rot[0]],
         scale =[sca[0], sca[1], sca[2]]
       )
-    self.gltf["scenes"][0]["nodes"].append(len(self.gltf["nodes"]) - 1)
+    if not mesh.parent.strip():
+      self.gltf["scenes"][0]["nodes"].append(len(self.gltf["nodes"]) - 1)
+
+  def fix_hack_mesh_with_bone_parent(self, mesh, skeleton):
+    # TODO: Fix this hack. 
+    # The fix need to rethink the way that we store mesh and bones and how we can detect the connection early on.
+    if not mesh.parent.strip():
+      return
+    parent_idx = self.node_name_to_node_idx[mesh.parent.lower()]
+    node_idx = self.node_name_to_node_idx[mesh.name.lower()]
+    self.add_node_children(parent_idx, node_idx)
+
+    # Fix to change global transformation to local transformation
+    parent = skeleton.bones[skeleton.bone_name_to_id[mesh.parent.lower()]]
+    pivot = np.array(parent.tm_inverse).T
+    target = np.array(mesh.tm).T
+    diff = np.matmul(pivot, target)
+    mtx = mathutils.Matrix(diff)
+    loc, rot, sca = mtx.decompose()
+
+    self.gltf["nodes"][node_idx]["translation"] = [loc[0], loc[1], loc[2]]
+    self.gltf["nodes"][node_idx]["rotation"] = [rot[1], rot[2], rot[3], rot[0]]
+    self.gltf["nodes"][node_idx]["scale"] = [sca[0], sca[1], sca[2]]
 
   def add_skin(self, skeleton):
     skin_bytes = io.BytesIO()
@@ -155,8 +177,10 @@ class GLTF:
     if "images" not in self.gltf:
       self.gltf["images"] = []
 
+    bitmap = material.bitmap.split(".")[0]
+    bitmap_png = bitmap + ".png"
     self.gltf["images"].append({
-      "uri": material.bitmap.replace("tga", "png") # TODO: Streamline this into pipeline
+      "uri": bitmap_png # TODO: Streamline this into pipeline
     })
     self.gltf["textures"].append({
       "source": len(self.gltf["images"]) - 1
@@ -198,7 +222,7 @@ class GLTF:
       for channel in animation["channels"]:
         self.gltf["animations"][i]["channels"].append(channel)
         # TODO: Super hacky thing
-        self.gltf["animations"][i]["channels"][-1]["sampler"] = len(self.gltf["animations"][0]["channels"]) - 1
+        self.gltf["animations"][i]["channels"][-1]["sampler"] = len(self.gltf["animations"][i]["channels"]) - 1
 
     if len(self.gltf["animations"][i]["samplers"]) == 0:
       del self.gltf["animations"]

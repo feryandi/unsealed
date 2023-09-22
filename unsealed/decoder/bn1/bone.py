@@ -31,13 +31,13 @@ class SealBoneBoneDecoder:
       [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
       [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
     ]
-    broken_tm_inverse = [
+    bone.tm_inverse = [
       [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
       [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
       [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
       [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
     ]
-    _ =[
+    _ = [
       [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
       [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
       [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
@@ -51,8 +51,10 @@ class SealBoneBoneDecoder:
     loc, rot, sca = tm.decompose()
     bone.loc = [loc.x, loc.y, loc.z]
     bone.rot = [rot.w, rot.x, rot.y, rot.z]
-    bone.sca = [sca.x, sca.y, sca.y]
+    bone.sca = [sca.x, sca.y, sca.z]
 
+    itm = np.array(bone.tm_inverse).T
+    # Fix the tm_inverse
     intm = np.array(tm.inverted()).T
     bone.tm_inverse = intm.tolist()
 

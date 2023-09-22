@@ -45,9 +45,10 @@ class File:
       # Null value
       return None
     try:
-      s = d.split(b'\x00')[0].decode('utf-8')
+      s = d.split(b'\x00')[0].decode('euc_kr')
       return s
-    except:
+    except Exception as e:
+      print(e)
       return None
 
   def seek_at(self, index_start, num_bytes):

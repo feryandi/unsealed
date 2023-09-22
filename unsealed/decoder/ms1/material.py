@@ -43,9 +43,9 @@ class SealMeshMaterialDecoder:
 
     for y in range(num_sub_material):
       pad = 16 + 16 + 5
-      _ = content.read(pad)
+      _ = self.file.read(pad)
       submaterial = self.__decode_normal_material()
-      self.add_sub_material(submaterial)
+      material.add_sub_material(submaterial)
     return material
 
   def __decode_special_material(self):
@@ -101,11 +101,11 @@ class SealMeshMaterialDecoder:
       self.file.read(pad * 4)
       _ = self.file.read(8)
 
-    name = content.read_string(256)
+    name = self.file.read_string(256)
     material = Material(name, bitmap)
-    _ = content.read_int()
-    _ = content.read(16 * 4)
-    _ = content.read(5)
+    _ = self.file.read_int()
+    _ = self.file.read(16 * 4)
+    _ = self.file.read(5)
     return material
 
   # Hacky and might not work :(

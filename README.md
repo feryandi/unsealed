@@ -10,6 +10,8 @@ Seal Online adalah game online yang sangat populer di Indonesia. Tetapi jika dib
 
 ## Demo
 
+![Cactus2](https://raw.githubusercontent.com/feryandi/unsealed/main/docs/assets/cactus2.gif)
+
 ![Festive Piya](https://raw.githubusercontent.com/feryandi/unsealed/main/docs/assets/festive_piya.gif)
 
 ![Dark Queen Ant](https://raw.githubusercontent.com/feryandi/unsealed/main/docs/assets/dark_queen_ant.gif)
