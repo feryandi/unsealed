@@ -67,10 +67,6 @@ class SealMeshMeshDecoder:
     num_face_index = num_faces * 3
     for x in range(num_face_index):
       idx = self.file.read_short()
-      # if self.name == "N_seit_new_body":
-      #   if x > 860:
-      #     print(num_face_index)
-      #     continue
       mesh.add_index(idx)
     _padding = self.file.read(4 * num_faces)
 

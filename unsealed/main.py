@@ -11,14 +11,15 @@ from encoder.obj import ObjEncoder
 from encoder.gltf.gltf import GLTF
 
 from model.model import Model
+from utils.strings import find_correct_path
 
 
 root_path = "/home/feryandi/repositories/unsealed"
 filename = "N_arus" # TODO: submaterial (2) is not working
-# filename = "N_elis" # TODO: submaterial (2) is not working
-# filename = "T_bya" # TODO: act decoder is not working
+filename = "N_elis" # TODO: submaterial (2) is not working
+filename = "T_bya" # TODO: bitmap not empty on material that has submaterial
 filename = "N_seit_new_stand" # TODO: submaterial (3) is not working
-# filename = "house_madelin_bank"
+filename = "house_madelin_bank" # TODO: fail to get bg_madelin_bank_window.png, where is it?
 model = Model()
 
 
@@ -28,11 +29,9 @@ def process_texture(bitmap):
 
   texture_filename = bitmap.split('.')[0]
   texture_path = root_path + '/tests/input/' + texture_filename + '.tex'
+  texture_path = find_correct_path(texture_path)
   if not os.path.isfile(texture_path):
-    texture_path = root_path + '/tests/input/' + texture_filename.lower() + '.tex'
-    if not os.path.isfile(texture_path):
-      print("Cannot found texture: " + bitmap)
-      return
+    return
   texture_decoder = SealTextureFileDecoder(texture_path)
   texture = texture_decoder.decode() # TODO: This still returns the decoder
 
@@ -47,10 +46,12 @@ def process_texture(bitmap):
 
 
 ## DECODERS
+# Decode ms1
 geometry_decoder = SealMeshFileDecoder(root_path + '/tests/input/' + filename + '.ms1')
 geometry = geometry_decoder.decode()
 model.add_geometry(geometry)
 
+# Decode act
 action_filepath = root_path + '/tests/input/' + filename + '.act'
 if os.path.isfile(action_filepath):
   action_decoder = SealActionFileDecoder(action_filepath)
@@ -61,6 +62,7 @@ else:
     "filename": filename
   }]
 
+# Decode an1
 for action in actions:
   ani_name = action["name"]
   ani_filename = action["filename"]
@@ -72,13 +74,14 @@ for action in actions:
       geometry.add_animation(animation)
       model.add_animation(ani_name, animation)
 
+# Decode bn1
 bone_path = root_path + '/tests/input/' + filename + '.bn1'
 if os.path.isfile(bone_path):
   skeleton_decoder = SealBoneFileDecoder(bone_path)
   skeleton = skeleton_decoder.decode()
   model.add_skeleton(skeleton)
 
-print(model.geometry.materials)
+# Decode tex
 for material in model.geometry.materials:
   process_texture(material.bitmap)
   for submaterial in material.sub_materials:
@@ -89,19 +92,4 @@ obj_encoder = ObjEncoder(geometry)
 obj_encoder.encode(root_path + '/tests/output/' + filename + '.obj')
 
 gltf2_encoder = GLTF()
-for mesh in geometry.meshes:
-  print(mesh.name)
-  if mesh.material_index is not None:
-    gltf2_encoder.add_mesh(mesh, material = geometry.materials[mesh.material_index])
-  else:
-    gltf2_encoder.add_mesh(mesh)
-for material in geometry.materials:
-  gltf2_encoder.add_material(material)
-if model.skeleton is not None:
-  gltf2_encoder.add_skin(model.skeleton)
-  # TODO: Fix
-  for mesh in geometry.meshes:
-    gltf2_encoder.fix_hack_mesh_with_bone_parent(mesh, model.skeleton)
-for name in model.animations:
-  gltf2_encoder.add_animation(model.animations[name])
-gltf2_encoder.encode(root_path + '/tests/output/' + filename)
+gltf2_encoder.encode(model, root_path + '/tests/output/' + filename)
