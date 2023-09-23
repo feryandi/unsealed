@@ -56,31 +56,49 @@ class GLTF:
       self.gltf["nodes"][parent_idx]["children"] = []
     self.gltf["nodes"][parent_idx]["children"].append(child_idx)
 
-  def add_mesh(self, mesh):
-    primitive = {}
-    primitive["mode"] = 4
-    primitive["attributes"] = {}
+  def add_mesh(self, mesh, material = None):
+    mesh_gltf = {
+      "name": mesh.name,
+      "primitives": []
+    }
 
-    vertices_accesors = self.__add_vertices(mesh.vertices)
-    primitive["attributes"]["NORMAL"] = vertices_accesors["normal"]
-    primitive["attributes"]["POSITION"] = vertices_accesors["position"]
-    primitive["attributes"]["TEXCOORD_0"] = vertices_accesors["textcoord"]
-
-    indices_accessor = self.__add_indices(mesh.indices)
-    primitive["indices"] = indices_accessor
+    materials = 1
+    if material is not None:
+      if len(material.sub_materials) != 0:
+        materials = len(material.sub_materials)
+      else:
+        materials = 1
 
     joints_accessors = self.__add_joints(mesh.joints)
-    for idx, a in enumerate(joints_accessors):
-      primitive["attributes"]["JOINTS_" + str(idx)] = a
-
     weights_accessors = self.__add_weights(mesh.weights)
-    for idx, a in enumerate(weights_accessors):
-      primitive["attributes"]["WEIGHTS_" + str(idx)] = a
+    vertices_accesors = self.__add_vertices(mesh.vertices)
+    indices_buffer = self.__add_indices_buffer(mesh.indices)
+    print(len(mesh.indices))
+    for i in range(materials):
+      primitive = {}
+      primitive["mode"] = 4
+      primitive["attributes"] = {}
 
-    self.gltf["meshes"].append({
-      "name": mesh.name,
-      "primitives": [primitive]
-    })
+      primitive["attributes"]["NORMAL"] = vertices_accesors["normal"]
+      primitive["attributes"]["POSITION"] = vertices_accesors["position"]
+      primitive["attributes"]["TEXCOORD_0"] = vertices_accesors["textcoord"]
+
+      indices_parts = len(mesh.indices) // materials
+      indices_accessor = self.__add_accessor(indices_buffer, 5123, indices_parts, "SCALAR", byte_offset = indices_parts * i * 2)
+      primitive["indices"] = indices_accessor
+
+      for idx, a in enumerate(joints_accessors):
+        primitive["attributes"]["JOINTS_" + str(idx)] = a
+
+      for idx, a in enumerate(weights_accessors):
+        primitive["attributes"]["WEIGHTS_" + str(idx)] = a
+
+      if material is not None:
+        primitive["material"] = mesh.material_index + i # TODO
+
+      mesh_gltf["primitives"].append(primitive)
+
+    self.gltf["meshes"].append(mesh_gltf)
 
     if len(joints_accessors) > 0 and len(weights_accessors) > 0:
       self.add_node(
@@ -100,13 +118,13 @@ class GLTF:
         rotation = [rot[1], rot[2], rot[3], rot[0]],
         scale =[sca[0], sca[1], sca[2]]
       )
-    if not mesh.parent.strip():
+    if mesh.parent is None or not mesh.parent.strip():
       self.gltf["scenes"][0]["nodes"].append(len(self.gltf["nodes"]) - 1)
 
   def fix_hack_mesh_with_bone_parent(self, mesh, skeleton):
     # TODO: Fix this hack. 
     # The fix need to rethink the way that we store mesh and bones and how we can detect the connection early on.
-    if not mesh.parent.strip():
+    if mesh.parent is None or not mesh.parent.strip():
       return
     parent_idx = self.node_name_to_node_idx[mesh.parent.lower()]
     node_idx = self.node_name_to_node_idx[mesh.name.lower()]
@@ -196,8 +214,8 @@ class GLTF:
     })
 
     # TODO: Search for this data on the ms1 file. Mapping of mesh to material.
-    for mesh in self.gltf["meshes"]:
-      mesh["primitives"][0]["material"] = 0
+    # for mesh in self.gltf["meshes"]:
+    #   mesh["primitives"][0]["material"] = 0
 
     if len(self.gltf["textures"]) == 0:
       del self.gltf["textures"]
@@ -304,15 +322,15 @@ class GLTF:
       "textcoord": t_a
     } 
       
-  def __add_indices(self, indices):
+  def __add_indices_buffer(self, indices):
     indices_bytes = io.BytesIO()
 
     for i in indices:
       p = [i]
       indices_bytes.write(struct.pack('H'*len(p), *p))
 
-    b = self.__add_buffer(indices_bytes)
-    return self.__add_accessor(b, 5123, len(indices), "SCALAR")
+    return self.__add_buffer(indices_bytes)
+    # return self.__add_accessor(b, 5123, len(indices), "SCALAR")
 
   def __add_joints(self, joints):
     joints_bytes = self.__split_by_fours(joints)

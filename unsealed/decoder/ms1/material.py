@@ -27,14 +27,13 @@ class SealMeshMaterialDecoder:
     return materials
 
   def __decode_normal_material(self):
-    _ = self.file.read_short()
+    x = self.file.read_short()
     bitmap = self.file.read_string(256)
     name = self.file.read_string(128)
     material = Material(name, bitmap)
 
     _ = self.file.read_string(128)
     num_sub_material = self.file.read_int()
-    
     _ = self.file.read_float() # Probably: Material Ambient or/and Diffuse (YES!)
     _ = self.file.read_float() # Probably: Material Ambient or/and Diffuse (YES!)
     _ = self.file.read_float() # Probably: Material Ambient or/and Diffuse (YES!)

@@ -16,8 +16,6 @@ class SealActionFileDecoder:
 
   def decode(self):
     # TODO: This doesn't work for: N_arus.act, T_by.act
-    # while self.file.seek(1)[0] == 0:
-    #   ukwn = self.file.read(1)  # TODO
     try:
       ukwn = self.file.read(4)  # TODO
       name = self.__read_string()
@@ -31,7 +29,9 @@ class SealActionFileDecoder:
       for i in range(animation_num):
         pad = self.file.read(36)  # TODO
         name = self.__read_string()
+        print(name)
         filename = self.__read_string()
+        print(filename)
         self.animations.append({
           "name": name,
           "filename": filename
@@ -51,9 +51,13 @@ class SealActionFileDecoder:
   def __decode_effect(self):
     pad = self.file.read(36)
     name = self.__read_string()
+    print(name)
     filename = self.__read_string()
+    print(filename)
     w = self.file.read(30)
 
   def __read_string(self):
     str_len = self.file.read_int()
+    if str_len == 0:
+      return None
     return self.file.read_string(str_len)

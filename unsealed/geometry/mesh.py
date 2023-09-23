@@ -12,6 +12,7 @@ class Mesh:
 
     self.tm = None
     self.animations = {}
+    self.material_index = None
 
   def add_vertex(self, vertex):
     self.vertices.append(vertex)
