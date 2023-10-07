@@ -1,5 +1,6 @@
 import io
 import os
+import struct
 
 from file import File
 

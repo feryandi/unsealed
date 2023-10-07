@@ -68,9 +68,9 @@ class GLTF:
         bitmaps.append(bitmap)
       if len(subs) == 0:
         bitmaps.append(bitmap)
-      else:
-        if not is_string_empty(material.bitmap):
-          raise Exception("Expect bitmap to be empty on material that has submaterial")
+      # else:
+      #   if not is_string_empty(material.bitmap):
+      #     raise Exception("Expect bitmap to be empty on material that has submaterial")
       self.geo_material_idx_to_gltf_material_idx[idx] = len(bitmaps) - max(1, len(subs))
 
     print(self.geo_material_idx_to_gltf_material_idx)
@@ -96,6 +96,7 @@ class GLTF:
 
   def encode_skeleton(self):
     skeleton = self.model.skeleton
+    print(skeleton)
     if skeleton is None:
       return
     
@@ -144,6 +145,7 @@ class GLTF:
   
   def encode_animation(self):
     animation_groups = self.model.animations
+    print(animation_groups)
     if len(animation_groups) == 0:
       return
     
@@ -157,7 +159,12 @@ class GLTF:
       animation_group = animation_groups[animation_group_name]
 
       for animation in animation_group:
-        node_idx = self.node_name_to_node_idx[animation.mesh_name.lower()]
+        node_idx = -1
+        try:
+          node_idx = self.node_name_to_node_idx[animation.mesh_name.lower()]
+        except:
+          print("No node named " + str(animation.mesh_name) + " found")
+          continue
         path_names = ["translation", "rotation", "scale"]
         output_types = ["VEC3", "VEC4", "VEC3"]
         for idx, sub in enumerate([animation.transforms, animation.rotations, animation.scales]):
@@ -198,6 +205,7 @@ class GLTF:
 
   def encode_mesh(self):
     meshes = self.model.geometry.meshes
+    print(meshes)
 
     for mesh in meshes:
       mesh_gltf = {
@@ -328,7 +336,8 @@ class GLTF:
     if name is not None:
       key = name.lower()
       if key in self.node_name_to_node_idx:
-        raise Exception("Node name duplicate detected")
+        print("Node name duplicate detected: " + str(key))
+        # raise Exception("Node name duplicate detected: " + str(key))
       self.node_name_to_node_idx[key] = idx
     return idx
 

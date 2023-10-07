@@ -29,9 +29,7 @@ class SealActionFileDecoder:
       for i in range(animation_num):
         pad = self.file.read(36)  # TODO
         name = self.__read_string()
-        print(name)
         filename = self.__read_string()
-        print(filename)
         self.animations.append({
           "name": name,
           "filename": filename
@@ -51,9 +49,7 @@ class SealActionFileDecoder:
   def __decode_effect(self):
     pad = self.file.read(36)
     name = self.__read_string()
-    print(name)
     filename = self.__read_string()
-    print(filename)
     w = self.file.read(30)
 
   def __read_string(self):

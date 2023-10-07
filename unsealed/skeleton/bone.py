@@ -11,3 +11,6 @@ class Bone:
     self.loc = [0.0, 0.0, 0.0]
     self.sca = [1.0, 1.0, 1.0]
     self.rot = [0.0, 0.0, 0.0, 1.0]
+
+  def __repr__(self):
+    return f"<Bone name:{self.name} parent:{self.parent}>"
