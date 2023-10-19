@@ -12,7 +12,6 @@ class SealMeshMeshDecoder:
   def decode(self):
     name = self.file.read_string(16 * 16 + 1)
     self.name = name
-    print(name)
     parent = self.file.read_string(16 * 16)
     mesh = Mesh(name, parent)
 
@@ -20,7 +19,6 @@ class SealMeshMeshDecoder:
     num_faces = self.file.read_int()
     material_index = self.file.read_int()  # TODO
     mesh.material_index = material_index
-    print(material_index)
 
     # TODO
     ukwn = self.file.read(4)
@@ -42,15 +40,12 @@ class SealMeshMeshDecoder:
       tm = None
 
     mesh.add_transform_matrix(tm)
-    print(hex(self.file.pointer))
     _ = self.file.read(4 * 16) # This could be transformation matrix or 0XCDCDCDCD that means uninitialized
     _ = self.file.read(24)
     _ = self.file.read(12)
     _ = self.file.read(68)
-    print(hex(self.file.pointer))
 
     self.__decode_vertices(mesh, num_vertices)
-    print(hex(self.file.pointer))
     self.__decode_indices(mesh, num_faces)
     if self.file.is_end() or not has_physique_data:
       return mesh
@@ -65,10 +60,16 @@ class SealMeshMeshDecoder:
 
   def __decode_indices(self, mesh, num_faces):
     num_face_index = num_faces * 3
+    indices = []
     for x in range(num_face_index):
       idx = self.file.read_short()
-      mesh.add_index(idx)
-    _padding = self.file.read(4 * num_faces)
+      indices.append(idx)
+    for x in range(num_faces):
+      n = self.file.read_int()
+      i = x * 3
+      mesh.add_index(n, indices[i])
+      mesh.add_index(n, indices[i+1])
+      mesh.add_index(n, indices[i+2])
 
   def __decode_physique(self, mesh):
     num_physique = self.file.read_int()

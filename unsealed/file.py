@@ -1,4 +1,6 @@
 import struct
+import traceback
+
 
 # Lightweight file reader
 class File:
@@ -48,8 +50,13 @@ class File:
       s = d.split(b'\x00')[0].decode('euc_kr')
       return s
     except Exception as e:
-      print(e)
-      return None
+      try:
+        s = d.split(b'\x00')[0].decode('windows-1252')
+        return s
+      except Exception as e:
+        print(traceback.format_exc())
+        print(e)
+        return None
 
   def seek_at(self, index_start, num_bytes):
     d = self.content[index_start:index_start+num_bytes]

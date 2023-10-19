@@ -73,13 +73,13 @@ class GLTF:
       #     raise Exception("Expect bitmap to be empty on material that has submaterial")
       self.geo_material_idx_to_gltf_material_idx[idx] = len(bitmaps) - max(1, len(subs))
 
-    print(self.geo_material_idx_to_gltf_material_idx)
     for bitmap in bitmaps:
       self.gltf["materials"].append({
         "pbrMetallicRoughness" : {
           "metallicFactor" : 0.0,  # TODO
           "roughnessFactor" : 1.0  # TODO
-        }
+        },
+        "alphaMode": "MASK"
       })
       if not is_string_empty(bitmap):
         bitmap_filename = bitmap.split(".")[0]
@@ -96,7 +96,6 @@ class GLTF:
 
   def encode_skeleton(self):
     skeleton = self.model.skeleton
-    print(skeleton)
     if skeleton is None:
       return
     
@@ -145,7 +144,6 @@ class GLTF:
   
   def encode_animation(self):
     animation_groups = self.model.animations
-    print(animation_groups)
     if len(animation_groups) == 0:
       return
     
@@ -163,7 +161,7 @@ class GLTF:
         try:
           node_idx = self.node_name_to_node_idx[animation.mesh_name.lower()]
         except:
-          print("No node named " + str(animation.mesh_name) + " found")
+          # print("No node named " + str(animation.mesh_name) + " found")
           continue
         path_names = ["translation", "rotation", "scale"]
         output_types = ["VEC3", "VEC4", "VEC3"]
@@ -201,11 +199,14 @@ class GLTF:
               "path": path_names[idx]
             }
           })
-      self.gltf["animations"].append(animation_gltf)
+      if len(animation_gltf["samplers"]) != 0:
+        self.gltf["animations"].append(animation_gltf)
+    if len(self.gltf["animations"]) == 0:
+      del self.gltf["animations"]
 
   def encode_mesh(self):
     meshes = self.model.geometry.meshes
-    print(meshes)
+    node_idx_to_mesh = {}
 
     for mesh in meshes:
       mesh_gltf = {
@@ -214,14 +215,13 @@ class GLTF:
       }
 
       material = self.model.geometry.materials[mesh.material_index]
-      num_sub_object = max(1, len(material.sub_materials))
 
       joints_accessors = self.__add_accessors_split_four(mesh.joints, 5123)
       weights_accessors = self.__add_accessors_split_four(mesh.weights, 5126)
       vertices_accesors = self.__add_accessors_vertices(mesh.vertices)
-      indices_buffer = self.__add_indices_buffer(mesh.indices)
 
-      for i in range(num_sub_object):
+      for k in mesh.indices:
+        i = int(k)
         primitive = {}
         primitive["mode"] = 4
         primitive["attributes"] = {}
@@ -230,13 +230,17 @@ class GLTF:
         primitive["attributes"]["POSITION"] = vertices_accesors["position"]
         primitive["attributes"]["TEXCOORD_0"] = vertices_accesors["textcoord"]
 
-        indices_parts = len(mesh.indices) // num_sub_object
-        indices_accessor = self.__add_accessor(indices_buffer, 5123, indices_parts, "SCALAR", byte_offset = indices_parts * i * 2)
+        indices = mesh.indices[k]
+        indices_parts = len(indices)
+        indices_buffer = self.__add_indices_buffer(indices)
+        indices_accessor = self.__add_accessor(indices_buffer, 5123, indices_parts, "SCALAR")
         primitive["indices"] = indices_accessor
 
+        # TODO: Check how submaterial affect this
         for idx, a in enumerate(joints_accessors):
           primitive["attributes"]["JOINTS_" + str(idx)] = a
 
+        # TODO: Check how submaterial affect this
         for idx, a in enumerate(weights_accessors):
           primitive["attributes"]["WEIGHTS_" + str(idx)] = a
 
@@ -248,23 +252,28 @@ class GLTF:
       self.gltf["meshes"].append(mesh_gltf)
 
       if len(joints_accessors) > 0 and len(weights_accessors) > 0:
-        self.__add_node(
+        node_idx = self.__add_node(
           name = mesh.name,
           mesh = len(self.gltf["meshes"]) - 1,
           skin = 0 # TODO?
         )
+        node_idx_to_mesh[node_idx] = mesh
       else:
         tm = np.array(mesh.tm).T
         mtx = mathutils.Matrix(tm)
 
+        skeleton = self.model.skeleton
         if not is_string_empty(mesh.parent):
           # Fix to change global transformation to local transformation
-          skeleton = self.model.skeleton
-          parent = skeleton.bones[skeleton.bone_name_to_id[mesh.parent.lower()]]
-          pivot = np.array(parent.tm_inverse).T
+          parent_idx = self.node_name_to_node_idx[mesh.parent.lower()]
+          parent = node_idx_to_mesh[parent_idx]
+          ntm = np.array(parent.tm).T
+          ptm = mathutils.Matrix(ntm)
+          pivot = np.array(ptm.inverted())
           diff = np.matmul(pivot, tm)
           mtx = mathutils.Matrix(diff)
         
+        # if skeleton is not None:
         # Decompose transformation matrix
         loc, rot, sca = mtx.decompose()
         node_idx = self.__add_node(
@@ -272,8 +281,16 @@ class GLTF:
           mesh = len(self.gltf["meshes"]) - 1,
           translation = [loc[0], loc[1], loc[2]],
           rotation = [rot[1], rot[2], rot[3], rot[0]],
-          scale =[sca[0], sca[1], sca[2]]
+          scale = [sca[0], sca[1], sca[2]]
         )
+        node_idx_to_mesh[node_idx] = mesh
+        # else:
+        #   # Decompose transformation matrix
+        #   loc, rot, sca = mtx.decompose()
+        #   node_idx = self.__add_node(
+        #     name = mesh.name,
+        #     mesh = len(self.gltf["meshes"]) - 1
+        #   )
 
         if not is_string_empty(mesh.parent):
           parent_idx = self.node_name_to_node_idx[mesh.parent.lower()]

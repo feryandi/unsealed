@@ -28,50 +28,31 @@ class SealMeshMaterialDecoder:
 
   def __decode_normal_material(self):
     x = self.file.read_short()
-    print(x)
     print(hex(self.file.pointer))
     bitmap = self.file.read_string(256)
-    print(bitmap)
-    print(hex(self.file.pointer))
     name = self.file.read_string(128)
-    print(hex(self.file.pointer))
     material = Material(name, bitmap)
 
     x = self.file.read(128)
-    print(x)
     num_sub_material = self.file.read_int()
-    print(num_sub_material)
     x = self.file.read_float() # Probably: Material Ambient or/and Diffuse (YES!)
-    print(x)
     x = self.file.read_float() # Probably: Material Ambient or/and Diffuse (YES!)
-    print(x)
     x = self.file.read_float() # Probably: Material Ambient or/and Diffuse (YES!)
-    print(x)
     x = self.file.read_float() # Dunno
-    print(x)
     x = self.file.read(16) # Name?
-    print(x)
-    print(hex(self.file.pointer))
-    print("-=-=-=-")
 
     for y in range(num_sub_material):
       x = [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()]
-      print(x)
       x = [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()]
-      print(x)
       x = self.file.read(5)
-      print(x)
-      print(hex(self.file.pointer))
       submaterial = self.__decode_normal_material()
       material.add_sub_material(submaterial)
     return material
 
   def __decode_special_material(self):
-    print("special material")
     # Unknown what special about this, yet
     _ = self.file.read_short()
     bitmap = self.file.read_string(256)
-    print(bitmap)
     _ = self.file.read_string(256)
     _ = self.file.read(16)
 

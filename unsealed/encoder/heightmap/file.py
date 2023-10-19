@@ -11,5 +11,6 @@ class HeightmapEncoder():
     # TODO: Adjust these calculation as needed
     alt_range = (altitudes.max() - altitudes.min())
     altitudes -= altitudes.min()
-    altitudes *= 255.0/alt_range
+    altitudes *= 65535.0/alt_range
+    altitudes = altitudes.astype(np.uint16)
     cv2.imwrite(path, altitudes)

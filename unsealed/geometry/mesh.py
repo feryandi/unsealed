@@ -6,7 +6,8 @@ class Mesh:
     self.parent = parent
 
     self.vertices = []
-    self.indices = []
+    self.indices = {}
+    self.old_indices = []
     self.joints = []
     self.weights = []
 
@@ -19,8 +20,11 @@ class Mesh:
     self.joints.append([])
     self.weights.append([])
 
-  def add_index(self, index):
-    self.indices.append(index)
+  def add_index(self, n, index):
+    if n not in self.indices:
+      self.indices[n] = []
+    self.indices[n].append(index)
+    self.old_indices.append(index)
 
   def add_joint(self, vertex_idx, bone_idx):
     self.joints[vertex_idx].append(bone_idx)

@@ -29,7 +29,6 @@ class SealMapFileDecoder:
     is_v13 = False
 
     header = self.file.read_string(64)
-    # print(header)
     if header == "Map File v.5":
       return # unsupported even by the game?
     if header == "Map File v.10":
@@ -51,14 +50,18 @@ class SealMapFileDecoder:
       s = self.file.read_string(32)
       s = self.file.read_string(32)
 
+    terrain = Terrain(512, 512)
+
     # Textures
     n = self.file.read_int()
     for i in range(n):
       s = self.file.read_string(16 * 4)
       _ = self.file.read(4)
+      terrain.add_texture(s)
 
     # Lightmap texture
     s = self.file.read_string(16 * 4)
+    terrain.add_lightmap(s)
 
     # Texture Layer 1
     i = 64
@@ -66,6 +69,7 @@ class SealMapFileDecoder:
     for i in range(i):
       x = self.file.read_int()
       a.append(x)
+    terrain.add_terrain_layer_a(a)
 
     # Texture Layer 2
     i = 64
@@ -73,15 +77,15 @@ class SealMapFileDecoder:
     for i in range(i):
       x = self.file.read_int()
       a.append(x)
+    terrain.add_terrain_layer_b(a)
 
     # Heightmap
     i = 512 * 512
     n = []
     for i in range(i):
       x = self.file.read_float()
-      # x = self.file.read_int()
       n.append(x)
-    terrain = Terrain(n, 512, 512)
+    terrain.add_heightmap(n)
 
     # Walkable area
     i = 512 * 512
@@ -95,15 +99,16 @@ class SealMapFileDecoder:
     # Object placement
     a = self.file.read_int()
     for x in range(a):
-      n = self.file.read_int() # This could be related to obeject index
+      n = self.file.read_int() # This could be related to object index
       p = [self.file.read_float(), self.file.read_float(), self.file.read_float()]
       r = [self.file.read_float(), self.file.read_float(), self.file.read_float()]
       if not is_v10 and not is_v11:
-        _ = self.file.read_float()
-      # Total: 28 Bytes
+        r.append(self.file.read_float())
+      terrain.add_object(n, p, r)
 
     num_objects = self.file.read_int()
     for x in range(num_objects):
       s = self.file.read_string(204)
+      terrain.add_object_file(s)
 
     return terrain

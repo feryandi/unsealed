@@ -6,9 +6,10 @@ from file import File
 
 
 class SealMdtFileDecoder:
-  def __init__(self, path):
+  def __init__(self, path, output_path):
     self.path = path
     self.file = None
+    self.output_path = output_path
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
@@ -28,10 +29,8 @@ class SealMdtFileDecoder:
       sizes.append(size)
       start = self.file.read(4)  # need to + 4 the value
 
-    print("Files detected:")
-    print(filenames)
     for idx, filename in enumerate(filenames):
       size = sizes[idx]
-      with open(filename, "wb") as f:
+      with open(self.output_path + "/" + filename, "wb") as f:
         f.write(self.file.read(size))
     
