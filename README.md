@@ -33,16 +33,16 @@ Saat ini project ini telah melalui fase 0.
 
 ### Phase 1
 
-- [ ] tex - Texture File
-- [ ] act - Action File
+- [x] tex - Texture File
+- [x] act - Action File
 
 
 ### Phase 2
 
-- [ ] map - Map File
-- [ ] Online Web Viewer
+- [x] map - Map File
+- [x] mdt
 
 ### Phase 3
 
-- [ ] mdt
 - [ ] spr
+- [ ] Viewer App

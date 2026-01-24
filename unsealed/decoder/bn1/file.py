@@ -1,4 +1,4 @@
-from file import File
+from utils.file import File
 from skeleton.skeleton import Skeleton
 
 from decoder.bn1.bone import SealBoneBoneDecoder
@@ -14,6 +14,9 @@ class SealBoneFileDecoder:
       raise Exception("Unable to open mesh file")
 
   def decode(self):
+    if self.file is None:
+      raise Exception("File was not initialized properly")
+
     skeleton = Skeleton()
     _ = self.file.read(4)
     _ = self.file.read(4)
@@ -23,5 +26,5 @@ class SealBoneFileDecoder:
       decoder = SealBoneBoneDecoder(self.file)
       bone = decoder.decode()
       skeleton.add_bone(bone)
-    
+
     return skeleton

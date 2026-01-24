@@ -1,5 +1,4 @@
 import os
-
 from PIL import Image
 
 from decoder.act.file import SealActionFileDecoder
@@ -16,158 +15,266 @@ from model.model import Model
 from utils.strings import find_correct_path
 
 
-root_path = "/home/feryandi/repositories/unsealed"
-output_path = "/tests/output/"
-output_path = "/web/output/"
-filename = "T_bya" # TODO: splitting to subobject still not fixing texture issue
-filename = "house_madelin_bank" # TODO: fail to get bg_madelin_bank_window.png, where is it?
-filenames = [
-  "N_adelA",   # TODO: Some node are not found (foot)
-  "N_adhB",  # TODO: splitting to subobject still not fixing texture issue
-  "N_adrian",   # TODO: Meshes cannot be triangles, Texture messed up
-  "N_adrian_stand",  # TODO: Some node are not found (foot)
-]
-filenames = [
-  "Bomberman_1_dd",
-  "G_flame_dragon",
-  "G_dark_leopard_stand",
-  "G_Unicon",
-]
-filenames = [
-  "gourmet_tower_01",
-  "gourmet_flower_01",
-  "house_adel_a000",
-  "hosue_raim_stage_0",
-]
-filenames = [
-  "G_Rainbow_Hoverboard_fw",
-]
-filenames = [
-  "house_elim_tutorial",
-]
-filenames = ["object_grass_s_01", "object_warpzone", "house_elim_church", "house_elim_traintown", "house_elim_sorcery", "house_poor_bookstore", "house_elim_c000", "house_elim_c001", "house_elim_c002", "house_elim_c003", "house_elim_bank", "house_elim_c004", "object_elim_fence_000", "object_elim_fence_001", "object_elim_fence_002", "object_elim_fence_003", "object_elim_fence_004", "object_elim_castledoor_c001", "object_elim_castlewall_c000", "object_elim_castletower_c001", "object_elim_castletower_c000", "object_elim_castledoor_c000", "house_elim_c005", "house_elim_c006", "house_elim_c007", "house_elim_c008", "house_elim_c009", "house_elim_c010", "house_elim_c011", "house_elim_c012", "house_elim_d000", "house_elim_itemshop", "house_elim_knighthall", "house_elim_travel", "house_elim_weaponshop", "object_elim_flowergarden_00", "object_elim_flowergarden_01", "object_elim_flowergarden_02", "object_elim_tree_e001", "object_elim_tree_e002", "object_elim_tree_e003", "object_elim_tree_e004", "object_elim_tree_e005", "object_elim_lamp_000", "object_elim_lamp_001", "object_a00_bench_000", "object_elim_castlewall_c001", "object_box_000", "house_elim_trainingtower", "object_elim_castlewall_c003", "object_elim_castlewall_c002", "object_elim_underdoor_c000", "object_elim_emblem_00", "object_elim_emblem_01", "object_elim_bench_e000", "object_elim_bench_e001", "house_elim_arena", "object_elim_bridge_00", "object_elim_bridge_01", "object_elim_bridge_02", "object_elim_streettree_e001", "object_elim_streettree_e002", "house_elim_gypsi", "house_elim_bookstore", "house_elim_booth", "object_elim_flowerbed_e001", "object_elim_flowerbed_e002", "object_elim_blockfence_00", "object_elim_blockfence_01", "object_elim_blockfence_02", "house_elim_c015", "house_elim_c014", "house_elim_c013", "object_elim_houseflowergarden_e001", "object_elim_houseflowergarden_e002", "object_elim_streettree_e003", "object_elim_streettree_e005", "object_elim_streettree_e004", "object_elim_streettree_e006", "object_elim_flowerbed_e003", "object_elim_flowerbed_e004", "object_elim_flowergarden_e000", "object_elim_flowergarden_e001", "elim_picket_y001", "house_poor_bank", "house_elim_trainning_tower_y000", "house_elim_drinkshop", "house_elim_request", "house_elim_lions", "object_elim_flowergarden_e002", "object_elim_fountain", "object_elim_carriage_001", "house_elimcastle", "object_elim_bridge_03", "object_tree_temperate_e000", "object_tree_temperate_e004", "object_tree_temperate_b001", "object_tree_temperate_b002", "object_tree_temperate_e001", "object_tree_temperate_e003", "object_field_tree_c003", "object_field_tree_01", "object_field_tree_02", "object_field_tree_c002", "object_tree_000", "object_grass_s_03", "object_grass_s_00", "object_grass_s_02", "object_grass_so_002", "object_grass_so_000", "object_grass_so_001", "object_tree_strange_011", "object_tree_strange_001", "object_tree_strange_002", "object_tree_strange_003", "object_tree_strange_005", "object_tree_strange_006", "object_tree_strange_007", "object_tree_strange_008", "object_a00_stone_007", "object_a00_stone_001", "object_a00_stone_002", "object_a00_stone_005", "object_a00_stone_006", "house_elim_tutorial"]
-# filenames = ["object_elim_castlewall_c000"]
-filenames = ["house_poor_arena"]
-filenames = ["object_madelin_tree_y003"]
-filenames = ["house_poor_bank"]
-filenames = ["object_warpzones"]
-model = Model()
+def get_file_type(filename):
+  """Extract file extension from filename."""
+  if '.' in filename:
+    return filename.split('.')[-1].lower()
+  return None
 
 
-# Experiment: Map File
-# for i in range(1, 582):
-#   map_path = root_path + '/tests/input/' + str(i) + '.map'
-#   if os.path.isfile(map_path):
-#     map_decoder = SealMapFileDecoder(map_path)
-#     m = map_decoder.decode()
-
-map_num = 1 # End's Land
-map_num = 540
-map_num = 32 # Elim
-# map_num = 216
-# map_num = 22 # Madelin
-# map_num = 2 # Zaid
-# map_num = 11 # Lime
-
-map_path = root_path + '/tests/input/' + str(map_num) + '.map'
-map_decoder = SealMapFileDecoder(map_path)
-terrain = map_decoder.decode()
-
-mdt_path = root_path + '/tests/input/' + str(map_num) + '.mdt'
-mdt_decoder = SealMdtFileDecoder(mdt_path, root_path + output_path)
-m = mdt_decoder.decode()
-
-map_data_path = root_path + output_path + 'map_data.' + str(map_num)
-with open(map_data_path + '.json', "w") as f:
-  f.write(terrain.to_json())
-
-
-def decode_texture(bitmap):
+def decode_texture(bitmap, search_dir, output_path):
+  """Decode texture file and convert to PNG."""
   if bitmap is None:
     return True
 
   texture_filename = bitmap.split('.')[0]
-  texture_path = root_path + '/tests/input/' + texture_filename + '.tex'
+  texture_path = os.path.join(search_dir, texture_filename + '.tex')
   texture_path = find_correct_path(texture_path)
-  if not os.path.isfile(texture_path):
-    return False
-  texture_decoder = SealTextureFileDecoder(texture_path)
-  texture = texture_decoder.decode() # TODO: This still returns the decoder
 
-  # TODO: Streamline this to the pipeline?
-  file_type = texture.file_type
-  file_type = 'tga' # TODO
-  texture_path = root_path + output_path + texture.filename
-  with open(texture_path + '.' + file_type, "wb") as f:
+  if not os.path.isfile(texture_path):
+    print(f"Warning: Texture file not found: {texture_path}")
+    return False
+
+  texture_decoder = SealTextureFileDecoder(texture_path)
+  texture = texture_decoder.decode()
+
+  file_type = 'tga'
+  # Use os.path.join for cross-platform compatibility
+  full_output_dir = output_path
+  if not os.path.exists(full_output_dir):
+    os.makedirs(full_output_dir)
+
+  texture_out_path = os.path.join(full_output_dir, texture.filename)
+
+  with open(texture_out_path + '.' + file_type, "wb") as f:
+    if texture.decoded is None:
+      print(f"Error: Texture data is empty for: {texture.filename}")
+      return False
     f.write(texture.decoded)
-  with Image.open(texture_path + '.' + file_type) as im:
-    im.save(texture_path + '.png')
+  with Image.open(texture_out_path + '.' + file_type) as im:
+    im.save(texture_out_path + '.png')
   return True
 
 
-def decode_mesh(filename):
+def decode_mesh(filename, search_dir, output_path):
+  """Decode mesh file with all related files (act, an1, bn1, tex)."""
+  model = Model()
+
   # Decode ms1
-  geometry_decoder = SealMeshFileDecoder(root_path + '/tests/input/' + filename + '.ms1')
+  geometry_decoder = SealMeshFileDecoder(
+      os.path.join(search_dir, filename + '.ms1'))
   geometry = geometry_decoder.decode()
   model.add_geometry(geometry)
 
   # Decode act
-  action_filepath = root_path + '/tests/input/' + filename + '.act'
+  action_filepath = os.path.join(search_dir, filename + '.act')
   if os.path.isfile(action_filepath):
     action_decoder = SealActionFileDecoder(action_filepath)
     actions = action_decoder.decode()
   else:
-    actions = [{
-      "name": "default",
-      "filename": filename
-    }]
+    actions = [{"name": "default", "filename": filename}]
 
   # Decode an1
   for action in actions:
     ani_name = action["name"]
     ani_filename = action["filename"]
-    path = root_path + '/tests/input/' + ani_filename + '.an1'
-    print(path)
+    path = os.path.join(search_dir, ani_filename + '.an1')
     if os.path.isfile(path):
-      print("add anims")
-      print(os.path.isfile(path))
       animation_decoder = SealAnimationFileDecoder(path)
       animations = animation_decoder.decode()
       for animation in animations:
-        print("add anima")
         geometry.add_animation(animation)
         model.add_animation(ani_name, animation)
 
   # Decode bn1
-  bone_path = root_path + '/tests/input/' + filename + '.bn1'
+  bone_path = os.path.join(search_dir, filename + '.bn1')
   if os.path.isfile(bone_path):
     skeleton_decoder = SealBoneFileDecoder(bone_path)
     skeleton = skeleton_decoder.decode()
     model.add_skeleton(skeleton)
 
   # Decode tex
-  for material in model.geometry.materials:
-    decode_texture(material.bitmap)
-    for submaterial in material.sub_materials:
-      decode_texture(submaterial.bitmap)
+  geometry_obj = getattr(model, 'geometry', None)
+  if geometry_obj is not None and getattr(geometry_obj, 'materials', None):
+    for material in geometry_obj.materials:
+      if getattr(material, 'bitmap', None):
+        decode_texture(material.bitmap, search_dir, output_path)
+      for submaterial in getattr(material, 'sub_materials', []) or []:
+        if getattr(submaterial, 'bitmap', None):
+          decode_texture(submaterial.bitmap, search_dir, output_path)
 
   return model
 
 
-def extract_mesh(filename):
-  model = decode_mesh(filename)
+def process_ms1(filepath, output_path):
+  """Process MS1 mesh file."""
+  print(f"Processing MS1 file: {filepath}")
+
+  # Get the directory where the file is located and the base filename
+  search_dir = os.path.dirname(os.path.abspath(filepath))
+  filename = os.path.splitext(os.path.basename(filepath))[0]
+
+  model = decode_mesh(filename, search_dir, output_path)
+
   gltf2_encoder = GLTF()
-  gltf2_encoder.encode(model, root_path + output_path + filename)
+  dest = os.path.join(output_path, filename)
+  gltf2_encoder.encode(model, dest)
+  print(f"Successfully exported to: {dest}.gltf")
 
 
-for object_file in terrain.object_files:
-  print("Extracting: " + object_file)
-  try:
-    extract_mesh(object_file.split('.')[0])
-  except:
-    print("Failed to extract: " + object_file)
+def process_tex(filepath, output_path):
+  """Process TEX texture file."""
+  print(f"Processing TEX file: {filepath}")
 
-# # # Testing
-# for filename in filenames:
-#   print("Extracting: " + filename)
-#   extract_mesh(filename)
+  search_dir = os.path.dirname(os.path.abspath(filepath))
+  filename = os.path.splitext(os.path.basename(filepath))[0]
+
+  texture_path = os.path.join(search_dir, filename + '.tex')
+  texture_path = find_correct_path(texture_path)
+
+  if not os.path.isfile(texture_path):
+    print(f"Error: Texture file not found: {texture_path}")
+    return
+
+  texture_decoder = SealTextureFileDecoder(texture_path)
+  texture = texture_decoder.decode()
+
+  file_type = 'tga'
+  if not os.path.exists(output_path):
+    os.makedirs(output_path)
+
+  output_texture_path = os.path.join(output_path, texture.filename)
+  with open(output_texture_path + '.' + file_type, "wb") as f:
+    if texture.decoded is None:
+      print(f"Error: Texture data is empty for: {texture.filename}")
+      return
+    f.write(texture.decoded)
+  with Image.open(output_texture_path + '.' + file_type) as im:
+    im.save(output_texture_path + '.png')
+
+  print(f"Successfully exported to: {output_texture_path}.png")
+
+
+def process_map(filepath, output_path):
+  """Process MAP terrain file."""
+  print(f"Processing MAP file: {filepath}")
+
+  search_dir = os.path.dirname(os.path.abspath(filepath))
+  filename = os.path.splitext(os.path.basename(filepath))[0]
+
+  map_path = os.path.join(search_dir, filename + '.map')
+  map_path = find_correct_path(map_path)
+
+  if not os.path.isfile(map_path):
+    print(f"Error: Map file not found: {map_path}")
+    return
+
+  map_decoder = SealMapFileDecoder(map_path)
+  terrain = map_decoder.decode()
+
+  if terrain is None:
+    print(f"Error: Failed to decode map: {map_path}")
+    return
+
+  if not os.path.exists(output_path):
+    os.makedirs(output_path)
+
+  map_data_path = os.path.join(output_path, filename + '.heightmap.png')
+  heightmap = HeightmapEncoder(terrain)
+  heightmap.encode(map_data_path)
+
+  print(f"Successfully exported heightmap to: {map_data_path}.png")
+
+  object_files = getattr(terrain, "object_files", [])
+  print(f"\nFound {len(object_files)} objects in the map")
+  for object_file in object_files:
+    object_name = object_file.split('.')[0]
+    try:
+      model = decode_mesh(object_name, search_dir, output_path)
+      gltf2_encoder = GLTF()
+      dest = os.path.join(output_path, object_name)
+      gltf2_encoder.encode(model, dest)
+    except Exception as e:
+      print(f"Failed to extract {object_name}: {str(e)}")
+
+
+def process_mdt(filepath, output_path):
+  """Process MDT file."""
+  print(f"Processing MDT file: {filepath}")
+
+  search_dir = os.path.dirname(os.path.abspath(filepath))
+  filename = os.path.splitext(os.path.basename(filepath))[0]
+
+  mdt_path = os.path.join(search_dir, filename + '.mdt')
+  mdt_decoder = SealMdtFileDecoder(mdt_path)
+  files = mdt_decoder.decode()
+
+  for filename, data in files:
+    output_file_path = os.path.join(output_path, filename)
+    with open(output_file_path, "wb") as f:
+      f.write(data)
+
+  print(f"Extracted {len(files)} files from the MDT file")
+
+
+def main():
+  """Main function to handle user input and file processing."""
+  root_path = os.getcwd()
+  output_dir = "output"
+  output_path = os.path.join(root_path, output_dir)
+
+  print("\n")
+  print("UNSEALED PROJECT")
+  print("________________")
+  print("\nSupported file types:")
+  print("- .ms1 (Mesh files)")
+  print("- .tex (Texture files)")
+  print("- .map (Map files)")
+  print("- .mdt (Archive files)")
+  print("\nNote: .act, .an1, .bn1 files are processed automatically with .ms1 files")
+  print("________________")
+
+  while True:
+    filename = input("\nEnter filepath (or 'quit' to exit): ").strip()
+
+    if filename.lower() in ['quit', 'exit', 'q']:
+      break
+
+    if not filename:
+      continue
+
+    # Convert to absolute path
+    if not os.path.isabs(filename):
+      filepath = os.path.join(root_path, filename)
+    else:
+      filepath = filename
+
+    file_type = get_file_type(filename)
+
+    try:
+      if file_type == 'ms1' or (file_type is None and os.path.isfile(filepath + '.ms1')):
+        if file_type is None:
+          filepath = filepath + '.ms1'
+        process_ms1(filepath, output_path)
+      elif file_type == 'tex' or (file_type is None and os.path.isfile(filepath + '.tex')):
+        if file_type is None:
+          filepath = filepath + '.tex'
+        process_tex(filepath, output_path)
+      elif file_type == 'map' or (file_type is None and os.path.isfile(filepath + '.map')):
+        if file_type is None:
+          filepath = filepath + '.map'
+        process_map(filepath, output_path)
+      elif file_type == 'mdt' or (file_type is None and os.path.isfile(filepath + '.mdt')):
+        if file_type is None:
+          filepath = filepath + '.mdt'
+        process_mdt(filepath, output_path)
+      else:
+        print(f"Error: Unsupported file: {filename}")
+    except Exception as e:
+      print(f"An error occurred: {e}")
+      import traceback
+      traceback.print_exc()
+
+
+if __name__ == "__main__":
+  main()

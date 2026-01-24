@@ -1,5 +1,6 @@
 from geometry.mesh import Mesh
 
+
 class Model:
   def __init__(self):
     self.geometry = None
@@ -14,7 +15,7 @@ class Model:
     if name not in self.animations:
       self.animations[name] = []
     self.animations[name].append(animation)
-  
+
   def add_skeleton(self, skeleton):
     self.skeleton = skeleton
 

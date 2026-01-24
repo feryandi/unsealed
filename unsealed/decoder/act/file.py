@@ -1,4 +1,4 @@
-from file import File
+from utils.file import File
 from animation.animation import Animation
 from animation.keyframe import Keyframe
 
@@ -15,14 +15,16 @@ class SealActionFileDecoder:
     self.animations = []
 
   def decode(self):
+    if self.file is None:
+      raise Exception("File was not initialized properly")
     # TODO: This doesn't work for: N_arus.act, T_by.act
     try:
       ukwn = self.file.read(4)  # TODO
       name = self.__read_string()
       filename = self.__read_string()
       self.animations.append({
-        "name": name,
-        "filename": filename
+          "name": name,
+          "filename": filename
       })
       animation_num = self.file.read_int()
 
@@ -31,28 +33,29 @@ class SealActionFileDecoder:
         name = self.__read_string()
         filename = self.__read_string()
         self.animations.append({
-          "name": name,
-          "filename": filename
+            "name": name,
+            "filename": filename
         })
 
         animation_effect_num = self.file.read_int()
         pad = self.file.read(4)  # TODO
         for m in range(animation_effect_num):
           self.__decode_effect()  # TODO
-      
+
       pad = self.file.read(36)  # TODO
       return self.animations
     except Exception as e:
-      print(hex(self.file.pointer))
       raise e
 
   def __decode_effect(self):
+    assert self.file is not None, "File was not initialized properly"
     pad = self.file.read(36)
     name = self.__read_string()
     filename = self.__read_string()
     w = self.file.read(30)
 
   def __read_string(self):
+    assert self.file is not None, "File was not initialized properly"
     str_len = self.file.read_int()
     if str_len == 0:
       return None

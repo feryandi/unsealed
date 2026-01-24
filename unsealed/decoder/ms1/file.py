@@ -1,4 +1,4 @@
-from file import File
+from utils.file import File
 from utils.strings import is_valid_ascii_letter
 
 from decoder.ms1.material import SealMeshMaterialDecoder
@@ -16,11 +16,11 @@ class SealMeshFileDecoder:
 
   def decode(self):
     if self.file is None:
-      raise Exception("No file loaded")
+      raise Exception("File was not initialized properly")
     maybe_non_first_object_has_pad = False
     maybe_different_mode = False
 
-    ukwn = self.file.read_int() # Unknown value
+    ukwn = self.file.read_int()  # Unknown value
     if ukwn == 0:
       # Normal mode
       pass
@@ -30,13 +30,14 @@ class SealMeshFileDecoder:
       # T_Gube1_idle, T_Gube2_idle, T_Gube3_idle, and several other skills
       maybe_different_mode = True
 
-    materials_decoder = SealMeshMaterialDecoder(self.file, maybe_different_mode)
+    materials_decoder = SealMeshMaterialDecoder(
+        self.file, maybe_different_mode)
     material_list = materials_decoder.decode()
 
-    geometry_decoder = SealMeshGeometryDecoder(self.file, maybe_non_first_object_has_pad)
+    geometry_decoder = SealMeshGeometryDecoder(
+        self.file, maybe_non_first_object_has_pad)
     geometry = geometry_decoder.decode()
     for material in material_list:
       geometry.add_material(material)
 
     return geometry
-

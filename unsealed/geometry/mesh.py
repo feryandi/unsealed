@@ -1,7 +1,8 @@
 from geometry.vertex import Vertex
 
+
 class Mesh:
-  def __init__(self, name, parent = None):
+  def __init__(self, name, parent=None):
     self.name = name
     self.parent = parent
 

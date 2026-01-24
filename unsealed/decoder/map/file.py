@@ -2,7 +2,7 @@ import io
 import os
 import struct
 
-from file import File
+from utils.file import File
 
 import sys
 import numpy as np
@@ -14,7 +14,8 @@ class SealMapFileDecoder:
   def __init__(self, path):
     self.path = path
     self.file = None
-    self.filename = os.path.splitext(os.path.basename(path))[0].split('.')[0]
+    self.filename = os.path.splitext(os.path.basename(path))[
+        0].split('.')[0]
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
@@ -22,6 +23,9 @@ class SealMapFileDecoder:
       raise Exception("Unable to open map file")
 
   def decode(self):
+    if self.file is None:
+      raise Exception("File was not initialized properly")
+
     is_v5 = False
     is_v10 = False
     is_v11 = False
@@ -30,7 +34,7 @@ class SealMapFileDecoder:
 
     header = self.file.read_string(64)
     if header == "Map File v.5":
-      return # unsupported even by the game?
+      return  # unsupported even by the game?
     if header == "Map File v.10":
       is_v10 = True
     if header == "Map File v.11":
@@ -43,6 +47,8 @@ class SealMapFileDecoder:
     ukwn = self.file.read(16 + 5)
     ukwn = self.file.read_string(160)
     _ = self.file.read(1 * 16 + 3)
+    if is_v13:  # TODO: Check, based on Nua new map
+      self.file.read(4)
 
     if not is_v10:
       if not is_v12 and not is_v11 and not is_v13:
@@ -94,14 +100,16 @@ class SealMapFileDecoder:
       x = self.file.read_int()
       n.append(x)
     arr = np.array(n)
-    narr =  arr.reshape(512, 512)
+    narr = arr.reshape(512, 512)
 
     # Object placement
     a = self.file.read_int()
     for x in range(a):
-      n = self.file.read_int() # This could be related to object index
-      p = [self.file.read_float(), self.file.read_float(), self.file.read_float()]
-      r = [self.file.read_float(), self.file.read_float(), self.file.read_float()]
+      n = self.file.read_int()  # This could be related to object index
+      p = [self.file.read_float(), self.file.read_float(),
+           self.file.read_float()]
+      r = [self.file.read_float(), self.file.read_float(),
+           self.file.read_float()]
       if not is_v10 and not is_v11:
         r.append(self.file.read_float())
       terrain.add_object(n, p, r)

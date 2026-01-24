@@ -29,18 +29,23 @@ class SealMeshMeshDecoder:
 
     # Transformation Matrix for vertex
     tm = [
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()]
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()]
     ]
-      
+
     if has_physique_data:
       # Do not transform when it has bone / physique data
       tm = None
 
     mesh.add_transform_matrix(tm)
-    _ = self.file.read(4 * 16) # This could be transformation matrix or 0XCDCDCDCD that means uninitialized
+    # This could be transformation matrix or 0XCDCDCDCD that means uninitialized
+    _ = self.file.read(4 * 16)
     _ = self.file.read(24)
     _ = self.file.read(12)
     _ = self.file.read(68)

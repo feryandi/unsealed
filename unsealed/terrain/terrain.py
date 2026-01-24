@@ -1,5 +1,6 @@
 import json
 
+
 class Terrain:
   def __init__(self, width, height):
     self.heightmap = []
@@ -20,9 +21,9 @@ class Terrain:
 
   def add_object(self, idx, pos, rot):
     self.objects.append({
-      'idx': idx,
-      'pos': pos,
-      'rot': rot,
+        'idx': idx,
+        'pos': pos,
+        'rot': rot,
     })
 
   def add_terrain_layer_a(self, terrain_layer):

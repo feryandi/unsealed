@@ -160,10 +160,18 @@ cython_debug/
 #.idea/
 
 # Customized
+.vscode/
 venv
 tests/
 viewer/
+viewer_old/
+web/
 
 unsealed/_old/
 unsealed/__pycache__
 unsealed/geometry/__pycache__
+unsealed/docs/assets/maps/
+unsealed/output/
+unsealed/tests/
+
+web/node_modules

@@ -7,6 +7,7 @@ class Material:
     self.sub_materials = []
     self.size = 0
     self.enabled = False
+    self.alpha_mode = 0
 
   def add_sub_material(self, material):
     self.sub_materials.append(material)

@@ -1,13 +1,13 @@
 import numpy as np
-import mathutils
 
-from file import File
+from utils.file import File
+from utils.matrix import decompose_mtx
 
 from skeleton.bone import Bone
 
 
 class SealBoneBoneDecoder:
-  def __init__(self, file):
+  def __init__(self, file: File):
     self.file = file
 
   def decode(self):
@@ -19,43 +19,58 @@ class SealBoneBoneDecoder:
       bone.parent = self.file.read_string(256)
     else:
       _ = self.file.read(256)
-    
-    cc = [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()]
+
+    cc = [self.file.read_float(), self.file.read_float(
+    ), self.file.read_float(), self.file.read_float(), self.file.read_float()]
     self.__decode_data(bone)
     return bone
 
   def __decode_data(self, bone):
     bone.tm = [
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
     ]
     bone.tm_inverse = [
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
     ]
     _ = [
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
-      [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
+        [self.file.read_float(), self.file.read_float(),
+         self.file.read_float(), self.file.read_float()],
     ]
-    broken_loc = [self.file.read_float(), self.file.read_float(), self.file.read_float()]
-    broken_sca = [self.file.read_float(), self.file.read_float(), self.file.read_float()]
-    broken_rot = [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()]
+    broken_loc = [self.file.read_float(), self.file.read_float(),
+                  self.file.read_float()]
+    broken_sca = [self.file.read_float(), self.file.read_float(),
+                  self.file.read_float()]
+    broken_rot = [self.file.read_float(), self.file.read_float(
+    ), self.file.read_float(), self.file.read_float()]
 
     ntm = np.array(bone.tm).T
-    tm = mathutils.Matrix(ntm)
-    loc, rot, sca = tm.decompose()
-    bone.loc = [loc.x, loc.y, loc.z]
+    tm = np.array(ntm)
+    loc, rot, sca = decompose_mtx(tm)
+    bone.loc = [loc[0], loc[1], loc[2]]
     bone.rot = [rot.w, rot.x, rot.y, rot.z]
     bone.sca = [sca.x, sca.y, sca.z]
 
     itm = np.array(bone.tm_inverse).T
-    # Fix the tm_inverse
-    intm = np.array(tm.inverted()).T
+    intm = np.linalg.inv(tm).T
     bone.tm_inverse = intm.tolist()
 
-    _ = [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()]
+    _ = [self.file.read_float(), self.file.read_float(
+    ), self.file.read_float(), self.file.read_float()]

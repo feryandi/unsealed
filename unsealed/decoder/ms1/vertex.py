@@ -1,11 +1,11 @@
-import mathutils
 import numpy as np
 
 from geometry.vertex import Vertex
+from utils.matrix import decompose_mtx
 
 
 class SealMeshVertexDecoder:
-  def __init__(self, file, transformation_matrix = None):
+  def __init__(self, file, transformation_matrix=None):
     self.file = file
     self.tm = transformation_matrix
 
@@ -22,8 +22,8 @@ class SealMeshVertexDecoder:
     position = [x, y, z]
 
     if self.tm is not None:
-      tm = mathutils.Matrix(self.tm)
-      tm.invert()
+      tm = np.array(self.tm)
+      tm = np.linalg.inv(tm)
       r = np.dot(np.array(tm).T, np.array([x, y, z, 1]).T)
       position = [r[0], r[1], r[2]]
 

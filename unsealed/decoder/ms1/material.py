@@ -1,4 +1,5 @@
 from material.material import Material
+from utils.strings import is_valid_ascii_letter
 
 
 class SealMeshMaterialDecoder:
@@ -8,42 +9,54 @@ class SealMeshMaterialDecoder:
     self.different_mode = different_mode
 
   def decode(self):
+    if self.file is None:
+      raise Exception("File was not initialized properly")
+    if self.different_mode:
+      print("Material is in different_mode")
     materials = []
     self.count = self.file.read_int()
     for x in range(self.count):
       if not self.different_mode:
         material = self.__decode_normal_material()
         # These data block is not available on sub-material
-        pad = 16 + 4 + 5
-        _ = self.file.read_float() # Unknown value of Kd, Ks, ?
-        _ = self.file.read_float() # Unknown value of Kd, Ks, ?
-        _ = self.file.read_float() # Unknown value of Kd, Ks, ?
-        _ = self.file.read(pad) # Unknown value of Kd, Ks, ?
+        x = [
+            self.file.read_float(), self.file.read_float(
+            ), self.file.read_float(), self.file.read_float(),
+            self.file.read_float(), self.file.read_float(
+            ), self.file.read_float(), self.file.read_float(),
+            self.file.read_float()
+        ]
+        alpha_mode = self.file.read(1)
+        material.alpha_mode = int.from_bytes(
+            alpha_mode, byteorder='little')
+
         materials.append(material)
       else:
-        while self.__is_still_material(self.file):
+        while self.__is_still_material():
           material = self.__decode_special_material()
           materials.append(material)
     return materials
 
   def __decode_normal_material(self):
-    x = self.file.read_short()
-    print(hex(self.file.pointer))
+    x = self.file.read(2)
     bitmap = self.file.read_string(256)
     name = self.file.read_string(128)
     material = Material(name, bitmap)
 
-    x = self.file.read(128)
+    x = self.file.read_string(128)
     num_sub_material = self.file.read_int()
-    x = self.file.read_float() # Probably: Material Ambient or/and Diffuse (YES!)
-    x = self.file.read_float() # Probably: Material Ambient or/and Diffuse (YES!)
-    x = self.file.read_float() # Probably: Material Ambient or/and Diffuse (YES!)
-    x = self.file.read_float() # Dunno
-    x = self.file.read(16) # Name?
+    x = [
+        self.file.read_float(), self.file.read_float(
+        ), self.file.read_float(), self.file.read_float(),
+        self.file.read_float(), self.file.read_float(
+        ), self.file.read_float(), self.file.read_float(),
+    ]
 
     for y in range(num_sub_material):
-      x = [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()]
-      x = [self.file.read_float(), self.file.read_float(), self.file.read_float(), self.file.read_float()]
+      x = [self.file.read_float(), self.file.read_float(
+      ), self.file.read_float(), self.file.read_float()]
+      x = [self.file.read_float(), self.file.read_float(
+      ), self.file.read_float(), self.file.read_float()]
       x = self.file.read(5)
       submaterial = self.__decode_normal_material()
       material.add_sub_material(submaterial)
@@ -119,5 +132,3 @@ class SealMeshMaterialDecoder:
         return False
       return True
     return False
-
-
