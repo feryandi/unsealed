@@ -8,8 +8,9 @@ from decoder.ms1.file import SealMeshFileDecoder
 from decoder.tex.file import SealTextureFileDecoder
 from decoder.map.file import SealMapFileDecoder
 from decoder.mdt.file import SealMdtFileDecoder
-from encoder.gltf.gltf import GLTF
-from encoder.heightmap.file import HeightmapEncoder
+from encoder.gltf import GLTF
+from encoder.glb import GLB
+from encoder.heightmap import HeightmapEncoder
 
 from model.model import Model
 from utils.strings import find_correct_path
@@ -116,10 +117,13 @@ def process_ms1(filepath, output_path):
 
   model = decode_mesh(filename, search_dir, output_path)
 
-  gltf2_encoder = GLTF()
+#   gltf2_encoder = GLTF()
+#   dest = os.path.join(output_path, filename)
+#   gltf2_encoder.encode(model, dest)
+  glb_encoder = GLB(model)
   dest = os.path.join(output_path, filename)
-  gltf2_encoder.encode(model, dest)
-  print(f"Successfully exported to: {dest}.gltf")
+  glb_encoder.encode(dest)
+  print(f"Successfully exported to: {dest}.glb")
 
 
 def process_tex(filepath, output_path):

@@ -3,7 +3,7 @@ import numpy as np
 from utils.file import File
 from utils.matrix import decompose_mtx
 
-from skeleton.bone import Bone
+from model.bone import Bone
 
 
 class SealBoneBoneDecoder:
@@ -65,8 +65,8 @@ class SealBoneBoneDecoder:
     tm = np.array(ntm)
     loc, rot, sca = decompose_mtx(tm)
     bone.loc = [loc[0], loc[1], loc[2]]
-    bone.rot = [rot.w, rot.x, rot.y, rot.z]
-    bone.sca = [sca.x, sca.y, sca.z]
+    bone.rot = [rot[3], rot[0], rot[1], rot[2]]
+    bone.sca = [sca[0], sca[1], sca[2]]
 
     itm = np.array(bone.tm_inverse).T
     intm = np.linalg.inv(tm).T

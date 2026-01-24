@@ -1,4 +1,4 @@
-from geometry.mesh import Mesh
+from model.mesh import Mesh
 
 from decoder.ms1.vertex import SealMeshVertexDecoder
 

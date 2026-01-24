@@ -1,12 +1,7 @@
-import io
 import os
-import struct
-
-from utils.file import File
-
-import sys
 import numpy as np
 
+from utils.file import File
 from terrain.terrain import Terrain
 
 

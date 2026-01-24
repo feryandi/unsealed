@@ -1,5 +1,3 @@
-from geometry.mesh import Mesh
-
 
 class Model:
   def __init__(self):

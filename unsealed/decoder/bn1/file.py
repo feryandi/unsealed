@@ -1,5 +1,5 @@
 from utils.file import File
-from skeleton.skeleton import Skeleton
+from model.skeleton import Skeleton
 
 from decoder.bn1.bone import SealBoneBoneDecoder
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from geometry.vertex import Vertex
+from model.vertex import Vertex
 from utils.matrix import decompose_mtx
 
 

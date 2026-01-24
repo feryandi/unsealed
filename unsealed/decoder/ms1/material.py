@@ -1,4 +1,4 @@
-from material.material import Material
+from model.material import Material
 from utils.strings import is_valid_ascii_letter
 
 
