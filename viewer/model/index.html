@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/purecss@3.0.0/build/pure-min.css"
+    integrity="sha384-X38yfunGUhNzHpBaEBsWLO+A0HDYOQi8ufWDkZ0k9e0eXz/tH3II7uKZ9msv++Ls" crossorigin="anonymous">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap');
+  </style>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <div id="viewer"></div>
+
+  <!-- Bottom Left Panel -->
+  <div id="events-panel">
+    <div id="events-section"></div>
+    <div id="control-bar">
+      <input type="file" id="file-input" accept=".glb" style="display:none">
+      <button id="file-input-btn">📦 Open</button>
+
+      <div id="animation-controls" class="disabled">
+        <div class="animation-row">
+          <select id="animation-select">
+            <option value="">No animations</option>
+          </select>
+          <div class="animation-buttons">
+            <button id="play-btn" class="icon-btn" title="Play">▶</button>
+            <button id="pause-btn" class="icon-btn" title="Pause">⏸</button>
+            <button id="stop-btn" class="icon-btn" title="Stop">⏹</button>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <input type="range" id="timeline" min="0" max="100" value="0" step="0.1">
+          <span class="timeline-info">
+            <span id="current-time">0.00</span>s / <span id="duration">0.00</span>s
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.157.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/"
+      }
+    }
+  </script>
+  <script type="module" src="./viewer.js"></script>
+</body>
+
+</html>

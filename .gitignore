@@ -163,7 +163,8 @@ cython_debug/
 .vscode/
 venv
 tests/
-viewer/
+viewer/map
+viewer/model/node_modules
 viewer_old/
 web/
 
