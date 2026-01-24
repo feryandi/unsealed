@@ -133,7 +133,7 @@ class GLTF:
       node_idx = self.__add_node(
           name=bone.name,
           translation=[loc[0], loc[1], loc[2]],
-          rotation=[rot[1], rot[2], rot[3], rot[0]],
+          rotation=[rot[0], rot[1], rot[2], rot[3]],
           scale=[sca[0], sca[1], sca[2]]
       )
       joints.append(node_idx)
@@ -313,7 +313,7 @@ class GLTF:
             name=mesh.name,
             mesh=len(self.gltf["meshes"]) - 1,
             translation=[loc[0], loc[1], loc[2]],
-            rotation=[rot[1], rot[2], rot[3], rot[0]],
+            rotation=[rot[0], rot[1], rot[2], rot[3]],
             scale=[sca[0], sca[1], sca[2]]
         )
         node_idx_to_mesh[node_idx] = mesh
