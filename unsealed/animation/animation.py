@@ -21,3 +21,6 @@ class Animation:
 
   def add_scale_keyframe(self, keyframe):
     self.scales.append(keyframe)
+
+  def __repr__(self):
+    return f"<Animation name:{self.name} start_frame:{self.start_frame} end_frame:{self.end_frame} fps:{self.fps} mesh_name:{self.mesh_name} transforms:{self.transforms} rotations:{self.rotations} scales:{self.scales}>"

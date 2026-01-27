@@ -65,7 +65,7 @@ class SealBoneBoneDecoder:
     tm = np.array(ntm)
     loc, rot, sca = decompose_mtx(tm)
     bone.loc = [loc[0], loc[1], loc[2]]
-    bone.rot = [rot[3], rot[0], rot[1], rot[2]]
+    bone.rot = [rot[0], rot[1], rot[2], rot[3]]
     bone.sca = [sca[0], sca[1], sca[2]]
 
     itm = np.array(bone.tm_inverse).T

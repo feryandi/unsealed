@@ -27,6 +27,7 @@ class GLTF:
     self.model = None
 
     self.node_name_to_node_idx = {}
+    self.node_idx_to_mesh = {}
     self.geo_material_idx_to_gltf_material_idx = {}
 
   def encode(self, model, path):
@@ -110,6 +111,7 @@ class GLTF:
       raise Exception("No model to encode")
 
     skeleton = self.model.skeleton
+
     if skeleton is None:
       return
 
@@ -136,6 +138,7 @@ class GLTF:
           rotation=[rot[0], rot[1], rot[2], rot[3]],
           scale=[sca[0], sca[1], sca[2]]
       )
+      self.node_idx_to_mesh[node_idx] = bone
       joints.append(node_idx)
 
       if bone.parent is not None:
@@ -231,7 +234,6 @@ class GLTF:
       raise Exception("No model to encode")
 
     meshes = self.model.geometry.meshes
-    node_idx_to_mesh = {}
 
     for mesh in meshes:
       mesh_gltf = {
@@ -283,20 +285,18 @@ class GLTF:
         node_idx = self.__add_node(
             name=mesh.name,
             mesh=len(self.gltf["meshes"]) - 1,
-            skin=0  # TODO?
+            skin=0 if "skins" in self.gltf else None
         )
-        node_idx_to_mesh[node_idx] = mesh
+        self.node_idx_to_mesh[node_idx] = mesh
       else:
         tm = np.array(mesh.tm).T
         mtx = np.array(tm)
 
-        skeleton = self.model.skeleton
         if not is_string_empty(mesh.parent):
           try:
             # Fix to change global transformation to local transformation
-            parent_idx = self.node_name_to_node_idx[mesh.parent.lower(
-            )]
-            parent = node_idx_to_mesh[parent_idx]
+            parent_idx = self.node_name_to_node_idx[mesh.parent.lower()]
+            parent = self.node_idx_to_mesh[parent_idx]
             ntm = np.array(parent.tm).T
             ptm = np.array(ntm)
             pivot = np.linalg.inv(ptm)
@@ -306,8 +306,6 @@ class GLTF:
             raise Exception(
                 f"Unable to find parent mesh named: {e}")
 
-        # if skeleton is not None:
-        # Decompose transformation matrix
         loc, rot, sca = decompose_mtx(mtx)
         node_idx = self.__add_node(
             name=mesh.name,
@@ -316,14 +314,7 @@ class GLTF:
             rotation=[rot[0], rot[1], rot[2], rot[3]],
             scale=[sca[0], sca[1], sca[2]]
         )
-        node_idx_to_mesh[node_idx] = mesh
-        # else:
-        #   # Decompose transformation matrix
-        #   loc, rot, sca = mtx.decompose()
-        #   node_idx = self.__add_node(
-        #     name = mesh.name,
-        #     mesh = len(self.gltf["meshes"]) - 1
-        #   )
+        self.node_idx_to_mesh[node_idx] = mesh
 
         if not is_string_empty(mesh.parent):
           parent_idx = self.node_name_to_node_idx[mesh.parent.lower(
@@ -339,8 +330,24 @@ class GLTF:
     normal_bytes = io.BytesIO()
     texcoord_bytes = io.BytesIO()
 
+    first_vertex = True
     for v in vertices:
       p = [v.position[0], v.position[1], v.position[2]]
+      if first_vertex:
+        p_min = list(v.position)
+        p_max = list(v.position)
+        first_vertex = False
+      else:
+        p_min = [
+            min(p_min[0], v.position[0]),
+            min(p_min[1], v.position[1]),
+            min(p_min[2], v.position[2]),
+        ]
+        p_max = [
+            max(p_max[0], v.position[0]),
+            max(p_max[1], v.position[1]),
+            max(p_max[2], v.position[2]),
+        ]
       position_bytes.write(struct.pack('f'*len(p), *p))
       n = [v.normal[0], v.normal[1], v.normal[2]]
       normal_bytes.write(struct.pack('f'*len(n), *n))
@@ -348,7 +355,8 @@ class GLTF:
       texcoord_bytes.write(struct.pack('f'*len(t), *t))
 
     b = self.__add_buffer(position_bytes)
-    p_a = self.__add_accessor(b, 5126, len(vertices), "VEC3")
+    p_a = self.__add_accessor(b, 5126, len(
+        vertices), "VEC3", min=p_min, max=p_max)
     b = self.__add_buffer(normal_bytes)
     n_a = self.__add_accessor(b, 5126, len(vertices), "VEC3")
     b = self.__add_buffer(texcoord_bytes)
@@ -389,7 +397,6 @@ class GLTF:
       key = name.lower()
       if key in self.node_name_to_node_idx:
         print("Node name duplicate detected: " + str(key))
-        # raise Exception("Node name duplicate detected: " + str(key))
       self.node_name_to_node_idx[key] = idx
     return idx
 
@@ -416,14 +423,19 @@ class GLTF:
       return len(self.gltf["bufferViews"]) - 1
     return -1
 
-  def __add_accessor(self, buffer_view_idx, component_type, count, type, byte_offset=0):
-    self.gltf["accessors"].append({
+  def __add_accessor(self, buffer_view_idx, component_type, count, type, byte_offset=0, min=None, max=None):
+    accessor = {
         "bufferView": buffer_view_idx,
         "byteOffset": byte_offset,
         "componentType": component_type,
         "count": count,
         "type": type
-    })
+    }
+    if min is not None:
+      accessor["min"] = min
+    if max is not None:
+      accessor["max"] = max
+    self.gltf["accessors"].append(accessor)
     return len(self.gltf["accessors"]) - 1
 
   def __add_accessors_split_four(self, data, component_type):

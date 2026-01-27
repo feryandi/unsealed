@@ -37,6 +37,7 @@ class SealAnimationFileDecoder:
       self.__decode_scale(node)
 
       animations.append(node)
+    # print(len(animations))
     return animations
 
   def __decode_position(self, node):

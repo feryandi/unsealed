@@ -1,7 +1,7 @@
 import os
 from PIL import Image
 
-from decoder.act.file import SealActionFileDecoder
+from decoder.act.file import SealActorFileDecoder
 from decoder.an1.file import SealAnimationFileDecoder
 from decoder.bn1.file import SealBoneFileDecoder
 from decoder.ms1.file import SealMeshFileDecoder
@@ -13,6 +13,8 @@ from encoder.glb import GLB
 from encoder.heightmap import HeightmapEncoder
 
 from model.model import Model
+from actor.actor import SealActor
+from actor.action import SealAction
 from utils.strings import find_correct_path
 
 
@@ -57,8 +59,22 @@ def decode_texture(bitmap, search_dir, output_path):
   return True
 
 
-def decode_mesh(filename, search_dir, output_path):
-  """Decode mesh file with all related files (act, an1, bn1, tex)."""
+def decode_actor(filename, search_dir, output_path):
+  """Decode actor file with all related files (ms1, an1, bn1, tex)."""
+
+  actor = SealActor("default", filename)
+  actor_filepath = os.path.join(search_dir, filename + '.act')
+  if os.path.isfile(actor_filepath):
+    actor_decoder = SealActorFileDecoder(actor_filepath)
+    actor_decoded = actor_decoder.decode()
+    if actor_decoded is not None:
+      actor = actor_decoded
+
+  model = decode_mesh(actor.filename, search_dir, output_path, actor.actions)
+  return model
+
+
+def decode_mesh(filename, search_dir, output_path, actions=[]):
   model = Model()
 
   # Decode ms1
@@ -67,18 +83,12 @@ def decode_mesh(filename, search_dir, output_path):
   geometry = geometry_decoder.decode()
   model.add_geometry(geometry)
 
-  # Decode act
-  action_filepath = os.path.join(search_dir, filename + '.act')
-  if os.path.isfile(action_filepath):
-    action_decoder = SealActionFileDecoder(action_filepath)
-    actions = action_decoder.decode()
-  else:
-    actions = [{"name": "default", "filename": filename}]
-
   # Decode an1
+  if len(actions) == 0:
+    actions = [SealAction("default", filename)]
   for action in actions:
-    ani_name = action["name"]
-    ani_filename = action["filename"]
+    ani_name = action.name
+    ani_filename = action.filename
     path = os.path.join(search_dir, ani_filename + '.an1')
     if os.path.isfile(path):
       animation_decoder = SealAnimationFileDecoder(path)
@@ -107,7 +117,23 @@ def decode_mesh(filename, search_dir, output_path):
   return model
 
 
-def process_ms1(filepath, output_path):
+def process_act(filepath, output_path):
+  """Process ACT mesh file."""
+  print(f"Processing ACT file: {filepath}")
+
+  # Get the directory where the file is located and the base filename
+  search_dir = os.path.dirname(os.path.abspath(filepath))
+  filename = os.path.splitext(os.path.basename(filepath))[0]
+
+  model = decode_actor(filename, search_dir, output_path)
+
+  glb_encoder = GLB(model)
+  dest = os.path.join(output_path, filename)
+  glb_encoder.encode(dest)
+  print(f"Successfully exported to: {dest}.glb")
+
+
+def process_mesh(filepath, output_path):
   """Process MS1 mesh file."""
   print(f"Processing MS1 file: {filepath}")
 
@@ -117,9 +143,6 @@ def process_ms1(filepath, output_path):
 
   model = decode_mesh(filename, search_dir, output_path)
 
-#   gltf2_encoder = GLTF()
-#   dest = os.path.join(output_path, filename)
-#   gltf2_encoder.encode(model, dest)
   glb_encoder = GLB(model)
   dest = os.path.join(output_path, filename)
   glb_encoder.encode(dest)
@@ -231,11 +254,11 @@ def main():
   print("UNSEALED PROJECT")
   print("________________")
   print("\nSupported file types:")
+  print("- .act (Actor files)")
   print("- .ms1 (Mesh files)")
   print("- .tex (Texture files)")
   print("- .map (Map files)")
   print("- .mdt (Archive files)")
-  print("\nNote: .act, .an1, .bn1 files are processed automatically with .ms1 files")
   print("________________")
 
   while True:
@@ -256,10 +279,14 @@ def main():
     file_type = get_file_type(filename)
 
     try:
-      if file_type == 'ms1' or (file_type is None and os.path.isfile(filepath + '.ms1')):
+      if file_type == 'act' or (file_type is None and os.path.isfile(filepath + '.act')):
+        if file_type is None:
+          filepath = filepath + '.act'
+        process_act(filepath, output_path)
+      elif file_type == 'ms1' or (file_type is None and os.path.isfile(filepath + '.ms1')):
         if file_type is None:
           filepath = filepath + '.ms1'
-        process_ms1(filepath, output_path)
+        process_mesh(filepath, output_path)
       elif file_type == 'tex' or (file_type is None and os.path.isfile(filepath + '.tex')):
         if file_type is None:
           filepath = filepath + '.tex'
