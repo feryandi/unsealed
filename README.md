@@ -24,7 +24,6 @@ Project ini dibuat pada saat waktu senggang, sehingga dibutuhkan waktu yang cuku
 
 
 ### Phase 0
-Saat ini project ini telah melalui fase 0.
 
 - [x] ms1 - Mesh File
 - [x] bn1 - Bone File
@@ -34,7 +33,7 @@ Saat ini project ini telah melalui fase 0.
 ### Phase 1
 
 - [x] tex - Texture File
-- [x] act - Action File
+- [x] act - Actor File
 
 
 ### Phase 2
@@ -44,5 +43,12 @@ Saat ini project ini telah melalui fase 0.
 
 ### Phase 3
 
+- [x] Viewer App
+
+### Phase 4
+
 - [ ] spr
-- [ ] Viewer App
+- [ ] te1
+- [ ] sha
+- [ ] sfx
+- [ ] dat

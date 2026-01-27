@@ -1,4 +1,5 @@
 import os
+import json
 from PIL import Image
 
 from decoder.act.file import SealActorFileDecoder
@@ -16,6 +17,8 @@ from model.model import Model
 from actor.actor import SealActor
 from actor.action import SealAction
 from utils.strings import find_correct_path
+import base64
+import gzip
 
 
 def get_file_type(filename):
@@ -203,26 +206,139 @@ def process_map(filepath, output_path):
     print(f"Error: Failed to decode map: {map_path}")
     return
 
+  # Also try to process same-named .tex and .mdt files for richer map rendering
+  tex_path = os.path.join(search_dir, filename + '.tex')
+  tex_path = find_correct_path(tex_path)
+  if os.path.isfile(tex_path):
+    try:
+      process_tex(tex_path, output_path)
+    except Exception as e:
+      print(f"Warning: Failed to process texture {tex_path}: {e}")
+
+  mdt_path = os.path.join(search_dir, filename + '.mdt')
+  if os.path.isfile(mdt_path):
+    try:
+      process_mdt(mdt_path, output_path)
+    except Exception as e:
+      print(f"Warning: Failed to process mdt {mdt_path}: {e}")
+
   if not os.path.exists(output_path):
     os.makedirs(output_path)
+  map_data_path = os.path.join(output_path, 'map_data.' + filename + '.json')
 
-  map_data_path = os.path.join(output_path, filename + '.heightmap.png')
-  heightmap = HeightmapEncoder(terrain)
-  heightmap.encode(map_data_path)
-
-  print(f"Successfully exported heightmap to: {map_data_path}.png")
+  # Also produce a PNG heightmap for reference (optional)
+  try:
+    png_path = os.path.join(output_path, filename + '.heightmap.png')
+    heightmap = HeightmapEncoder(terrain)
+    heightmap.encode(png_path)
+    print(f"Successfully exported heightmap to: {png_path}.png")
+  except Exception:
+    pass
 
   object_files = getattr(terrain, "object_files", [])
   print(f"\nFound {len(object_files)} objects in the map")
+
+  embedded_glbs = []
   for object_file in object_files:
     object_name = object_file.split('.')[0]
     try:
       model = decode_mesh(object_name, search_dir, output_path)
+      # write glTF (existing behaviour)
       gltf2_encoder = GLTF()
       dest = os.path.join(output_path, object_name)
       gltf2_encoder.encode(model, dest)
+      # also write GLB for embedding and faster loading
+      try:
+        glb_encoder = GLB(model)
+        glb_encoder.encode(dest)
+      except Exception:
+        # if GLB encoding fails, continue without GLB
+        pass
+
+      # if a .glb exists, embed it now
+      glb_path = os.path.join(output_path, object_name + '.glb')
+      if os.path.isfile(glb_path):
+        try:
+          with open(glb_path, 'rb') as gf:
+            gb = gf.read()
+          embedded_glbs.append({
+              'name': object_name,
+              'filename': os.path.basename(glb_path),
+              'data_b64': base64.b64encode(gb).decode('ascii')
+          })
+        except Exception:
+          pass
     except Exception as e:
       print(f"Failed to extract {object_name}: {str(e)}")
+
+  # After object extraction, assemble final JSON with embedded assets
+  try:
+    data = terrain.to_serializable()
+
+    embedded_textures = []
+    for tex in getattr(terrain, 'textures', []) or []:
+      if not tex:
+        continue
+      tex_name = tex.split('.')[0]
+      for ext in ('.dds', '.tga', '.png'):
+        p = os.path.join(output_path, tex_name + ext)
+        p = find_correct_path(p)
+        if os.path.isfile(p):
+          try:
+            with open(p, 'rb') as tf:
+              b = tf.read()
+            embedded_textures.append({
+                'name': tex_name,
+                'filename': os.path.basename(p),
+                'ext': ext.lstrip('.'),
+                'data_b64': base64.b64encode(b).decode('ascii')
+            })
+          except Exception:
+            pass
+          break
+
+    embedded_lightmap = None
+    lm = getattr(terrain, 'lightmap', None)
+    if lm:
+      lm_name = lm.split('.')[0]
+      for ext in ('.dds', '.tga', '.png'):
+        p = os.path.join(output_path, lm_name + ext)
+        p = find_correct_path(p)
+        if os.path.isfile(p):
+          try:
+            with open(p, 'rb') as lf:
+              b = lf.read()
+            embedded_lightmap = {
+                'name': lm_name,
+                'filename': os.path.basename(p),
+                'ext': ext.lstrip('.'),
+                'data_b64': base64.b64encode(b).decode('ascii')
+            }
+          except Exception:
+            embedded_lightmap = None
+          break
+
+    if embedded_textures:
+      data['embedded_textures'] = embedded_textures
+    if embedded_lightmap:
+      data['embedded_lightmap'] = embedded_lightmap
+    if embedded_glbs:
+      data['embedded_glbs'] = embedded_glbs
+
+    # write both plain JSON and gzipped JSON for compatibility and smaller transfer
+    json_text = json.dumps(data)
+    with open(map_data_path, 'w', encoding='utf-8') as f:
+      f.write(json_text)
+    # gzipped version
+    try:
+      gz_path = map_data_path + '.gz'
+      with gzip.open(gz_path, 'wb') as gz:
+        gz.write(json_text.encode('utf-8'))
+    except Exception:
+      pass
+    print(f"Successfully exported map JSON to: {map_data_path} (and .gz)")
+  except Exception as e:
+    print(f"Failed to write map JSON: {e}")
 
 
 def process_mdt(filepath, output_path):

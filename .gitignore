@@ -163,10 +163,7 @@ cython_debug/
 .vscode/
 venv
 tests/
-viewer/map
-viewer/model/node_modules
-viewer_old/
-web/
+viewer/node_modules
 
 unsealed/_old/
 unsealed/__pycache__
