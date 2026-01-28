@@ -9,6 +9,7 @@ from decoder.ms1.file import SealMeshFileDecoder
 from decoder.tex.file import SealTextureFileDecoder
 from decoder.map.file import SealMapFileDecoder
 from decoder.mdt.file import SealMdtFileDecoder
+from decoder.spr.file import SealSprFileDecoder
 from encoder.gltf import GLTF
 from encoder.glb import GLB
 from encoder.heightmap import HeightmapEncoder
@@ -38,7 +39,10 @@ def decode_texture(bitmap, search_dir, output_path):
   texture_path = find_correct_path(texture_path)
 
   if not os.path.isfile(texture_path):
-    print(f"Warning: Texture file not found: {texture_path}")
+    texture_path = os.path.join(search_dir, texture_filename + '.te1')
+    texture_path = find_correct_path(texture_path)
+    if not os.path.isfile(texture_path):
+      print(f"Error: Texture file not found: {texture_path}")
     return False
 
   texture_decoder = SealTextureFileDecoder(texture_path)
@@ -75,6 +79,27 @@ def decode_actor(filename, search_dir, output_path):
 
   model = decode_mesh(actor.filename, search_dir, output_path, actor.actions)
   return model
+
+
+def decode_sprite(files, search_dir, output_path):
+  """Decode sprite file from tex file"""
+
+  for filename, data in files:
+    result = decode_texture(filename, search_dir, output_path)
+    if not result:
+      print(f"Warning: Unable to decode texture for sprite: {filename}")
+      continue
+
+    texture_filename = filename.split('.')[0]
+    texture_path = os.path.join(output_path, texture_filename + '.png')
+    with Image.open(os.path.join(output_path, texture_path)) as im:
+      for idx, (a, b, c, d) in enumerate(data):
+        sprite = im.crop((a, c, b, d))
+        sprite_output_path = os.path.join(
+            output_path, f"{filename}_sprite_{idx}.png")
+        sprite.save(sprite_output_path)
+
+  return True
 
 
 def decode_mesh(filename, search_dir, output_path, actions=[]):
@@ -345,11 +370,7 @@ def process_mdt(filepath, output_path):
   """Process MDT file."""
   print(f"Processing MDT file: {filepath}")
 
-  search_dir = os.path.dirname(os.path.abspath(filepath))
-  filename = os.path.splitext(os.path.basename(filepath))[0]
-
-  mdt_path = os.path.join(search_dir, filename + '.mdt')
-  mdt_decoder = SealMdtFileDecoder(mdt_path)
+  mdt_decoder = SealMdtFileDecoder(filepath)
   files = mdt_decoder.decode()
 
   for filename, data in files:
@@ -358,6 +379,17 @@ def process_mdt(filepath, output_path):
       f.write(data)
 
   print(f"Extracted {len(files)} files from the MDT file")
+
+
+def process_spr(filepath, output_path):
+  """Process SPR file."""
+  print(f"Processing SPR file: {filepath}")
+
+  decoder = SealSprFileDecoder(filepath)
+  files = decoder.decode()
+
+  decode_sprite(files, os.path.dirname(filepath), output_path)
+  print(f"Extracted {len(files)} sprites from the SPR file")
 
 
 def main():
@@ -375,6 +407,7 @@ def main():
   print("- .tex (Texture files)")
   print("- .map (Map files)")
   print("- .mdt (Archive files)")
+  print("- .spr (Sprite files)")
   print("________________")
 
   while True:
@@ -403,7 +436,8 @@ def main():
         if file_type is None:
           filepath = filepath + '.ms1'
         process_mesh(filepath, output_path)
-      elif file_type == 'tex' or (file_type is None and os.path.isfile(filepath + '.tex')):
+      elif file_type == 'tex' or (file_type is None and os.path.isfile(filepath + '.tex')) or \
+              file_type == 'te1' or (file_type is None and os.path.isfile(filepath + '.te1')):
         if file_type is None:
           filepath = filepath + '.tex'
         process_tex(filepath, output_path)
@@ -415,6 +449,10 @@ def main():
         if file_type is None:
           filepath = filepath + '.mdt'
         process_mdt(filepath, output_path)
+      elif file_type == 'spr' or (file_type is None and os.path.isfile(filepath + '.spr')):
+        if file_type is None:
+          filepath = filepath + '.spr'
+        process_spr(filepath, output_path)
       else:
         print(f"Error: Unsupported file: {filename}")
     except Exception as e:

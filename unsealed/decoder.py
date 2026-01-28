@@ -13,6 +13,7 @@ from decoder.map.file import SealMapFileDecoder
 from decoder.mdt.file import SealMdtFileDecoder
 from decoder.ms1.file import SealMeshFileDecoder
 from decoder.tex.file import SealTextureFileDecoder
+from decoder.spr.file import SealSprFileDecoder
 
 
 def get_file_type(filename):
@@ -46,6 +47,8 @@ def decode_file(filepath: str):
     decoder = SealMapFileDecoder(filepath)
   if file_type == "mdt":
     decoder = SealMdtFileDecoder(filepath)
+  if file_type == 'spr':
+    decoder = SealSprFileDecoder(filepath)
 
   if decoder is not None:
     result = decoder.decode()
@@ -66,8 +69,7 @@ def main(argv: Optional[list[str]] = None):
       decoded = decode_file(inp)
       print(f"Decoded file: {inp}")
       print(f"Decoded contents:")
-      print(json.dumps(decoded, indent=2, ensure_ascii=False,
-            default=lambda o: o.__dict__))
+      print(decoded)
     except Exception as e:
       print(f"Failed to process {inp}: {e}")
       import traceback

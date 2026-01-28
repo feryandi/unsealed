@@ -51,7 +51,7 @@ Project ini dibuat pada saat waktu senggang, sehingga dibutuhkan waktu yang cuku
 
 ### Phase 4
 
-- [ ] spr
+- [x] spr
 - [ ] te1
 - [ ] sha
 - [ ] sfx
