@@ -10,6 +10,7 @@ from decoder.tex.file import SealTextureFileDecoder
 from decoder.map.file import SealMapFileDecoder
 from decoder.mdt.file import SealMdtFileDecoder
 from decoder.spr.file import SealSprFileDecoder
+from decoder.sha.file import SealShaFileDecoder
 from encoder.gltf import GLTF
 from encoder.glb import GLB
 from encoder.heightmap import HeightmapEncoder
@@ -392,6 +393,22 @@ def process_spr(filepath, output_path):
   print(f"Extracted {len(files)} sprites from the SPR file")
 
 
+def process_sha(filepath, output_path):
+  """Process SHA file."""
+  print(f"Processing SHA file: {filepath}")
+  filename = os.path.splitext(os.path.basename(filepath))[0]
+
+  decoder = SealShaFileDecoder(filepath)
+  mapping = decoder.decode()
+
+  json_text = json.dumps(mapping)
+  data_path = os.path.join(output_path, filename + '.sha.json')
+  with open(data_path, 'w', encoding='utf-8') as f:
+    f.write(json_text)
+
+  print(f"Extracted {len(mapping)} material shaders from the SHA file")
+
+
 def main():
   """Main function to handle user input and file processing."""
   root_path = os.getcwd()
@@ -408,6 +425,7 @@ def main():
   print("- .map (Map files)")
   print("- .mdt (Archive files)")
   print("- .spr (Sprite files)")
+  print("- .sha (Material Shader files)")
   print("________________")
 
   while True:
@@ -453,6 +471,10 @@ def main():
         if file_type is None:
           filepath = filepath + '.spr'
         process_spr(filepath, output_path)
+      elif file_type == 'sha' or (file_type is None and os.path.isfile(filepath + '.sha')):
+        if file_type is None:
+          filepath = filepath + '.sha'
+        process_sha(filepath, output_path)
       else:
         print(f"Error: Unsupported file: {filename}")
     except Exception as e:

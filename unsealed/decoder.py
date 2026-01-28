@@ -14,6 +14,7 @@ from decoder.mdt.file import SealMdtFileDecoder
 from decoder.ms1.file import SealMeshFileDecoder
 from decoder.tex.file import SealTextureFileDecoder
 from decoder.spr.file import SealSprFileDecoder
+from decoder.sha.file import SealShaFileDecoder
 
 
 def get_file_type(filename):
@@ -49,6 +50,8 @@ def decode_file(filepath: str):
     decoder = SealMdtFileDecoder(filepath)
   if file_type == 'spr':
     decoder = SealSprFileDecoder(filepath)
+  if file_type == 'sha':
+    decoder = SealShaFileDecoder(filepath)
 
   if decoder is not None:
     result = decoder.decode()
