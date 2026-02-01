@@ -13,8 +13,11 @@ from decoder.map.file import SealMapFileDecoder
 from decoder.mdt.file import SealMdtFileDecoder
 from decoder.ms1.file import SealMeshFileDecoder
 from decoder.tex.file import SealTextureFileDecoder
+from decoder.sfx.file import SealSfxFileDecoder
 from decoder.spr.file import SealSprFileDecoder
 from decoder.sha.file import SealShaFileDecoder
+from decoder.mat.file import SealMatFileDecoder
+from decoder.men.file import SealMenFileDecoder
 
 
 def get_file_type(filename):
@@ -40,18 +43,24 @@ def decode_file(filepath: str):
     decoder = SealAnimationFileDecoder(filepath)
   if file_type == "bn1":
     decoder = SealBoneFileDecoder(filepath)
-  if file_type == "ms1":
-    decoder = SealMeshFileDecoder(filepath)
-  if file_type == "tex":
-    decoder = SealTextureFileDecoder(filepath)
   if file_type == "map":
     decoder = SealMapFileDecoder(filepath)
+  if file_type == "mat":
+    decoder = SealMatFileDecoder(filepath)
   if file_type == "mdt":
     decoder = SealMdtFileDecoder(filepath)
-  if file_type == 'spr':
-    decoder = SealSprFileDecoder(filepath)
+  if file_type == "men":
+    decoder = SealMenFileDecoder(filepath)
+  if file_type == "ms1":
+    decoder = SealMeshFileDecoder(filepath)
+  if file_type == 'sfx':
+    decoder = SealSfxFileDecoder(filepath)
   if file_type == 'sha':
     decoder = SealShaFileDecoder(filepath)
+  if file_type == 'spr':
+    decoder = SealSprFileDecoder(filepath)
+  if file_type == "tex":
+    decoder = SealTextureFileDecoder(filepath)
 
   if decoder is not None:
     result = decoder.decode()

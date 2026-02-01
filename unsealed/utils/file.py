@@ -61,3 +61,6 @@ class File:
   def seek_at(self, index_start, num_bytes):
     d = self.content[index_start:index_start+num_bytes]
     return d
+
+  def reset(self):
+    self.pointer = 0

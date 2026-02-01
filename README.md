@@ -43,7 +43,7 @@ Project ini dibuat pada saat waktu senggang, sehingga dibutuhkan waktu yang cuku
 ### Phase 2
 
 - [x] map - Map File
-- [x] mdt
+- [x] mdt - Archive File
 
 ### Phase 3
 
@@ -51,8 +51,21 @@ Project ini dibuat pada saat waktu senggang, sehingga dibutuhkan waktu yang cuku
 
 ### Phase 4
 
-- [x] spr
-- [x] te1
-- [x] sha
+- [x] spr - Sprite File
+- [x] te1 - Texture File
+- [x] sha - Material Shader File
+
+### Phase 5
+
+- [ ] men - Menu File
+- [ ] mat - Material File
+- [ ] gcm
 - [ ] sfx
-- [ ] dat
+- [ ] scr
+
+### Phase 6
+
+Viewer App improvements
+- [ ] Shader Support
+- [ ] Animation Sound and Effect Support
+- [ ] Character Viewer
