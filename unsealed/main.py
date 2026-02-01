@@ -123,7 +123,6 @@ def decode_mesh(filename, search_dir, output_path, actions=[]):
       animation_decoder = SealAnimationFileDecoder(path)
       animations = animation_decoder.decode()
       for animation in animations:
-        geometry.add_animation(animation)
         model.add_animation(ani_name, animation)
 
   # Decode bn1
