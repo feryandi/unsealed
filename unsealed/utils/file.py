@@ -13,8 +13,11 @@ class File:
     return len(self.content) <= self.pointer + 1
 
   def seek(self, num_bytes):
-    d = self.content[self.pointer:self.pointer+num_bytes]
+    d = self.content[self.pointer : self.pointer + num_bytes]
     return d
+
+  def read_until_end(self):
+    return self.read(len(self.content) - self.pointer)
 
   # Reading data will move the pointer forward
   # make it impossible to read previous bytes
@@ -39,7 +42,7 @@ class File:
     while d[0] != 0:
       s.append(d[0])
       d = self.read(1)
-    return bytearray(s).decode('utf-8')
+    return bytearray(s).decode("utf-8")
 
   def read_string(self, num_bytes):
     d = self.read(num_bytes)
@@ -47,11 +50,11 @@ class File:
       # Null value
       return None
     try:
-      s = d.split(b'\x00')[0].decode('euc_kr')
+      s = d.split(b"\x00")[0].decode("euc_kr")
       return s
     except Exception as e:
       try:
-        s = d.split(b'\x00')[0].decode('windows-1252')
+        s = d.split(b"\x00")[0].decode("windows-1252")
         return s
       except Exception as e:
         print(traceback.format_exc())
@@ -59,7 +62,7 @@ class File:
         return None
 
   def seek_at(self, index_start, num_bytes):
-    d = self.content[index_start:index_start+num_bytes]
+    d = self.content[index_start : index_start + num_bytes]
     return d
 
   def reset(self):

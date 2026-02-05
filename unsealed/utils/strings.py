@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 
 def is_valid_ascii_letter(c):
@@ -9,51 +9,35 @@ def is_string_empty(string):
   return string is None or not string.strip()
 
 
-def find_correct_path(path):
+def find_correct_path(path_str) -> Path:
   """
-  Try to find a file with different case variations.
+  Finds a file with different case variations using pathlib.
   Works cross-platform (Windows, Linux, macOS).
   """
-  # Normalize the path to use os-specific separators
-  path = os.path.normpath(path)
+  original_path = Path(path_str)
+  root_path = original_path.parent
 
-  # Split into directory and filename
-  root_path = os.path.dirname(path)
-  full_filename = os.path.basename(path)
+  # Handle filename and extension separately
+  # .stem is the filename without extension; .suffix is the extension
+  filename = original_path.stem
+  ext = original_path.suffix  # Includes the dot (e.g., '.txt')
 
-  # If root_path is empty, use current directory
-  if not root_path:
-    root_path = '.'
-
-  # Split filename and extension
-  if '.' in full_filename:
-    parts = full_filename.rsplit('.', 1)
-    filename = parts[0]
-    ext = parts[1]
-  else:
-    filename = full_filename
-    ext = ''
-
-  # Generate case variations
+  # Generate case variations for the filename
   combinations = [
-      filename,
-      filename.lower(),
-      filename.upper(),
-      filename.capitalize(),
-      '_'.join(x.capitalize() if x else '_' for x in filename.split('_'))
+    filename,
+    filename.lower(),
+    filename.upper(),
+    filename.capitalize(),
+    "_".join(x.capitalize() if x else "_" for x in filename.split("_")),
   ]
 
   # Try each combination
-  for combination in combinations:
-    if ext:
-      try_filename = combination + '.' + ext
-    else:
-      try_filename = combination
+  for name_variant in combinations:
+    # Reconstruct path using the / operator
+    try_path = root_path / f"{name_variant}{ext}"
 
-    try_path = os.path.join(root_path, try_filename)
+    if try_path.is_file():
+      return Path(str(try_path))
 
-    if os.path.isfile(try_path):
-      return try_path
-
-  # If nothing found, return original path
-  return path
+  # Return original string if no variation is found
+  return path_str

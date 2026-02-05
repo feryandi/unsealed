@@ -4,3 +4,5 @@ numpy==2.4.1
 setuptools==80.10.1
 pillow==12.1.0
 pygltflib==1.16.5
+Sphinx==9.1.0
+ruff==0.14.14
