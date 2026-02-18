@@ -1,10 +1,12 @@
 import base64
 import io
 import math
+from platform import node
 import struct
+from typing import List
 
 import numpy as np
-
+from ...assets.vertex import Vertex
 from ...assets.model import Model
 from ...utils.strings import is_string_empty
 from ...utils.matrix import decompose_mtx
@@ -123,12 +125,22 @@ class GltfEncoder:
 
       if bone.parent is not None:
         # Convert to local transformation
-        parent = skeleton.bones[bone.parent]
-        pivot = np.array(parent.tm_inverse).T
-        target = np.array(bone.tm).T
-        diff = np.matmul(pivot, target)
-        mtx = np.array(diff)
-        loc, rot, sca = decompose_mtx(mtx)
+        parent = skeleton.bones.get(bone.parent)
+        if parent is None:
+          parent = skeleton.bones.get(bone.parent.lower())
+        if parent is None:
+          print(
+            "Warning: Parent bone named "
+            + str(bone.parent)
+            + " not found for bone named "
+            + str(bone.name)
+          )
+        else:
+          pivot = np.array(parent.tm_inverse).T
+          target = np.array(bone.tm).T
+          diff = np.matmul(pivot, target)
+          mtx = np.array(diff)
+          loc, rot, sca = decompose_mtx(mtx)
 
       node_idx = self.__add_node(
         name=bone.name,
@@ -141,7 +153,14 @@ class GltfEncoder:
 
       if bone.parent is not None:
         parent_idx = self.node_name_to_node_idx[bone.parent.lower()]
-        self.__add_node_children(parent_idx, node_idx)
+        if parent_idx == node_idx:
+          print(
+            "Warning: Bone named "
+            + str(bone.name)
+            + " has the same node index as its parent"
+          )
+        else:
+          self.__add_node_children(parent_idx, node_idx)
       else:
         self.gltf["scenes"][0]["nodes"].append(node_idx)
 
@@ -190,9 +209,17 @@ class GltfEncoder:
           keyframes = []
           values = []
 
+          min_time_sec = 0.0
+          max_time_sec = 0.0
+          first_frame = True
+
           for x in sub:
             frame_num = x.time / animation.ticks_per_frame
             time_sec = frame_num / animation.fps
+            if first_frame:
+              min_time_sec = time_sec
+              first_frame = False
+            max_time_sec = max(max_time_sec, time_sec)
             keyframes.append(time_sec)
             values.extend(x.value)
 
@@ -200,7 +227,14 @@ class GltfEncoder:
           animation_bytes.write(struct.pack("f" * len(values), *values))
 
           b = self.__add_buffer(animation_bytes)
-          a_input = self.__add_accessor(b, 5126, len(sub), "SCALAR")
+          a_input = self.__add_accessor(
+            b,
+            5126,
+            len(sub),
+            "SCALAR",
+            min=[min_time_sec],
+            max=[max_time_sec],
+          )
           a_output = self.__add_accessor(
             b, 5126, len(sub), output_types[idx], byte_offset=len(keyframes) * 4
           )
@@ -239,7 +273,12 @@ class GltfEncoder:
 
       joints_accessors = self.__add_accessors_split_four(mesh.joints, 5123)
       weights_accessors = self.__add_accessors_split_four(mesh.weights, 5126)
-      vertices_accesors = self.__add_accessors_vertices(mesh.vertices)
+      vertices_accesors = (
+        self.__add_accessors_vertices(mesh.vertices) if len(mesh.vertices) > 0 else None
+      )
+
+      if vertices_accesors is None:
+        continue
 
       for k in mesh.indices:
         i = int(k)
@@ -317,12 +356,16 @@ class GltfEncoder:
       if is_string_empty(mesh.parent):
         self.gltf["scenes"][0]["nodes"].append(len(self.gltf["nodes"]) - 1)
 
-  def __add_accessors_vertices(self, vertices):
+  def __add_accessors_vertices(self, vertices: List[Vertex]):
+    assert len(vertices) > 0
     position_bytes = io.BytesIO()
     normal_bytes = io.BytesIO()
     texcoord_bytes = io.BytesIO()
 
     first_vertex = True
+    p_min = [0, 0, 0]
+    p_max = [0, 0, 0]
+
     for v in vertices:
       p = [v.position[0], v.position[1], v.position[2]]
       if first_vertex:
@@ -457,6 +500,8 @@ class GltfEncoder:
         w = [0, 0, 0, 0]
         if len(weight) > i:
           w = weight[i]
+          if component_type == 5126:
+            w = self.__normalize(w)
           is_empty = False
         w_bytes.write(struct.pack(t * len(w), *w))
       if is_empty:
@@ -479,3 +524,14 @@ class GltfEncoder:
         parts.append(flattened)
       data_bytes.append(parts)
     return data_bytes
+
+  def __normalize(self, weights):
+    normalized = []
+    s = 0
+    for w in weights:
+      s += w
+    if s == 0:
+      normalized = weights
+    else:
+      normalized = [x / s for x in weights]
+    return normalized

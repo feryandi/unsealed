@@ -11,7 +11,7 @@ from ..act.decoder import SealActorDecoder
 from ..ms1.format import SealMeshFormat
 
 
-class SealActorFormat(BaseFormat):
+class SealActorFormat(BaseFormat[Model]):
   @property
   def extensions(self) -> Pattern[str]:
     return re.compile(r"\.act$", re.IGNORECASE)

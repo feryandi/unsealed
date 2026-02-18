@@ -1,18 +1,18 @@
-from ...assets.material import Material
+from ...utils.file import File
 from ...utils.strings import is_valid_ascii_letter
+from ...assets.material import Material
 
 
 class SealMeshMaterialDecoder:
-  def __init__(self, file, different_mode):
+  def __init__(self, file: File, different_mode):
     self.file = file
     self.count = 0
     self.different_mode = different_mode
 
   def decode(self):
-    if self.file is None:
-      raise Exception("File was not initialized properly")
     if self.different_mode:
-      print("Material is in different_mode")
+      print("Warning: Material is in different_mode")
+
     materials = []
     self.count = self.file.read_int()
     for x in range(self.count):
@@ -41,7 +41,7 @@ class SealMeshMaterialDecoder:
     return materials
 
   def __decode_normal_material(self):
-    _x = self.file.read(2)
+    _x = self.file.read_short()
     bitmap = self.file.read_string(256)
     name = self.file.read_string(128)
     material = Material(name, bitmap)

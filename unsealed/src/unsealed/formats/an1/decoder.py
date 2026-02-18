@@ -1,5 +1,4 @@
 from pathlib import Path
-from pprint import pprint
 from typing import Dict, List, Optional
 
 from ...assets.animation import Animation, Keyframe
@@ -34,7 +33,6 @@ class SealAnimationDecoder:
 
     for i in range(self.nodes):
       name = self.file.read_string(256)
-      print(f"Node name: {name}")
       node = Animation(self.path, start_frame, end_frame, fps, ticks_per_frame, name)
 
       self.__decode_position(node)
@@ -102,7 +100,6 @@ class SealAnimationDecoder:
     if size != 0:
       root_frame = self.file.read_int()
       node.btree = self.__decode_hash_table(hash_table, root_frame)
-      pprint(node.btree)
 
   def __decode_scale(self, node: Animation):
     size = self.file.read_int()

@@ -1,10 +1,11 @@
+from ...utils.file import File
 from ...assets.geometry import Geometry
 
 from ..ms1.mesh import SealMeshMeshDecoder
 
 
 class SealMeshGeometryDecoder:
-  def __init__(self, file, maybe_non_first_object_has_pad):
+  def __init__(self, file: File, maybe_non_first_object_has_pad):
     self.file = file
     self.maybe_non_first_object_has_pad = maybe_non_first_object_has_pad
 

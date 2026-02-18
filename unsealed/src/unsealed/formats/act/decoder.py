@@ -1,6 +1,8 @@
 from pathlib import Path
+from pprint import pprint
+import re
 from ...assets.actor import Actor, Action
-from ...assets.resource import Resource
+from ...assets.resource import Resource, ResourceType
 from ...utils.file import File
 
 
@@ -36,6 +38,7 @@ class SealActorDecoder:
       __arr_z = []
       for i in range(8):
         __arr_z.append(self.file.read_int())  # TODO
+
       name = self.file.read_string(self.file.read_int())
       filename = self.file.read_string(self.file.read_int())
 
@@ -69,10 +72,11 @@ class SealActorDecoder:
 
     name = self.file.read_string(self.file.read_int())
     filename = self.file.read_string(self.file.read_int())
+    resource = Resource(name, filename)
 
-    _x = self.file.read(8)
-    _resource_type = self.file.read_int()
-    # 1: effect
-    # 5: sound
-    _x = self.file.read(18)
-    return Resource(name, filename)
+    _x = self.file.read_int()
+    resource.index = self.file.read_int()  # Frame index
+    resource.type = ResourceType(self.file.read_short())
+    _x = self.file.read(20)
+
+    return resource

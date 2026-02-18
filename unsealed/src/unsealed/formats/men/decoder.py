@@ -25,7 +25,6 @@ class SealMenDecoder:
     if header is not None and header.startswith(header_template):
       # get version number from header, remove prefix
       version = int(header[len(header_template) :].strip())
-      print(f"Version: {version}")
       # TODO: Version 5: item_custome_buy
     else:
       self.file.reset()
@@ -33,11 +32,9 @@ class SealMenDecoder:
     interface = {}
 
     spr_file = self.file.read_string(100)
-    print(spr_file)
     interface["spr"] = spr_file
 
     x = self.file.read_int()
-    print(x)
 
     interface["elements"] = []
 
@@ -70,16 +67,12 @@ class SealMenDecoder:
 
     if version >= 3:
       x = self.file.read(4)
-      print(x)
     if version >= 4:
       x = self.file.read(4)
-      print(x)
     if version >= 5:
       x = self.file.read(4)
-      print(x)
     if version >= 7:
       x = self.file.read(4)
-      print(x)
 
     rectangle = [
       self.file.read_int(),
@@ -100,7 +93,6 @@ class SealMenDecoder:
     element["sublabel"] = sublabel
 
     y = self.file.read_int()
-    print(y)
 
     return element
 
@@ -114,7 +106,6 @@ class SealMenDecoder:
       spr = self.file.read_string(100)
       element["spr_file"] = spr
 
-    print(element)
     return element
 
   def _decode_type(self, type):

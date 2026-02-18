@@ -26,9 +26,9 @@ class MapPipeline:
       blob_format = BlobFormat()
       blob_format.encode(file, filepath.with_name(f"{file.filename}.{file.extension}"))
 
-    # tex_pipeline = TexturePipeline()
-    # tex_pipeline.run(filepath.with_suffix(".tex"), output_dir)
+    tex_pipeline = TexturePipeline()
+    tex_pipeline.run(filepath.with_suffix(".tex"), output_dir)
 
-    # object_pipeline = ObjectPipeline()
-    # for object in terrain.object_files:
-    #   object_pipeline.run(filepath.with_name(object), output_dir)
+    object_pipeline = ObjectPipeline()
+    for object in terrain.object_files:
+      object_pipeline.run(filepath.with_name(object), output_dir)

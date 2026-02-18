@@ -13,9 +13,9 @@ class Vertex(Asset):
   def __init__(
     self, position=[0.0, 0.0, 0.0], normal=[0.0, 0.0, 0.0], texcoord=[0.0, 0.0]
   ):
-    self.position = [0.0, 0.0, 0.0]
-    self.normal = [0.0, 0.0, 0.0]
-    self.texcoord = [0.0, 0.0]
+    self.position = position
+    self.normal = normal
+    self.texcoord = texcoord
     self.joints: List[int] = []
     self.weights: List[int] = []
 

@@ -1,10 +1,11 @@
+from ...utils.file import File
 from ...assets.mesh import Mesh
 
 from ..ms1.vertex import SealMeshVertexDecoder
 
 
 class SealMeshMeshDecoder:
-  def __init__(self, file):
+  def __init__(self, file: File):
     self.file = file
     self.tm = None
     self.name = None

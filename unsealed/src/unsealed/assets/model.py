@@ -1,3 +1,5 @@
+from typing import Dict, List, Optional
+from .skeleton import Skeleton
 from .animation import Animation
 from .geometry import Geometry
 from ..core.asset import Asset
@@ -12,10 +14,10 @@ class Model(Asset):
   """
 
   def __init__(self):
-    self.name: str | None = None
-    self.geometry = None
-    self.animations = {}
-    self.skeleton = None
+    self.name: Optional[str] = None
+    self.geometry: Optional[Geometry] = None
+    self.animations: Dict[str, List[Animation]] = {}
+    self.skeleton: Optional[Skeleton] = None
 
   def add_geometry(self, geometry: Geometry) -> None:
     self.geometry = geometry
@@ -26,7 +28,7 @@ class Model(Asset):
       self.animations[name] = []
     self.animations[name].append(animation)
 
-  def add_skeleton(self, skeleton) -> None:
+  def add_skeleton(self, skeleton: Skeleton) -> None:
     self.skeleton = skeleton
 
   def __repr__(self):

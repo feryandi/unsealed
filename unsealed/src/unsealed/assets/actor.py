@@ -14,3 +14,8 @@ class Action:
     self.name: Optional[str] = name
     self.filename: str = filename
     self.resources: List[Resource] = []
+
+  def __repr__(self):
+    return (
+      f"Action(name={self.name}, filename={self.filename}, resources={self.resources})"
+    )
