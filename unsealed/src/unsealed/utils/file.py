@@ -1,69 +1,89 @@
+# unsealed/io/binary_reader.py
 import struct
-import traceback
+from io import BytesIO
+from pathlib import Path
+from typing import Union
 
 
-# Lightweight file reader
 class File:
-  def __init__(self, content):
-    self.content = content
-    self.pointer = 0
-    self.size = len(content)
+  def __init__(self, data: Union[bytes, Path]):
+    if isinstance(data, Path):
+      with open(data, "rb") as f:
+        data = f.read()
+    self._stream = BytesIO(data)
 
-  def is_end(self):
-    return len(self.content) <= self.pointer + 1
+  # Compatibility methods (same names as your File class)
+  def read(self, num_bytes: int) -> bytes:
+    return self._stream.read(num_bytes)
 
-  def seek(self, num_bytes):
-    d = self.content[self.pointer : self.pointer + num_bytes]
-    return d
+  def read_short(self) -> int:
+    return struct.unpack("<H", self._stream.read(2))[0]
 
-  def read_until_end(self):
-    return self.read(len(self.content) - self.pointer)
+  def read_int(self) -> int:
+    return struct.unpack("<I", self._stream.read(4))[0]
 
-  # Reading data will move the pointer forward
-  # make it impossible to read previous bytes
-  def read(self, num_bytes):
-    d = self.seek(num_bytes)
-    self.pointer += num_bytes
-    return d
+  def read_float(self) -> float:
+    return struct.unpack("<f", self._stream.read(4))[0]
 
-  def read_short(self):
-    return struct.unpack("H", self.read(2))[0]
+  def read_string(self, num_bytes: int) -> str:
+    data = self._stream.read(num_bytes)
+    if len(data) > 0 and data[0] == 0xCD:
+      return ""
 
-  def read_int(self):
-    return struct.unpack("I", self.read(4))[0]
-
-  def read_float(self):
-    return struct.unpack("f", self.read(4))[0]
-
-  # TODO: Cleanup
-  def read_string_compact(self):
-    d = self.read(1)
-    s = []
-    while d[0] != 0:
-      s.append(d[0])
-      d = self.read(1)
-    return bytearray(s).decode("utf-8")
-
-  def read_string(self, num_bytes):
-    d = self.read(num_bytes)
-    if d[0] == 205:  # TODO: What is 205?
-      # Null value
-      return None
+    # Split at null
     try:
-      s = d.split(b"\x00")[0].decode("euc_kr")
-      return s
-    except Exception:
-      try:
-        s = d.split(b"\x00")[0].decode("windows-1252")
-        return s
-      except Exception as e:
-        print(traceback.format_exc())
-        print(e)
-        return None
+      data = data[: data.index(0)]
+    except ValueError:
+      pass
 
-  def seek_at(self, index_start, num_bytes):
-    d = self.content[index_start : index_start + num_bytes]
-    return d
+    # Try decode
+    for encoding in ["euc_kr", "windows-1252", "utf-8"]:
+      try:
+        return data.decode(encoding)
+      except (UnicodeDecodeError, LookupError):
+        continue
+    return ""
+
+  def read_string_compact(self) -> str:
+    chars = []
+    while True:
+      byte = self._stream.read(1)
+      if not byte or byte[0] == 0:
+        break
+      chars.append(byte)
+    return b"".join(chars).decode("utf-8")
+
+  def seek(self, num_bytes: int) -> bytes:
+    pos = self._stream.tell()
+    data = self._stream.read(num_bytes)
+    self._stream.seek(pos)
+    return data
+
+  def seek_at(self, index_start: int, num_bytes: int) -> bytes:
+    self._stream.seek(index_start)
+    return self._stream.read(num_bytes)
+
+  def is_end(self) -> bool:
+    pos = self._stream.tell()
+    self._stream.seek(0, 2)
+    end = self._stream.tell()
+    self._stream.seek(pos)
+    return pos >= end - 1
+
+  def read_until_end(self) -> bytes:
+    return self._stream.read()
 
   def reset(self):
-    self.pointer = 0
+    self._stream.seek(0)
+
+  @property
+  def pointer(self) -> int:
+    return self._stream.tell()
+
+  @property
+  def size(self) -> int:
+    pos = self._stream.tell()
+    self._stream.seek(0, 2)
+    size = self._stream.tell()
+    self._stream.seek(pos)
+    return size

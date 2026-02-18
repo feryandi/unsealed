@@ -9,7 +9,7 @@ from .texture_pipeline import TexturePipeline
 
 
 class MapPipeline:
-  def run(self, filepath: Path):
+  def run(self, filepath: Path, output_dir: Path):
     if not filepath.exists():
       raise Exception(f"File not found: {filepath}")
 
@@ -26,9 +26,9 @@ class MapPipeline:
       blob_format = BlobFormat()
       blob_format.encode(file, filepath.with_name(f"{file.filename}.{file.extension}"))
 
-    tex_pipeline = TexturePipeline()
-    tex_pipeline.run(filepath.with_suffix(".tex"))
+    # tex_pipeline = TexturePipeline()
+    # tex_pipeline.run(filepath.with_suffix(".tex"), output_dir)
 
-    object_pipeline = ObjectPipeline()
-    for object in terrain.object_files:
-      object_pipeline.run(filepath.with_name(object))
+    # object_pipeline = ObjectPipeline()
+    # for object in terrain.object_files:
+    #   object_pipeline.run(filepath.with_name(object), output_dir)

@@ -1,5 +1,6 @@
 import json
 import base64
+from typing import List
 import numpy as np
 import zlib
 
@@ -13,7 +14,7 @@ class Terrain(Asset):
     self.width = width
     self.height = height
     self.objects = []
-    self.object_files = []
+    self.object_files: List[str] = []
     self.textures = []
     self.lightmap = None
     self.terrain_layer_a = []

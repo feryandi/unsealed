@@ -24,6 +24,8 @@ class GlbFormat(BaseFormat[Model]):
 
   def encoder(self, asset: Model, path: Path) -> None:
     gltf2_format = GltfFormat()
+    if asset.name is not None:
+      path = path / asset.name
     gltf2_format.encode(asset, path.with_suffix(".gltf"))
 
     gltf = GLTF2().load(path.with_suffix(".gltf"))

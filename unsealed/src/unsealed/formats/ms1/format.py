@@ -21,6 +21,7 @@ class SealMeshFormat(BaseFormat[Model]):
 
   def decoder(self, path: Path) -> Model:
     model = Model()
+    model.name = path.stem
 
     geometry_decoder = SealMeshDecoder(path)
     geometry = geometry_decoder.decode()

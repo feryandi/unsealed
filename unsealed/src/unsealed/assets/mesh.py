@@ -1,3 +1,4 @@
+from typing import Optional
 from .vertex import Vertex
 from ..core.asset import Asset
 
@@ -10,18 +11,17 @@ class Mesh(Asset):
   material assignments for a renderable object.
   """
 
-  def __init__(self, name, parent=None):
+  def __init__(self, name: str, parent: Optional[str] = None):
     self.name = name
     self.parent = parent
 
     self.vertices = []
     self.indices = {}
-    self.old_indices = []
     self.joints = []
     self.weights = []
 
     self.tm = None
-    self.material_index = None
+    self.material_index: Optional[int] = None
 
   def add_vertex(self, vertex: Vertex):
     self.vertices.append(vertex)
@@ -32,7 +32,6 @@ class Mesh(Asset):
     if n not in self.indices:
       self.indices[n] = []
     self.indices[n].append(index)
-    self.old_indices.append(index)
 
   def add_joint(self, vertex_idx, bone_idx):
     self.joints[vertex_idx].append(bone_idx)

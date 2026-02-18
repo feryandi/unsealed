@@ -5,6 +5,7 @@ import struct
 
 import numpy as np
 
+from ...assets.model import Model
 from ...utils.strings import is_string_empty
 from ...utils.matrix import decompose_mtx
 
@@ -21,7 +22,7 @@ class GltfEncoder:
     self.gltf["scenes"] = [{"nodes": []}]
     self.gltf["scene"] = 0
 
-    self.model = None
+    self.model: Model | None = None
 
     self.node_name_to_node_idx = {}
     self.node_idx_to_mesh = {}
@@ -50,7 +51,7 @@ class GltfEncoder:
     return self.gltf
 
   def __encode_material(self):
-    if self.model is None:
+    if self.model is None or self.model.geometry is None:
       raise Exception("No model to encode")
 
     materials = self.model.geometry.materials
@@ -115,14 +116,14 @@ class GltfEncoder:
     skin_bytes = io.BytesIO()
     joints = []
 
-    for bone in skeleton.bones:
+    for bone in skeleton.bones.values():
       loc = bone.loc
       rot = [bone.rot[0], bone.rot[1], bone.rot[2], bone.rot[3]]
       sca = bone.sca
 
       if bone.parent is not None:
         # Convert to local transformation
-        parent = skeleton.bones[skeleton.bone_name_to_id[bone.parent.lower()]]
+        parent = skeleton.bones[bone.parent]
         pivot = np.array(parent.tm_inverse).T
         target = np.array(bone.tm).T
         diff = np.matmul(pivot, target)
@@ -190,7 +191,7 @@ class GltfEncoder:
           values = []
 
           for x in sub:
-            frame_num = x.time / animation.smallest_keyframe
+            frame_num = x.time / animation.ticks_per_frame
             time_sec = frame_num / animation.fps
             keyframes.append(time_sec)
             values.extend(x.value)
@@ -220,15 +221,21 @@ class GltfEncoder:
       del self.gltf["animations"]
 
   def __encode_mesh(self):
-    if self.model is None:
-      raise Exception("No model to encode")
+    if self.model is None or self.model.geometry is None:
+      raise Exception("No mesh to encode")
 
     meshes = self.model.geometry.meshes
 
     for mesh in meshes:
       mesh_gltf = {"name": mesh.name, "primitives": []}
 
-      material = self.model.geometry.materials[mesh.material_index]
+      try:
+        if mesh.material_index is not None:
+          material = self.model.geometry.materials[mesh.material_index]
+        else:
+          raise IndexError()
+      except IndexError:
+        raise IndexError(f"Material index: {mesh.material_index} is not found")
 
       joints_accessors = self.__add_accessors_split_four(mesh.joints, 5123)
       weights_accessors = self.__add_accessors_split_four(mesh.weights, 5126)
@@ -280,7 +287,7 @@ class GltfEncoder:
         tm = np.array(mesh.tm).T
         mtx = np.array(tm)
 
-        if not is_string_empty(mesh.parent):
+        if not is_string_empty(mesh.parent) and mesh.parent is not None:
           try:
             # Fix to change global transformation to local transformation
             parent_idx = self.node_name_to_node_idx[mesh.parent.lower()]
@@ -303,7 +310,7 @@ class GltfEncoder:
         )
         self.node_idx_to_mesh[node_idx] = mesh
 
-        if not is_string_empty(mesh.parent):
+        if not is_string_empty(mesh.parent) and mesh.parent is not None:
           parent_idx = self.node_name_to_node_idx[mesh.parent.lower()]
           self.__add_node_children(parent_idx, node_idx)
 

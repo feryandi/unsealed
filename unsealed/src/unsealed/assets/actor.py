@@ -1,11 +1,16 @@
-from .action import Action
+from typing import List, Optional
+from .resource import Resource
 
 
 class Actor:
   def __init__(self, name: str, filename: str):
-    self.name = name
-    self.filename = filename
-    self.actions: list[Action] = []
+    self.name: str = name
+    self.filename: str = filename
+    self.actions: List[Action] = []
 
-  def add_action(self, action):
-    self.actions.append(action)
+
+class Action:
+  def __init__(self, name: Optional[str], filename: str):
+    self.name: Optional[str] = name
+    self.filename: str = filename
+    self.resources: List[Resource] = []

@@ -18,6 +18,5 @@ class SealMeshGeometryDecoder:
         if pad == b"\x01":
           self.file.read(12)
       decoder = SealMeshMeshDecoder(self.file)
-      mesh = decoder.decode()
-      geometry.add_mesh(mesh)
+      geometry.meshes.append(decoder.decode())
     return geometry

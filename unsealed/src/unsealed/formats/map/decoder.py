@@ -1,14 +1,14 @@
 import os
-import numpy as np
+from pathlib import Path
 
 from ...utils.file import File
 from ...assets.terrain import Terrain
 
 
 class SealMapDecoder:
-  def __init__(self, path):
+  def __init__(self, path: Path):
+    self.version = 1
     self.path = path
-    self.file = None
     self.filename = os.path.splitext(os.path.basename(path))[0].split(".")[0]
     try:
       with open(path, "rb") as dat:
@@ -21,33 +21,27 @@ class SealMapDecoder:
       raise Exception("File was not initialized properly")
 
     terrain = Terrain(512, 512)
+    self.version = self.__decode_version()
 
-    is_v10 = False
-    is_v11 = False
-    is_v12 = False
-    is_v13 = False
+    if self.version == 5:
+      # Unsupported even by the game?
+      # Example: 67.map
+      return terrain
 
-    header = self.file.read_string(64)
-    if header == "Map File v.5":
-      return terrain  # unsupported even by the game?
-    if header == "Map File v.10":
-      is_v10 = True
-    if header == "Map File v.11":
-      is_v11 = True
-    if header == "Map File v.12":
-      is_v12 = True
-    if header == "Map File v.13":
-      is_v13 = True
+    s = self.file.read_string(20)
+    if self.version > 10:
+      _ = self.file.read(1)
 
-    _ukwn = self.file.read(16 + 5)
-    _ukwn = self.file.read_string(160)
-    _ = self.file.read(1 * 16 + 3)
-    if is_v13:  # TODO: Check, based on Nua new map
-      self.file.read(4)
+    s = self.file.read_string(172)
+    if self.version == 10:
+      _ = self.file.read(1)
 
-    if not is_v10:
-      if not is_v12 and not is_v11 and not is_v13:
-        _ = self.file.read(2 * 16 + 8)
+    _ = self.file.read(7)
+
+    if self.version >= 14:
+      s = self.file.read_string(40)
+
+    if self.version > 10:
       s = self.file.read_string(32)
       s = self.file.read_string(32)
 
@@ -92,8 +86,6 @@ class SealMapDecoder:
     for i in range(i):
       x = self.file.read_int()
       n.append(x)
-    arr = np.array(n)
-    _narr = arr.reshape(512, 512)
 
     # Object placement
     a = self.file.read_int()
@@ -101,7 +93,7 @@ class SealMapDecoder:
       n = self.file.read_int()  # This could be related to object index
       p = [self.file.read_float(), self.file.read_float(), self.file.read_float()]
       r = [self.file.read_float(), self.file.read_float(), self.file.read_float()]
-      if not is_v10 and not is_v11:
+      if self.version > 11:
         r.append(self.file.read_float())
       terrain.add_object(n, p, r)
 
@@ -111,3 +103,19 @@ class SealMapDecoder:
       terrain.add_object_file(s)
 
     return terrain
+
+  def __decode_version(self) -> int:
+    header = self.file.read_string(64)
+    if header == "Map File v.5":
+      return 5
+    if header == "Map File v.10":
+      return 10
+    if header == "Map File v.11":
+      return 11
+    if header == "Map File v.12":
+      return 12
+    if header == "Map File v.13":
+      return 13
+    if header == "Map File v.14":
+      return 14
+    return 10

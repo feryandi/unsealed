@@ -74,7 +74,7 @@ class SealMeshMaterialDecoder:
       ]
       _x = self.file.read(5)
       submaterial = self.__decode_normal_material()
-      material.add_sub_material(submaterial)
+      material.sub_materials.append(submaterial)
     return material
 
   def __decode_special_material(self):

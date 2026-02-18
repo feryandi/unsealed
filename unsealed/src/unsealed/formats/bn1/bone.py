@@ -3,7 +3,7 @@ import numpy as np
 from ...utils.file import File
 from ...utils.matrix import decompose_mtx
 
-from ...assets.bone import Bone
+from ...assets.skeleton import Bone
 
 
 class SealBoneBoneDecoder:
@@ -30,7 +30,7 @@ class SealBoneBoneDecoder:
     self.__decode_data(bone)
     return bone
 
-  def __decode_data(self, bone):
+  def __decode_data(self, bone: Bone):
     bone.tm = [
       [
         self.file.read_float(),

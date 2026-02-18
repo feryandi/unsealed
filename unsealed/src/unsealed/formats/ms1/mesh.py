@@ -13,7 +13,7 @@ class SealMeshMeshDecoder:
     name = self.file.read_string(16 * 16 + 1)
     self.name = name
     parent = self.file.read_string(16 * 16)
-    mesh = Mesh(name, parent)
+    mesh: Mesh = Mesh(name, parent)
 
     num_vertices = self.file.read_int()
     num_faces = self.file.read_int()
@@ -74,13 +74,13 @@ class SealMeshMeshDecoder:
     self.__decode_physique(mesh)
     return mesh
 
-  def __decode_vertices(self, mesh, num_vertices):
+  def __decode_vertices(self, mesh: Mesh, num_vertices):
     for x in range(num_vertices):
       decoder = SealMeshVertexDecoder(self.file, mesh.tm)
       v = decoder.decode()
       mesh.add_vertex(v)
 
-  def __decode_indices(self, mesh, num_faces):
+  def __decode_indices(self, mesh: Mesh, num_faces):
     num_face_index = num_faces * 3
     indices = []
     for x in range(num_face_index):
@@ -93,7 +93,7 @@ class SealMeshMeshDecoder:
       mesh.add_index(n, indices[i + 1])
       mesh.add_index(n, indices[i + 2])
 
-  def __decode_physique(self, mesh):
+  def __decode_physique(self, mesh: Mesh):
     num_physique = self.file.read_int()
     for bone_idx in range(num_physique):
       p_num = self.file.read_int()

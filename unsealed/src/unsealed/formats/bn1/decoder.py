@@ -25,6 +25,6 @@ class SealBoneDecoder:
     for i in range(self.count):
       decoder = SealBoneBoneDecoder(self.file)
       bone = decoder.decode()
-      skeleton.add_bone(bone)
+      skeleton.bones[bone.name] = bone
 
     return skeleton

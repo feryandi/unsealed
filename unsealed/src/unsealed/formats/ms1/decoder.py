@@ -37,6 +37,6 @@ class SealMeshDecoder:
     )
     geometry = geometry_decoder.decode()
     for material in material_list:
-      geometry.add_material(material)
+      geometry.materials.append(material)
 
     return geometry

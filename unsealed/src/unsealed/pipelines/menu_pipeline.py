@@ -6,5 +6,5 @@ class MenuPipeline:
   #   SPR file --> extract TEX referred
   #   TEX file --> decode
   # ]
-  def run(self, filepath: Path):
+  def run(self, filepath: Path, output_dir: Path):
     raise Exception("Not implemented yet")

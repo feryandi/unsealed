@@ -16,7 +16,7 @@ SUPPORTED_FILE_TYPES = {
 
 
 class MainPipeline:
-  def run(self, filepath: Path):
+  def run(self, filepath: Path, output_dir: Path):
     if not filepath.exists():
       raise Exception(f"File not found: {filepath}")
 
@@ -26,7 +26,7 @@ class MainPipeline:
     if setup is None:
       raise Exception(f"No pipeline available for file type: {filetype}")
 
-    setup["pipeline"].run(filepath)
+    setup["pipeline"].run(filepath, output_dir)
 
   def get_supported_file_types(self):
     list = []

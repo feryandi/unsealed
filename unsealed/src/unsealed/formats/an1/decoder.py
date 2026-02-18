@@ -1,36 +1,41 @@
+from pathlib import Path
+from pprint import pprint
+from typing import Dict, List, Optional
+
+from ...assets.animation import Animation, Keyframe
+from ...assets.binarytree import BinaryTree, BinaryTreeNode
 from ...utils.file import File
-from ...assets.animation import Animation
-from ...assets.keyframe import Keyframe
 
 
 class SealAnimationDecoder:
-  def __init__(self, path):
+  def __init__(self, path: Path):
     self.path = path
-    self.file = None
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
     except Exception:
       raise Exception("Unable to open mesh file")
 
-  def decode(self):
-    if self.file is None:
-      raise Exception("File was not initialized properly")
+  def decode(self) -> List[Animation]:
     animations = []
     start_frame = self.file.read_int()
     end_frame = self.file.read_int()
     fps = self.file.read_float()
+    ticks_per_frame = self.file.read_float()
 
-    _ = self.file.read(4)
-    # Padded string space
-    _ = self.file.read(17 * 16)
+    _source_filename = self.file.read_string(256)
+
+    _ = self.file.read_int()  # Same as number of nodes
+    _ = self.file.read_int()  # Usually same as or more than end_frame
+    _ = self.file.read_int()  # Usually 0
+    _ = self.file.read_int()  # Usually same as end_frame
 
     self.nodes = self.file.read_int()
 
     for i in range(self.nodes):
       name = self.file.read_string(256)
-      # TODO: Change the name to a better one?
-      node = Animation(self.path, start_frame, end_frame, fps, name)
+      print(f"Node name: {name}")
+      node = Animation(self.path, start_frame, end_frame, fps, ticks_per_frame, name)
 
       self.__decode_position(node)
       self.__decode_rotation(node)
@@ -39,9 +44,9 @@ class SealAnimationDecoder:
       animations.append(node)
     return animations
 
-  def __decode_position(self, node):
-    assert self.file is not None, "File was not initialized properly"
+  def __decode_position(self, node: Animation):
     size = self.file.read_int()
+    hash_table = []
 
     for j in range(size):
       time = self.file.read_int()
@@ -50,14 +55,23 @@ class SealAnimationDecoder:
       z = self.file.read_float()
       position = [x, y, z]
       keyframe = Keyframe(time, position)
-      node.add_transform_keyframe(keyframe)
-      _ = self.file.read(8)  # TODO
-    if size != 0:
-      _hash_num = self.file.read_int()
+      node.transforms.append(keyframe)
 
-  def __decode_rotation(self, node):
-    assert self.file is not None, "File was not initialized properly"
+      left_child_frame = self.file.read_int()
+      right_child_frame = self.file.read_int()
+      hash_table.append(
+        {
+          "left": left_child_frame if left_child_frame != 0xFFFFFFFE else None,
+          "right": right_child_frame if right_child_frame != 0xFFFFFFFE else None,
+        }
+      )
+    if size != 0:
+      root_frame = self.file.read_int()
+      node.btree = self.__decode_hash_table(hash_table, root_frame)
+
+  def __decode_rotation(self, node: Animation):
     size = self.file.read_int()
+    hash_table = []
 
     for j in range(size):
       time = self.file.read_int()
@@ -67,15 +81,32 @@ class SealAnimationDecoder:
       w = self.file.read_float()
       rotation = [x, y, z, w]
       keyframe = Keyframe(time, rotation)
-      node.add_rotation_keyframe(keyframe)
-      _ = self.file.read(16 + 8)  # TODO
+      node.rotations.append(keyframe)
 
+      # Redundant axis-angle encoding
+      # axis = [qx, qy, qz] / sin(angle/2)
+      # angle = 2 * arccos(w)
+      _axis_x = self.file.read_float()
+      _axis_y = self.file.read_float()
+      _axis_z = self.file.read_float()
+      _angle = self.file.read_float()
+
+      left_child_frame = self.file.read_int()
+      right_child_frame = self.file.read_int()
+      hash_table.append(
+        {
+          "left": left_child_frame if left_child_frame != 0xFFFFFFFE else None,
+          "right": right_child_frame if right_child_frame != 0xFFFFFFFE else None,
+        }
+      )
     if size != 0:
-      _hash_num = self.file.read_int()
+      root_frame = self.file.read_int()
+      node.btree = self.__decode_hash_table(hash_table, root_frame)
+      pprint(node.btree)
 
-  def __decode_scale(self, node):
-    assert self.file is not None, "File was not initialized properly"
+  def __decode_scale(self, node: Animation):
     size = self.file.read_int()
+    hash_table = []
 
     for j in range(size):
       time = self.file.read_int()
@@ -84,7 +115,45 @@ class SealAnimationDecoder:
       z = self.file.read_float()
       scale = [x, y, z]
       keyframe = Keyframe(time, scale)
-      node.add_scale_keyframe(keyframe)
-      _ = self.file.read(16 + 8)  # TODO
+      node.scales.append(keyframe)
+
+      _x = self.file.read_float()  # Usually 0.0
+      _y = self.file.read_float()  # Usually 0.0
+      _z = self.file.read_float()  # Usually 0.0
+      _w = self.file.read_float()  # Usually 0.0
+
+      left_child_frame = self.file.read_int()
+      right_child_frame = self.file.read_int()
+      hash_table.append(
+        {
+          "left": left_child_frame if left_child_frame != 0xFFFFFFFE else None,
+          "right": right_child_frame if right_child_frame != 0xFFFFFFFE else None,
+        }
+      )
     if size != 0:
-      _hash_num = self.file.read_int()
+      root_frame = self.file.read_int()
+      node.btree = self.__decode_hash_table(hash_table, root_frame)
+
+  def __decode_hash_table(
+    self, hash_table: List[Dict[str, Optional[int]]], root_frame: int
+  ):
+    bt = BinaryTree()
+    bt.root = BinaryTreeNode(root_frame)
+
+    def dfs(node: BinaryTreeNode):
+      if node.value is None:
+        return
+      h: Dict[str, Optional[int]] = hash_table[node.value]
+
+      left_value = h.get("left")
+      if left_value is not None:
+        node.left = BinaryTreeNode(left_value)
+        dfs(node.left)
+
+      right_value = h.get("right")
+      if right_value is not None:
+        node.right = BinaryTreeNode(right_value)
+        dfs(node.right)
+
+    dfs(bt.root)
+    return bt

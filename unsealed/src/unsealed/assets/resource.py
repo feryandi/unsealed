@@ -1,4 +1,7 @@
+from typing import Optional
+
+
 class Resource:
-  def __init__(self, name: str | None, filename: str | None):
-    self.name = name
-    self.filename = filename
+  def __init__(self, name: Optional[str], filename: Optional[str]):
+    self.name: Optional[str] = name
+    self.filename: Optional[str] = filename
