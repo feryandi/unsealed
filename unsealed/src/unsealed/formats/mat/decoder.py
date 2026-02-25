@@ -1,17 +1,20 @@
+from pathlib import Path
+from typing import Optional
+
 from ...utils.file import File
 
 
 class SealMatDecoder:
-  def __init__(self, path):
-    self.path = path
-    self.file = None
+  def __init__(self, path: Path) -> None:
+    self.path: Path = path
+    self.file: Optional[File] = None
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
     except Exception:
       raise Exception("Unable to open mat file")
 
-  def decode(self):
+  def decode(self) -> None:
     """
     Decodes the MAT file
     """

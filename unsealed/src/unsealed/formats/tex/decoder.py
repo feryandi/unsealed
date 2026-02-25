@@ -1,28 +1,29 @@
 import io
 import os
 from pathlib import Path
+from typing import Optional
 
 from ...assets.blob import Blob
 from ...utils.file import File
 
 
 class SealTextureDecoder:
-  def __init__(self, path: Path):
-    self.path = path
-    self.filename = os.path.splitext(os.path.basename(path))[0]
-    self.file = None
+  def __init__(self, path: Path) -> None:
+    self.path: Path = path
+    self.filename: str = os.path.splitext(os.path.basename(path))[0]
+    self.file: Optional[File] = None
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
     except Exception:
       raise Exception("Unable to open texture file")
 
-    self.grigon_header = None
-    self.original_file_size = None
-    self.scrambled_header = None
-    self.file_type = None
-    self.file_content = None
-    self.decoded = None
+    self.grigon_header: Optional[bytes] = None
+    self.original_file_size: Optional[int] = None
+    self.scrambled_header: Optional[bytes] = None
+    self.file_type: Optional[str] = None
+    self.file_content: Optional[bytes] = None
+    self.decoded: Optional[bytes] = None
 
   def decode(self) -> Blob:
     if self.file is None:
@@ -40,7 +41,7 @@ class SealTextureDecoder:
     blob.extension = self.file_type if self.file_type != "unknown" else None
     return blob
 
-  def __get_file_decoded(self):
+  def __get_file_decoded(self) -> io.BytesIO:
     assert self.file_content is not None, "File was not initialized properly"
     file_bytes = io.BytesIO()
     key = self.__key(self.file_content[0], self.file_type)
@@ -50,7 +51,7 @@ class SealTextureDecoder:
     file_bytes.write(self.file_content[18:])
     return file_bytes
 
-  def __key(self, x, filetype):
+  def __key(self, x: int, filetype: str) -> int:
     if filetype == "dds":
       return int(x) ^ int("0x44", 0)
     if filetype == "jpg":
@@ -61,7 +62,7 @@ class SealTextureDecoder:
       return int(x) ^ int("0x00", 0)
     return 0
 
-  def __predict_filetype(self):
+  def __predict_filetype(self) -> str:
     assert self.file is not None, "File was not initialized properly"
     header_zero = 16 * 4 + 4
 

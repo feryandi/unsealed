@@ -1,20 +1,20 @@
 from pathlib import Path
-from pprint import pprint
-import re
+from typing import Optional
+
 from ...assets.actor import Actor, Action
 from ...assets.resource import Resource, ResourceType
 from ...utils.file import File
 
 
 class SealActorDecoder:
-  def __init__(self, path: Path):
-    self.path = path
+  def __init__(self, path: Path) -> None:
+    self.path: Path = path
     try:
       with open(path, "rb") as dat:
-        self.file = File(dat.read())
+        self.file: File = File(dat.read())
     except Exception:
       raise Exception("Unable to open actor file")
-    self.actor = None
+    self.actor: Optional[Actor] = None
 
   def decode(self) -> Actor:
     _ukwn = self.file.read_int()  # TODO

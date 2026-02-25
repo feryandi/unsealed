@@ -5,11 +5,11 @@ from ..ms1.mesh import SealMeshMeshDecoder
 
 
 class SealMeshGeometryDecoder:
-  def __init__(self, file: File, maybe_non_first_object_has_pad):
-    self.file = file
-    self.maybe_non_first_object_has_pad = maybe_non_first_object_has_pad
+  def __init__(self, file: File, maybe_non_first_object_has_pad: bool) -> None:
+    self.file: File = file
+    self.maybe_non_first_object_has_pad: bool = maybe_non_first_object_has_pad
 
-  def decode(self):
+  def decode(self) -> Geometry:
     geometry = Geometry()
     count = self.file.read_int()
     for x in range(count):

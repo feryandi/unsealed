@@ -1,17 +1,20 @@
+from pathlib import Path
+from typing import Any, Dict, Optional
+
 from ...utils.file import File
 
 
 class SealShaDecoder:
-  def __init__(self, path):
-    self.path = path
-    self.file = None
+  def __init__(self, path: Path) -> None:
+    self.path: Path = path
+    self.file: Optional[File] = None
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
     except Exception:
       raise Exception("Unable to open sha file")
 
-  def decode(self):
+  def decode(self) -> Dict[str, Any]:
     """
     Decodes the SHA file and returns a list of tuples: (material, shader)
     """

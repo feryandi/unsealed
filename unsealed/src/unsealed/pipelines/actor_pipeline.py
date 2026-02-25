@@ -6,7 +6,7 @@ from .texture_pipeline import TexturePipeline
 
 
 class ActorPipeline:
-  def run(self, filepath: Path, output_dir: Path):
+  def run(self, filepath: Path, output_dir: Path) -> None:
     if not filepath.exists():
       raise Exception(f"File not found: {filepath}")
 

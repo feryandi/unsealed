@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from ...utils.file import File
 from ...assets.mesh import Mesh
 
@@ -5,12 +7,12 @@ from ..ms1.vertex import SealMeshVertexDecoder
 
 
 class SealMeshMeshDecoder:
-  def __init__(self, file: File):
-    self.file = file
-    self.tm = None
-    self.name = None
+  def __init__(self, file: File) -> None:
+    self.file: File = file
+    self.tm: Optional[List[List[float]]] = None
+    self.name: Optional[str] = None
 
-  def decode(self):
+  def decode(self) -> Mesh:
     name = self.file.read_string(16 * 16 + 1)
     self.name = name
     parent = self.file.read_string(16 * 16)
@@ -75,13 +77,13 @@ class SealMeshMeshDecoder:
     self.__decode_physique(mesh)
     return mesh
 
-  def __decode_vertices(self, mesh: Mesh, num_vertices):
+  def __decode_vertices(self, mesh: Mesh, num_vertices: int) -> None:
     for x in range(num_vertices):
       decoder = SealMeshVertexDecoder(self.file, mesh.tm)
       v = decoder.decode()
       mesh.add_vertex(v)
 
-  def __decode_indices(self, mesh: Mesh, num_faces):
+  def __decode_indices(self, mesh: Mesh, num_faces: int) -> None:
     num_face_index = num_faces * 3
     indices = []
     for x in range(num_face_index):
@@ -94,11 +96,11 @@ class SealMeshMeshDecoder:
       mesh.add_index(n, indices[i + 1])
       mesh.add_index(n, indices[i + 2])
 
-  def __decode_physique(self, mesh: Mesh):
+  def __decode_physique(self, mesh: Mesh) -> None:
     num_physique = self.file.read_int()
     for bone_idx in range(num_physique):
       p_num = self.file.read_int()
-      weights = []
+      weights: List[float] = []
       for _ in range(p_num):
         weights.append(self.file.read_float())
       for i in range(p_num):

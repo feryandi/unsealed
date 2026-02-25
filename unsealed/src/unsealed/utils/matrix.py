@@ -1,8 +1,10 @@
 import numpy as np
+from numpy.typing import NDArray
 from scipy.spatial.transform import Rotation as R
+from typing import Tuple
 
 
-def decompose_mtx(mtx):
+def decompose_mtx(mtx: NDArray[np.float64]) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
   """
   Decompose a 4x4 transformation matrix into translation, rotation, and scale.
 

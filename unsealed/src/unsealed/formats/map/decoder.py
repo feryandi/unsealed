@@ -6,13 +6,13 @@ from ...assets.terrain import Terrain
 
 
 class SealMapDecoder:
-  def __init__(self, path: Path):
-    self.version = 1
-    self.path = path
-    self.filename = os.path.splitext(os.path.basename(path))[0].split(".")[0]
+  def __init__(self, path: Path) -> None:
+    self.version: int = 1
+    self.path: Path = path
+    self.filename: str = os.path.splitext(os.path.basename(path))[0].split(".")[0]
     try:
       with open(path, "rb") as dat:
-        self.file = File(dat.read())
+        self.file: File = File(dat.read())
     except Exception:
       raise Exception("Unable to open map file")
 

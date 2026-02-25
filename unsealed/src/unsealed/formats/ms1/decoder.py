@@ -1,19 +1,23 @@
+from pathlib import Path
+from typing import Optional
+
 from ...utils.file import File
+from ...assets.geometry import Geometry
 
 from ..ms1.material import SealMeshMaterialDecoder
 from ..ms1.geometry import SealMeshGeometryDecoder
 
 
 class SealMeshDecoder:
-  def __init__(self, path):
-    self.file = None
+  def __init__(self, path: Path) -> None:
+    self.file: Optional[File] = None
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
     except Exception:
       raise Exception("Unable to open mesh file")
 
-  def decode(self):
+  def decode(self) -> Geometry:
     if self.file is None:
       raise Exception("File was not initialized properly")
     maybe_non_first_object_has_pad = False

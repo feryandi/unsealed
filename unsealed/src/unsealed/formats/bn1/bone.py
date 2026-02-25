@@ -7,10 +7,10 @@ from ...assets.skeleton import Bone
 
 
 class SealBoneBoneDecoder:
-  def __init__(self, file: File):
-    self.file = file
+  def __init__(self, file: File) -> None:
+    self.file: File = file
 
-  def decode(self):
+  def decode(self) -> Bone:
     bone = Bone()
     bone.name = self.file.read_string(256)
     t = self.file.read(1)
@@ -30,7 +30,7 @@ class SealBoneBoneDecoder:
     self.__decode_data(bone)
     return bone
 
-  def __decode_data(self, bone: Bone):
+  def __decode_data(self, bone: Bone) -> None:
     bone.tm = [
       [
         self.file.read_float(),

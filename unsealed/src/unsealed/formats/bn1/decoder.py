@@ -1,3 +1,6 @@
+from pathlib import Path
+from typing import Optional
+
 from ...utils.file import File
 from ...assets.skeleton import Skeleton
 
@@ -5,15 +8,16 @@ from ..bn1.bone import SealBoneBoneDecoder
 
 
 class SealBoneDecoder:
-  def __init__(self, path):
-    self.file = None
+  def __init__(self, path: Path) -> None:
+    self.file: Optional[File] = None
+    self.count: int = 0
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
     except Exception:
       raise Exception("Unable to open mesh file")
 
-  def decode(self):
+  def decode(self) -> Skeleton:
     if self.file is None:
       raise Exception("File was not initialized properly")
 

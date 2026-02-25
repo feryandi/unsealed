@@ -10,12 +10,12 @@ class Material(Asset):
   attribute configurations for rendering.
   """
 
-  def __init__(self, name: str, bitmap: str):
-    self.name = name
-    self.bitmap = bitmap
-    self.num_sub_material = 0
+  def __init__(self, name: str, bitmap: str) -> None:
+    self.name: str = name
+    self.bitmap: str = bitmap
+    self.num_sub_material: int = 0
     self.sub_materials: List[Self] = []
-    self.alpha_mode = 0
+    self.alpha_mode: int = 0
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     return f"<Material name:{self.name} bitmap:{self.bitmap} sub_materials:{self.sub_materials}>"

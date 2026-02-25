@@ -1,6 +1,6 @@
 import json
 import base64
-from typing import List
+from typing import Any, Dict, List, Optional
 import numpy as np
 import zlib
 
@@ -9,24 +9,24 @@ from ..core.asset import Asset
 
 
 class Terrain(Asset):
-  def __init__(self, width, height):
-    self.heightmap = []
-    self.width = width
-    self.height = height
-    self.objects = []
+  def __init__(self, width: int, height: int) -> None:
+    self.heightmap: List[float] = []
+    self.width: int = width
+    self.height: int = height
+    self.objects: List[Dict[str, Any]] = []
     self.object_files: List[str] = []
-    self.textures = []
-    self.lightmap = None
-    self.terrain_layer_a = []
-    self.terrain_layer_b = []
+    self.textures: List[str] = []
+    self.lightmap: Optional[str] = None
+    self.terrain_layer_a: List[int] = []
+    self.terrain_layer_b: List[int] = []
 
-  def add_heightmap(self, heightmap):
+  def add_heightmap(self, heightmap: List[float]) -> None:
     self.heightmap = heightmap
 
-  def add_object_file(self, filename):
+  def add_object_file(self, filename: str) -> None:
     self.object_files.append(filename)
 
-  def add_object(self, idx, pos, rot):
+  def add_object(self, idx: int, pos: List[float], rot: List[float]) -> None:
     self.objects.append(
       {
         "idx": idx,
@@ -35,22 +35,22 @@ class Terrain(Asset):
       }
     )
 
-  def add_terrain_layer_a(self, terrain_layer):
+  def add_terrain_layer_a(self, terrain_layer: List[int]) -> None:
     self.terrain_layer_a = terrain_layer
 
-  def add_terrain_layer_b(self, terrain_layer):
+  def add_terrain_layer_b(self, terrain_layer: List[int]) -> None:
     self.terrain_layer_b = terrain_layer
 
-  def add_texture(self, texture):
+  def add_texture(self, texture: str) -> None:
     self.textures.append(texture)
 
-  def add_lightmap(self, lightmap):
+  def add_lightmap(self, lightmap: str) -> None:
     self.lightmap = lightmap
 
-  def to_json(self):
+  def to_json(self) -> str:
     return json.dumps(self.to_serializable())
 
-  def to_serializable(self):
+  def to_serializable(self) -> Dict[str, Any]:
     """Return a compact, JSON-serializable dict.
 
     The `heightmap` is encoded as base64 of Float32 bytes to keep the
@@ -108,5 +108,5 @@ class Terrain(Asset):
     }
     return data
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     return f"<Terrain width:{self.width} height:{self.height} >"

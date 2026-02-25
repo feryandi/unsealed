@@ -16,6 +16,6 @@ class Resource:
     self.index: int = -1
     self.type: Optional[ResourceType] = None
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     return f"Resource(name={self.name}, \
     filename={self.filename}, type={self.type} index={self.index})"

@@ -1,12 +1,15 @@
+from pathlib import Path
+from typing import Optional
+
 from ...assets.blob import Blob
 from ...assets.directory import Directory
 from ...utils.file import File
 
 
 class SealMdtDecoder:
-  def __init__(self, path):
-    self.path = path
-    self.file = None
+  def __init__(self, path: Path) -> None:
+    self.path: Path = path
+    self.file: Optional[File] = None
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())

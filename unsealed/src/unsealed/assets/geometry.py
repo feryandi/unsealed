@@ -12,9 +12,9 @@ class Geometry(Asset):
   buffers and primitive topology definitions.
   """
 
-  def __init__(self):
+  def __init__(self) -> None:
     self.meshes: List[Mesh] = []
     self.materials: List[Material] = []
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     return f"<Node meshes:{self.meshes}>"

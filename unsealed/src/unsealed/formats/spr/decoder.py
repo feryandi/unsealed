@@ -1,17 +1,20 @@
+from pathlib import Path
+from typing import List, Optional, Tuple
+
 from ...utils.file import File
 
 
 class SealSprDecoder:
-  def __init__(self, path):
-    self.path = path
-    self.file = None
+  def __init__(self, path: Path) -> None:
+    self.path: Path = path
+    self.file: Optional[File] = None
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
     except Exception:
       raise Exception("Unable to open spr file")
 
-  def decode(self):
+  def decode(self) -> List[Tuple[str, List[Tuple[int, int, int, int]]]]:
     """
     Decodes the SPR file and returns a list of tuples: (filename, data_bytes)
     """

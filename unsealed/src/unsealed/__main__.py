@@ -6,7 +6,7 @@ import traceback
 from .pipelines.main_pipeline import MainPipeline
 
 
-def run():
+def run() -> None:
   """Main function to handle user input and file processing."""
   parser = argparse.ArgumentParser(
     description="Unsealed - Seal Online file decoder/encoder",

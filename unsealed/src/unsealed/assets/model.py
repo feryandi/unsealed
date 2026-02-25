@@ -13,7 +13,7 @@ class Model(Asset):
   grouping multiple meshes, skeletons, and materials.
   """
 
-  def __init__(self):
+  def __init__(self) -> None:
     self.name: Optional[str] = None
     self.geometry: Optional[Geometry] = None
     self.animations: Dict[str, List[Animation]] = {}
@@ -22,7 +22,7 @@ class Model(Asset):
   def add_geometry(self, geometry: Geometry) -> None:
     self.geometry = geometry
 
-  def add_animation(self, name, animation: Animation) -> None:
+  def add_animation(self, name: Optional[str], animation: Animation) -> None:
     # TODO: Properly support multi-animation
     if name not in self.animations:
       self.animations[name] = []
@@ -31,5 +31,5 @@ class Model(Asset):
   def add_skeleton(self, skeleton: Skeleton) -> None:
     self.skeleton = skeleton
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     return f"<Model geometry:{self.geometry} skeleton:{self.skeleton} animations:{self.animations}>"

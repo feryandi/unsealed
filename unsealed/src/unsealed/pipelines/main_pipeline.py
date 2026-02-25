@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import List, Tuple
 
 from .actor_pipeline import ActorPipeline
 from .map_pipeline import MapPipeline
@@ -16,7 +17,7 @@ SUPPORTED_FILE_TYPES = {
 
 
 class MainPipeline:
-  def run(self, filepath: Path, output_dir: Path):
+  def run(self, filepath: Path, output_dir: Path) -> None:
     if not filepath.exists():
       raise Exception(f"File not found: {filepath}")
 
@@ -28,8 +29,8 @@ class MainPipeline:
 
     setup["pipeline"].run(filepath, output_dir)
 
-  def get_supported_file_types(self):
-    list = []
+  def get_supported_file_types(self) -> List[Tuple[str, str]]:
+    list: List[Tuple[str, str]] = []
     for filetype, info in SUPPORTED_FILE_TYPES.items():
       list.append((filetype, info["name"]))
     return list

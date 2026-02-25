@@ -3,7 +3,7 @@ import io
 import math
 from platform import node
 import struct
-from typing import List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 from ...assets.vertex import Vertex
@@ -13,8 +13,8 @@ from ...utils.matrix import decompose_mtx
 
 
 class GltfEncoder:
-  def __init__(self):
-    self.gltf = {}
+  def __init__(self) -> None:
+    self.gltf: Dict[str, Any] = {}
     self.gltf["asset"] = {"version": "2.0"}
     self.gltf["buffers"] = []
     self.gltf["bufferViews"] = []
@@ -24,13 +24,13 @@ class GltfEncoder:
     self.gltf["scenes"] = [{"nodes": []}]
     self.gltf["scene"] = 0
 
-    self.model: Model | None = None
+    self.model: Optional[Model] = None
 
-    self.node_name_to_node_idx = {}
-    self.node_idx_to_mesh = {}
-    self.geo_material_idx_to_gltf_material_idx = {}
+    self.node_name_to_node_idx: Dict[str, int] = {}
+    self.node_idx_to_mesh: Dict[int, Any] = {}
+    self.geo_material_idx_to_gltf_material_idx: Dict[int, int] = {}
 
-  def encode(self, model, path):
+  def encode(self, model: Model, path: Any) -> Dict[str, Any]:
     self.model = model
     if self.model is None:
       raise Exception("No model to encode")
@@ -52,7 +52,7 @@ class GltfEncoder:
 
     return self.gltf
 
-  def __encode_material(self):
+  def __encode_material(self) -> None:
     if self.model is None or self.model.geometry is None:
       raise Exception("No model to encode")
 
@@ -83,7 +83,7 @@ class GltfEncoder:
       #     raise Exception("Expect bitmap to be empty on material that has submaterial")
       self.geo_material_idx_to_gltf_material_idx[idx] = len(bitmaps) - max(1, len(subs))
 
-  def __add_material(self, bitmap, alpha_mode="MASK"):
+  def __add_material(self, bitmap: str, alpha_mode: str = "MASK") -> None:
     self.gltf["materials"].append(
       {
         "pbrMetallicRoughness": {
@@ -106,7 +106,7 @@ class GltfEncoder:
         "index": len(self.gltf["textures"]) - 1
       }
 
-  def __encode_skeleton(self):
+  def __encode_skeleton(self) -> None:
     if self.model is None:
       raise Exception("No model to encode")
 
@@ -173,7 +173,7 @@ class GltfEncoder:
 
     self.gltf["skins"] = [{"inverseBindMatrices": skin_accessor_idx, "joints": joints}]
 
-  def __encode_animation(self):
+  def __encode_animation(self) -> None:
     if self.model is None:
       raise Exception("No model to encode")
 
@@ -254,7 +254,7 @@ class GltfEncoder:
     if len(self.gltf["animations"]) == 0:
       del self.gltf["animations"]
 
-  def __encode_mesh(self):
+  def __encode_mesh(self) -> None:
     if self.model is None or self.model.geometry is None:
       raise Exception("No mesh to encode")
 
@@ -356,15 +356,15 @@ class GltfEncoder:
       if is_string_empty(mesh.parent):
         self.gltf["scenes"][0]["nodes"].append(len(self.gltf["nodes"]) - 1)
 
-  def __add_accessors_vertices(self, vertices: List[Vertex]):
+  def __add_accessors_vertices(self, vertices: List[Vertex]) -> Dict[str, int]:
     assert len(vertices) > 0
     position_bytes = io.BytesIO()
     normal_bytes = io.BytesIO()
     texcoord_bytes = io.BytesIO()
 
     first_vertex = True
-    p_min = [0, 0, 0]
-    p_max = [0, 0, 0]
+    p_min: List[float] = [0.0, 0.0, 0.0]
+    p_max: List[float] = [0.0, 0.0, 0.0]
 
     for v in vertices:
       p = [v.position[0], v.position[1], v.position[2]]
@@ -398,7 +398,7 @@ class GltfEncoder:
 
     return {"position": p_a, "normal": n_a, "textcoord": t_a}
 
-  def __add_indices_buffer(self, indices):
+  def __add_indices_buffer(self, indices: List[int]) -> int:
     indices_bytes = io.BytesIO()
 
     for i in indices:
@@ -408,8 +408,14 @@ class GltfEncoder:
     return self.__add_buffer(indices_bytes)
 
   def __add_node(
-    self, name=None, mesh=None, skin=None, translation=None, rotation=None, scale=None
-  ):
+    self,
+    name: Optional[str] = None,
+    mesh: Optional[int] = None,
+    skin: Optional[int] = None,
+    translation: Optional[List[float]] = None,
+    rotation: Optional[List[float]] = None,
+    scale: Optional[List[float]] = None,
+  ) -> int:
     node = {}
     if name is not None:
       node["name"] = name
@@ -432,13 +438,13 @@ class GltfEncoder:
       self.node_name_to_node_idx[key] = idx
     return idx
 
-  def __add_node_children(self, parent_idx, child_idx):
+  def __add_node_children(self, parent_idx: int, child_idx: int) -> None:
     node = self.gltf["nodes"][parent_idx]
     if "children" not in node:
       node["children"] = []
     node["children"].append(child_idx)
 
-  def __add_buffer(self, data):
+  def __add_buffer(self, data: io.BytesIO) -> int:
     data.seek(0)
     bdata = data.read()
     b64 = base64.b64encode(bdata).decode("ascii")
@@ -458,14 +464,14 @@ class GltfEncoder:
 
   def __add_accessor(
     self,
-    buffer_view_idx,
-    component_type,
-    count,
-    type,
-    byte_offset=0,
-    min=None,
-    max=None,
-  ):
+    buffer_view_idx: int,
+    component_type: int,
+    count: int,
+    type: str,
+    byte_offset: int = 0,
+    min: Optional[List[float]] = None,
+    max: Optional[List[float]] = None,
+  ) -> int:
     accessor = {
       "bufferView": buffer_view_idx,
       "byteOffset": byte_offset,
@@ -480,7 +486,9 @@ class GltfEncoder:
     self.gltf["accessors"].append(accessor)
     return len(self.gltf["accessors"]) - 1
 
-  def __add_accessors_split_four(self, data, component_type):
+  def __add_accessors_split_four(
+    self, data: List[List[Any]], component_type: int
+  ) -> List[int]:
     data_bytes = self.__split_by_fours(data)
     data_max_length = 8  # TODO
     accessors = []
@@ -510,7 +518,7 @@ class GltfEncoder:
       accessors.append(self.__add_accessor(b, component_type, len(data_bytes), "VEC4"))
     return accessors
 
-  def __split_by_fours(self, data):
+  def __split_by_fours(self, data: List[List[Any]]) -> List[List[List[Any]]]:
     data_bytes = []
     for d in data:
       parts = []
@@ -525,7 +533,7 @@ class GltfEncoder:
       data_bytes.append(parts)
     return data_bytes
 
-  def __normalize(self, weights):
+  def __normalize(self, weights: List[float]) -> List[float]:
     normalized = []
     s = 0
     for w in weights:

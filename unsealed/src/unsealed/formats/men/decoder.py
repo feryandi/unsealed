@@ -1,18 +1,21 @@
 import json
+from pathlib import Path
+from typing import Any, Dict, Optional, Union
+
 from ...utils.file import File
 
 
 class SealMenDecoder:
-  def __init__(self, path):
-    self.path = path
-    self.file = None
+  def __init__(self, path: Path) -> None:
+    self.path: Path = path
+    self.file: Optional[File] = None
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
     except Exception:
       raise Exception("Unable to open men file")
 
-  def decode(self):
+  def decode(self) -> str:
     """
     Decodes the MEN file
     """
@@ -44,7 +47,7 @@ class SealMenDecoder:
     # return interface
     return json.dumps(interface, indent=2)
 
-  def _read_element(self, version):
+  def _read_element(self, version: int) -> Dict[str, Any]:
     if self.file is None:
       raise Exception("File was not initialized properly")
 
@@ -96,7 +99,7 @@ class SealMenDecoder:
 
     return element
 
-  def _read_element_wrapper(self, version):
+  def _read_element_wrapper(self, version: int) -> Dict[str, Any]:
     if self.file is None:
       raise Exception("File was not initialized properly")
 
@@ -108,7 +111,7 @@ class SealMenDecoder:
 
     return element
 
-  def _decode_type(self, type):
+  def _decode_type(self, type: int) -> Union[str, int]:
     if type == 0:
       return "image"
     if type == 1:

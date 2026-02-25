@@ -6,7 +6,7 @@ from ..formats.blob.format import BlobFormat
 
 
 class TexturePipeline:
-  def run(self, filepath: Path, output_dir: Path, convert_to: str | None = None):
+  def run(self, filepath: Path, output_dir: Path, convert_to: str | None = None) -> None:
     tex_format = SealTextureFormat()
     potential_tex_types = [
       ".tex",

@@ -1,15 +1,17 @@
+from typing import List
+
 from ...utils.file import File
 from ...utils.strings import is_valid_ascii_letter
 from ...assets.material import Material
 
 
 class SealMeshMaterialDecoder:
-  def __init__(self, file: File, different_mode):
-    self.file = file
-    self.count = 0
-    self.different_mode = different_mode
+  def __init__(self, file: File, different_mode: bool) -> None:
+    self.file: File = file
+    self.count: int = 0
+    self.different_mode: bool = different_mode
 
-  def decode(self):
+  def decode(self) -> List[Material]:
     if self.different_mode:
       print("Warning: Material is in different_mode")
 
@@ -40,7 +42,7 @@ class SealMeshMaterialDecoder:
           materials.append(material)
     return materials
 
-  def __decode_normal_material(self):
+  def __decode_normal_material(self) -> Material:
     _x = self.file.read_short()
     bitmap = self.file.read_string(256)
     name = self.file.read_string(128)
@@ -77,7 +79,7 @@ class SealMeshMaterialDecoder:
       material.sub_materials.append(submaterial)
     return material
 
-  def __decode_special_material(self):
+  def __decode_special_material(self) -> Material:
     # Unknown what special about this, yet
     _ = self.file.read_short()
     bitmap = self.file.read_string(256)
@@ -138,7 +140,7 @@ class SealMeshMaterialDecoder:
     return material
 
   # Hacky and might not work :(
-  def __is_still_material(self):
+  def __is_still_material(self) -> bool:
     check = self.file.seek(6)
     if is_valid_ascii_letter(check[2]):
       return True

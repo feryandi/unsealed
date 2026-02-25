@@ -7,11 +7,12 @@ from ...utils.file import File
 
 
 class SealAnimationDecoder:
-  def __init__(self, path: Path):
-    self.path = path
+  def __init__(self, path: Path) -> None:
+    self.path: Path = path
+    self.nodes: int = 0
     try:
       with open(path, "rb") as dat:
-        self.file = File(dat.read())
+        self.file: File = File(dat.read())
     except Exception:
       raise Exception("Unable to open mesh file")
 
@@ -42,7 +43,7 @@ class SealAnimationDecoder:
       animations.append(node)
     return animations
 
-  def __decode_position(self, node: Animation):
+  def __decode_position(self, node: Animation) -> None:
     size = self.file.read_int()
     hash_table = []
 
@@ -67,7 +68,7 @@ class SealAnimationDecoder:
       root_frame = self.file.read_int()
       node.btree = self.__decode_hash_table(hash_table, root_frame)
 
-  def __decode_rotation(self, node: Animation):
+  def __decode_rotation(self, node: Animation) -> None:
     size = self.file.read_int()
     hash_table = []
 
@@ -101,7 +102,7 @@ class SealAnimationDecoder:
       root_frame = self.file.read_int()
       node.btree = self.__decode_hash_table(hash_table, root_frame)
 
-  def __decode_scale(self, node: Animation):
+  def __decode_scale(self, node: Animation) -> None:
     size = self.file.read_int()
     hash_table = []
 
@@ -133,7 +134,7 @@ class SealAnimationDecoder:
 
   def __decode_hash_table(
     self, hash_table: List[Dict[str, Optional[int]]], root_frame: int
-  ):
+  ) -> BinaryTree:
     bt = BinaryTree()
     bt.root = BinaryTreeNode(root_frame)
 

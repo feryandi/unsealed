@@ -1,15 +1,16 @@
 from pathlib import Path
+from typing import Optional, Union
 
 
-def is_valid_ascii_letter(c):
+def is_valid_ascii_letter(c: int) -> bool:
   return c > 20 and c < 128
 
 
-def is_string_empty(string):
+def is_string_empty(string: Optional[str]) -> bool:
   return string is None or not string.strip()
 
 
-def find_correct_path(path_str) -> Path:
+def find_correct_path(path_str: str) -> Union[Path, str]:
   """
   Finds a file with different case variations using pathlib.
   Works cross-platform (Windows, Linux, macOS).

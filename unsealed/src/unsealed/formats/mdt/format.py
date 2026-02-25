@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Pattern, Type
 
 from ..base import BaseFormat
-from ...assets.terrain import Terrain
 from ...assets.directory import Directory
 from ..mdt.decoder import SealMdtDecoder
 
@@ -23,5 +22,5 @@ class SealMdtFormat(BaseFormat[Directory]):
     blobs = decoder.decode()
     return blobs
 
-  def encoder(self, asset: Terrain, path: Path) -> None:
+  def encoder(self, asset: Directory, path: Path) -> None:
     raise NotImplementedError("Encoder is not implemented")

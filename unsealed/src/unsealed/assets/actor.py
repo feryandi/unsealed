@@ -15,7 +15,7 @@ class Action:
     self.filename: str = filename
     self.resources: List[Resource] = []
 
-  def __repr__(self):
+  def __repr__(self) -> str:
     return (
       f"Action(name={self.name}, filename={self.filename}, resources={self.resources})"
     )
