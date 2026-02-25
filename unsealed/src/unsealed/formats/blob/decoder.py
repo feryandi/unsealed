@@ -22,9 +22,9 @@ class BlobDecoder:
     blob = Blob()
     blob.value = self.file.read_until_end()
     blob.extension = str.join(".", self.path.suffixes)
-    blob.filename = self.path.with_suffix("").name
-    while self.path.suffix:
-      path = self.path.with_suffix("")
+    path = self.path
+    while path.suffix:
+      path = path.with_suffix("")
     blob.filename = path.name
 
     return blob

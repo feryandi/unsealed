@@ -57,33 +57,29 @@ class SealMapDecoder:
     terrain.add_lightmap(s)
 
     # Texture Layer 1
-    i = 64
     a = []
-    for i in range(i):
+    for _ in range(64):
       x = self.file.read_int()
       a.append(x)
     terrain.add_terrain_layer_a(a)
 
     # Texture Layer 2
-    i = 64
     a = []
-    for i in range(i):
+    for _ in range(64):
       x = self.file.read_int()
       a.append(x)
     terrain.add_terrain_layer_b(a)
 
     # Heightmap
-    i = 512 * 512
     n = []
-    for i in range(i):
+    for _ in range(512 * 512):
       x = self.file.read_float()
       n.append(x)
     terrain.add_heightmap(n)
 
     # Walkable area
-    i = 512 * 512
     n = []
-    for i in range(i):
+    for _ in range(512 * 512):
       x = self.file.read_int()
       n.append(x)
 

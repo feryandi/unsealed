@@ -36,7 +36,7 @@ class SealActorDecoder:
       # 11: Example: T_Pu1.act, N_boyA.act, N_adelA.act, T_Ni2.act
       _x = self.file.read_int()  # TODO
       __arr_z = []
-      for i in range(8):
+      for j in range(8):
         __arr_z.append(self.file.read_int())  # TODO
 
       name = self.file.read_string(self.file.read_int())
@@ -67,7 +67,7 @@ class SealActorDecoder:
     _x = self.file.read_int()  # TODO
 
     __arr_z = []
-    for i in range(8):
+    for j in range(8):
       __arr_z.append(self.file.read_int())  # TODO
 
     name = self.file.read_string(self.file.read_int())

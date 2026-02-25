@@ -51,7 +51,7 @@ class SealTextureDecoder:
     file_bytes.write(self.file_content[18:])
     return file_bytes
 
-  def __key(self, x: int, filetype: str) -> int:
+  def __key(self, x: int, filetype: Optional[str]) -> int:
     if filetype == "dds":
       return int(x) ^ int("0x44", 0)
     if filetype == "jpg":
@@ -62,7 +62,7 @@ class SealTextureDecoder:
       return int(x) ^ int("0x00", 0)
     return 0
 
-  def __predict_filetype(self) -> str:
+  def __predict_filetype(self) -> Optional[str]:
     assert self.file is not None, "File was not initialized properly"
     header_zero = 16 * 4 + 4
 
@@ -82,15 +82,15 @@ class SealTextureDecoder:
     op = int(check_header[0]) ^ int("0xFF", 0)
     check_footer = self.file.seek_at(self.file.size - 2 - 16 * 4, 2)
     if (
-      int(check[1]) ^ op == int("0xD8", 0)
-      and int(check[2]) ^ op == int("0xFF", 0)
+      int(check_header[1]) ^ op == int("0xD8", 0)
+      and int(check_header[2]) ^ op == int("0xFF", 0)
       and check_footer == b"\xff\xd9"
     ):
       return "jpg"
 
     check = self.file.seek_at(header_zero, 2)
-    op = int(check_header[0]) ^ int("0x42", 0)
+    op = int(check[0]) ^ int("0x42", 0)
     if int(check[1]) ^ op == int("0x4D", 0):
       return "bmp"
 
-    return "unknown"
+    return None

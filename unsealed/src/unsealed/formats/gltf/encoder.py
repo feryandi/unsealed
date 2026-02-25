@@ -263,13 +263,11 @@ class GltfEncoder:
     for mesh in meshes:
       mesh_gltf = {"name": mesh.name, "primitives": []}
 
-      try:
-        if mesh.material_index is not None:
-          material = self.model.geometry.materials[mesh.material_index]
-        else:
-          raise IndexError()
-      except IndexError:
-        raise IndexError(f"Material index: {mesh.material_index} is not found")
+      material = None
+      if mesh.material_index is not None:
+        if mesh.material_index >= len(self.model.geometry.materials):
+          raise IndexError(f"Material index: {mesh.material_index} is not found")
+        material = self.model.geometry.materials[mesh.material_index]
 
       joints_accessors = self.__add_accessors_split_four(mesh.joints, 5123)
       weights_accessors = self.__add_accessors_split_four(mesh.weights, 5126)
@@ -306,7 +304,7 @@ class GltfEncoder:
         for idx, a in enumerate(weights_accessors):
           primitive["attributes"]["WEIGHTS_" + str(idx)] = a
 
-        if material is not None:
+        if material is not None and mesh.material_index is not None:
           primitive["material"] = (
             self.geo_material_idx_to_gltf_material_idx[mesh.material_index] + i
           )

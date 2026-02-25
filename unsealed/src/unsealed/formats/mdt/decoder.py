@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional, Tuple
 
 from ...assets.blob import Blob
 from ...assets.directory import Directory
@@ -25,7 +25,7 @@ class SealMdtDecoder:
 
     num_files = self.file.read_int()
 
-    file_metadata = []
+    file_metadata: List[Tuple[str, int]] = []
     for _ in range(num_files):
       filename = self.file.read_string(16 * 6)
       _ = self.file.read(4)
@@ -38,8 +38,9 @@ class SealMdtDecoder:
       # Read the actual byte data from the stream
       blob = Blob()
       blob.value = self.file.read(size)
-      blob.filename = filename.split(".")[0]
-      blob.extension = filename.split(".")[1]
+      parts = filename.split(".", 1)
+      blob.filename = parts[0]
+      blob.extension = parts[1] if len(parts) > 1 else None
       decoded_files.append(blob)
 
     dir = Directory()

@@ -68,7 +68,7 @@ class File:
     self._stream.seek(0, 2)
     end = self._stream.tell()
     self._stream.seek(pos)
-    return pos >= end - 1
+    return pos >= end
 
   def read_until_end(self) -> bytes:
     return self._stream.read()
