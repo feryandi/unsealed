@@ -9,7 +9,7 @@ if TYPE_CHECKING:
   from ...app.components.animation import AnimationComponent
   from ...camera import Camera
   from ...rendering import HudPanel
-  from ...scene import ViewerScene
+  from ...scenes import ViewerScene
   from ..context import ViewerContext
   from ..world import AppWorld
 

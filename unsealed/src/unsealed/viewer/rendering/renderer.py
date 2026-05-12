@@ -75,7 +75,7 @@ from OpenGL.GL import (
 )
 
 from ..camera import ImageCamera, MapCamera, OrbitCamera
-from ..scene import ImageScene, MapScene, ViewerScene
+from ..scenes import ImageScene, MapScene, ViewerScene
 from .components import BoundsComp, GpuBufferComp, MaterialComp, TransformComp
 from .hud import HudRenderer
 from .passes import GBufferPass, LightingPass, OverlayPass

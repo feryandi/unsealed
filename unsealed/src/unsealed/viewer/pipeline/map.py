@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from ..scene import MapScene, ViewerMesh
+from ..scenes import MapScene, ViewerMesh
 from .model import ModelViewerPipeline
 from .tex import TexViewerPipeline
 

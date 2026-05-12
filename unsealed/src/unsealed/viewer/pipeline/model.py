@@ -10,7 +10,7 @@ import numpy as np
 from unsealed.assets import Material
 
 from ..camera import compute_bounds
-from ..scene import (
+from ..scenes import (
   ModelScene,
   ViewerAnimationGroup,
   ViewerBone,

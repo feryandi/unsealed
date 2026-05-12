@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
 from ..camera import MapCamera
 from ..rendering import HudAction
-from ..scene import MapScene, ModelScene
+from ..scenes import MapScene, ModelScene
 from .components import InputComponent, RenderComponent, SceneComponent, WindowComponent
 from .systems import AnimationSystem, HudSystem, InputSystem, LoadSystem, UpdateSystem
 

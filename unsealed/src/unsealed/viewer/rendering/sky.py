@@ -49,7 +49,7 @@ from OpenGL.GL import (
 )
 
 from .shaders import _SKY_FRAG, _SKY_VERT, _compile_prog, _u_mat4, _upload_rgba
-from ..scene import ViewerMesh
+from ..scenes import ViewerMesh
 from .types import _STRIDE_PLAIN
 
 

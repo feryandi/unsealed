@@ -3,7 +3,7 @@ from pathlib import Path
 
 
 from ...rendering import HudAction, HudButton, HudPanel
-from ...scene import MapScene
+from ...scenes import MapScene
 
 
 class MapControlPanel(HudPanel):

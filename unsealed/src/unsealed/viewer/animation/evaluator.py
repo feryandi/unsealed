@@ -25,7 +25,7 @@ from typing import List, Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from ..scene import (
+from ..scenes import (
   ViewerAnimationGroup,
   ViewerBoneAnimation,
   ViewerSkeleton,

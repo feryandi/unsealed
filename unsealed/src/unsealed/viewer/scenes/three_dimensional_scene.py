@@ -1,9 +1,8 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
 
-from unsealed.viewer.scenes.viewer_scene import ViewerScene
-
 from .scene import ViewerAnimationGroup, ViewerMesh, ViewerSkeleton
+from .viewer_scene import ViewerScene
 
 
 @dataclass

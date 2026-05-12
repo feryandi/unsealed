@@ -4,7 +4,7 @@ from typing import List
 
 from ...rendering import HudPanel
 from ...rendering.types import _STRIDE_PLAIN, _STRIDE_SKINNED
-from ...scene import ViewerMesh
+from ...scenes import ViewerMesh
 
 
 class ObjectDetailPanel(HudPanel):

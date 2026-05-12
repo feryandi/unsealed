@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from ..camera import Camera
-from ..scene import ImageScene, MapScene, ViewerScene
+from ..scenes import ImageScene, MapScene, ViewerScene
 from .scenes import ImageConfig, MapConfig, ModelConfig, SceneConfig
 
 

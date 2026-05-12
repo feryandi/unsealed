@@ -12,7 +12,7 @@ from typing import List
 import numpy as np
 from numpy.typing import NDArray
 
-from ..scene import ViewerKeyframe
+from ..scenes import ViewerKeyframe
 
 
 def _find_keyframe_pair(

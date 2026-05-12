@@ -10,7 +10,7 @@ if TYPE_CHECKING:
   from ...app.components.animation import AnimationComponent
   from ...camera import Camera
   from ...rendering import HudPanel
-  from ...scene import ViewerScene
+  from ...scenes import ViewerScene
   from ..context import ViewerContext
   from ..world import AppWorld
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class MapConfig(SceneConfig):
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
     from ...camera import MapCamera
-    from ...scene import MapScene
+    from ...scenes import MapScene
 
     cam = MapCamera()
     cam.fit_map()
@@ -33,7 +33,7 @@ class MapConfig(SceneConfig):
     selected_idx: Optional[int],
     q3_enabled: bool = True,
   ) -> "List[HudPanel]":
-    from ...scene import MapScene
+    from ...scenes import MapScene
     from ..panels import MapControlPanel, ObjectDetailPanel
 
     scene = cast(MapScene, ctx.scene)

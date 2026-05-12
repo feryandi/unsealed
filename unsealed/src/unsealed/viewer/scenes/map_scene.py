@@ -1,13 +1,10 @@
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import List, Optional, Tuple
+
+from numpy.typing import NDArray
 
 from .scene import ViewerMesh
 from .three_dimensional_scene import ThreeDimensionalScene
-
-from dataclasses import field
-from typing import List, Tuple
-
-from numpy.typing import NDArray
 
 
 @dataclass

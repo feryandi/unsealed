@@ -4,7 +4,7 @@ from typing import List
 from pathlib import Path
 
 from ...rendering import HudAction, HudButton, HudPanel
-from ...scene import ModelScene
+from ...scenes import ModelScene
 
 
 class ModelControlPanel(HudPanel):

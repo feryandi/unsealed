@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from ...scene import ImageScene
+from ...scenes import ImageScene
 from ..context import ViewerContext
 
 if TYPE_CHECKING:

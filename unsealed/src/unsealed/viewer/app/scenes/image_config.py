@@ -10,7 +10,7 @@ if TYPE_CHECKING:
   from ...app.components.animation import AnimationComponent
   from ...camera import Camera
   from ...rendering import HudPanel
-  from ...scene import ViewerScene
+  from ...scenes import ViewerScene
   from ..context import ViewerContext
   from ..world import AppWorld
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class ImageConfig(SceneConfig):
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
     from ...camera import ImageCamera
-    from ...scene import ImageScene
+    from ...scenes import ImageScene
 
     cam = ImageCamera()
     if isinstance(scene, ImageScene):
@@ -33,7 +33,7 @@ class ImageConfig(SceneConfig):
     q3_enabled: bool = True,
   ) -> "List[HudPanel]":
     from ...camera import ImageCamera
-    from ...scene import ImageScene
+    from ...scenes import ImageScene
     from ..panels import ImageControlPanel
 
     scene = cast(ImageScene, ctx.scene)

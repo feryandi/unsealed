@@ -96,13 +96,14 @@ viewer/
 ├── pipeline/          — file → ViewerScene converters
 ├── shader/            — Q3-style .sha parser
 └── rendering/
-    ├── renderer.py    — orchestrator
+    ├── renderer.py    — orchestrator (also owns inline command building, GPU upload, ray picking)
     ├── shaders.py     — GLSL loader + ShaderProgram wrapper
-    ├── command_builder.py — builds DrawCommand lists
-    ├── scene_uploader.py  — uploads ViewerScene to GPU
+    ├── types.py       — DrawCommand, RenderContext, HudButton, HudPanel, VertexLayout
     ├── registry.py    — entity_id → GPU components
     ├── components.py  — GPU buffer / material / transform / bounds
-    ├── passes/        — one file per render pass
+    ├── hud.py         — HudRenderer
+    ├── sky.py / terrain.py — forward renderers (map mode)
+    ├── passes/        — gbuffer, lighting, overlay
     └── glsl/          — shader source files
 ```
 

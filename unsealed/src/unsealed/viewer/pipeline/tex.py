@@ -9,7 +9,7 @@ import io
 from pathlib import Path
 from typing import Optional, Tuple
 
-from ..scene import ImageScene, MapScene, ModelScene
+from ..scenes import ImageScene, MapScene, ModelScene
 
 
 class TexViewerPipeline:

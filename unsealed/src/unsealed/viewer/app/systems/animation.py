@@ -8,7 +8,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ...animation import Animator, NodeAnimator
-from ...scene import MapScene, ModelScene
+from ...scenes import MapScene, ModelScene
 from ..components.animation import AnimationComponent
 
 

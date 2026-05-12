@@ -10,7 +10,7 @@ if TYPE_CHECKING:
   from ...app.components.animation import AnimationComponent
   from ...camera import Camera
   from ...rendering import HudPanel
-  from ...scene import ViewerScene
+  from ...scenes import ViewerScene
   from ..context import ViewerContext
   from ..world import AppWorld
 
@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class ModelConfig(SceneConfig):
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
     from ...camera import OrbitCamera
-    from ...scene import ModelScene
+    from ...scenes import ModelScene
 
     cam = OrbitCamera()
     if isinstance(scene, ModelScene) and scene.bounds_radius > 0:
@@ -32,7 +32,7 @@ class ModelConfig(SceneConfig):
     selected_idx: Optional[int],
     q3_enabled: bool = True,
   ) -> "List[HudPanel]":
-    from ...scene import ModelScene
+    from ...scenes import ModelScene
     from ..panels import AnimationListPanel, ModelControlPanel, PlaybackControlPanel
 
     scene = cast(ModelScene, ctx.scene)
@@ -74,7 +74,7 @@ class ModelConfig(SceneConfig):
       if app.scene.anim.enabled:
         ctx = app.scene.context
         if ctx is not None:
-          from ...scene import ModelScene
+          from ...scenes import ModelScene
           scene = cast(ModelScene, ctx.scene)
           n = len(scene.animation_groups)
           app.anim_select((app.scene.anim.group_idx - 1) % n)
@@ -82,7 +82,7 @@ class ModelConfig(SceneConfig):
       if app.scene.anim.enabled:
         ctx = app.scene.context
         if ctx is not None:
-          from ...scene import ModelScene
+          from ...scenes import ModelScene
           scene = cast(ModelScene, ctx.scene)
           n = len(scene.animation_groups)
           app.anim_select((app.scene.anim.group_idx + 1) % n)
