@@ -28,16 +28,14 @@ vec4 sampleTex(int idx, vec2 uv) {
 }
 
 void main() {
-    // Tile the detail textures 128× across the terrain (each layer uses its own UV)
-    vec2 uv_a = fract(vUv  * 128.0);
-    vec2 uv_b = fract(vUv2 * 128.0);
+    // Tile the detail textures 128× across the terrain.
+    // Both layers share one UV and one tile index — viewer.js createGround().
+    // vUv = (x/511, z/511), matches viewer.js's vUv after its vertex y-flip.
+    vec2 uv1  = fract(vUv * 128.0);
+    int  tile = clamp(int(floor(vUv.y * 8.0)) * 8 + int(floor(vUv.x * 8.0)), 0, 63);
 
-    // Tile index for layer_a (rotated UV) and layer_b (original UV)
-    int tile_a = clamp(int(floor(vUv.y  * 8.0)) * 8 + int(floor(vUv.x  * 8.0)), 0, 63);
-    int tile_b = clamp(int(floor(vUv2.y * 8.0)) * 8 + int(floor(vUv2.x * 8.0)), 0, 63);
-
-    vec4 terrain = sampleTex(uLayerB[tile_a], uv_a);
-    vec4 path    = sampleTex(uLayerA[tile_b], uv_b);
+    vec4 terrain = sampleTex(uLayerB[tile], uv1);
+    vec4 path    = sampleTex(uLayerA[tile], uv1);
 
     vec3 color;
     if (uHasLightmap) {

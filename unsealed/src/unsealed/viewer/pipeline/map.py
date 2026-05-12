@@ -103,7 +103,6 @@ class MapViewerPipeline:
     for obj in terrain.objects:
       instances_by_idx[obj["idx"]].append(obj)
 
-    total_instances = 0
     total_types = 0
 
     for idx, obj_instances in instances_by_idx.items():
@@ -156,7 +155,6 @@ class MapViewerPipeline:
           )
         )
 
-      total_instances += len(inst_mats)
       total_types += 1
 
     # ── Sky dome (sky.ms1 alongside the .map file) ───────────────────────────
@@ -168,12 +166,6 @@ class MapViewerPipeline:
       except Exception as e:
         print(f"[viewer] sky.ms1: {e}")
 
-    print(
-      f"[viewer] map: terrain {W}×{H}, "
-      f"textures={len([t for t in scene.terrain_textures if t is not None])}/12, "
-      f"object types={total_types}, instances={total_instances}, "
-      f"sky={'yes' if scene.sky_meshes else 'no'}"
-    )
     return scene
 
   @staticmethod

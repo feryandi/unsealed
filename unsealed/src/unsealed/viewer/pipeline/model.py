@@ -201,8 +201,6 @@ class ModelViewerPipeline:
             )
           )
         else:
-          if ms1_key or sha_key:
-            print(f"[q3] mesh '{mesh.name}' shader '{ms1_key or sha_key}' NOT found in cache ({len(shaders) if shaders else 0} shaders loaded)")
           image, w, h = cls._decode_texture(path, bitmap)
           viewer_mesh.primitives.append(
             ViewerPrimitive(
@@ -254,13 +252,11 @@ class ModelViewerPipeline:
   def _resolve_q3_stages(model_path: Path, shader) -> List[ViewerQ3Stage]:
     """Resolve each stage of a Q3Shader into a ViewerQ3Stage with pixel data."""
     result: List[ViewerQ3Stage] = []
-    print(f"[q3] resolving shader '{shader.name}' ({len(shader.stages)} stages)")
     for stage in shader.stages:
       image: Optional[bytes] = None
       w = h = 0
       if stage.map_texture is not None:
         image, w, h = ModelViewerPipeline._decode_texture(model_path, stage.map_texture)
-        print(f"[q3]   map '{stage.map_texture}' → {'OK' if image else 'MISSING'}")
 
       anim_frames: list = []
       for tex_name in stage.anim_textures:

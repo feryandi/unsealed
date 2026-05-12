@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 
 import pygame
 
-from ...scene import ImageScene, ModelScene
+from ...scene import ImageScene
 from ..context import ViewerContext
 
 if TYPE_CHECKING:
@@ -21,13 +21,11 @@ _TITLE = "Unsealed — 3D Viewer"
 
 class LoadSystem:
     def load(self, path: Path, world: "AppWorld") -> None:
-        print(f"[viewer] loading {path}")
         try:
             if path.parent != world._shader_dir:
                 from ...shader import load_shaders
                 world.shader_cache = load_shaders(path.parent)
                 world._shader_dir = path.parent
-                print(f"[viewer] loaded {len(world.shader_cache)} shaders from {path.parent.name}")
             ctx = ViewerContext.load(path, world.window.width, world.window.height,
                                      world.shader_cache)
             world.scene.context = ctx
@@ -37,16 +35,6 @@ class LoadSystem:
             if not isinstance(ctx.scene, ImageScene):
                 world._anim_sys.load(world.scene.anim, ctx.scene)
             pygame.display.set_caption(f"{_TITLE} — {path.name}")
-
-            if isinstance(ctx.scene, ImageScene):
-                print(f"[viewer] image {ctx.scene.image_w}\u00d7{ctx.scene.image_h}")
-            elif isinstance(ctx.scene, ModelScene):
-                print(
-                    f"[viewer] meshes={len(ctx.scene.mesh_names)}, "
-                    f"triangles={ctx.scene.tri_count:,}, "
-                    f"animations={len(ctx.scene.animation_groups)}"
-                )
-            # MapScene: pipeline already prints map stats
 
         except Exception as e:
             print(f"[viewer] error: {e}")

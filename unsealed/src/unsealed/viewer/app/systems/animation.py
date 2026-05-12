@@ -76,12 +76,6 @@ class AnimationSystem:
           na = NodeAnimator(ba_match, local_mat)
           component.map_node_anim_states[mesh_idx] = [na, 0.0, group.duration]
 
-    if component.map_anim_states or component.map_node_anim_states:
-      print(
-        f"[viewer] map animation: "
-        f"{len(component.map_anim_states)} bone-anim type(s), "
-        f"{len(component.map_node_anim_states)} node-anim mesh(es)"
-      )
 
   def select(
     self, component: AnimationComponent, scene: ModelScene, idx: int
