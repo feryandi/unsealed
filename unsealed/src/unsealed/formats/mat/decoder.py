@@ -26,7 +26,7 @@ class SealMatDecoder:
     _materials = []
     _textures = []
 
-    while self.file.is_end() is False:
+    while not self.file.is_end():
       _t = self.file.read_short()
       _name = self.file.read_string(256)
       _filename = self.file.read_string(256)

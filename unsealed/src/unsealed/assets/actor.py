@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 from .resource import Resource
 
 
@@ -10,8 +10,8 @@ class Actor:
 
 
 class Action:
-  def __init__(self, name: Optional[str], filename: str):
-    self.name: Optional[str] = name
+  def __init__(self, name: str, filename: str):
+    self.name: str = name
     self.filename: str = filename
     self.resources: List[Resource] = []
 

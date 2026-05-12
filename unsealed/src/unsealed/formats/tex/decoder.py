@@ -1,5 +1,4 @@
 import io
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -10,7 +9,7 @@ from ...utils.file import File
 class SealTextureDecoder:
   def __init__(self, path: Path) -> None:
     self.path: Path = path
-    self.filename: str = os.path.splitext(os.path.basename(path))[0]
+    self.filename: str = path.stem
     self.file: Optional[File] = None
     try:
       with open(path, "rb") as dat:
@@ -53,13 +52,13 @@ class SealTextureDecoder:
 
   def __key(self, x: int, filetype: Optional[str]) -> int:
     if filetype == "dds":
-      return int(x) ^ int("0x44", 0)
+      return x ^ 0x44
     if filetype == "jpg":
-      return int(x) ^ int("0xFF", 0)
+      return x ^ 0xFF
     if filetype == "bmp":
-      return int(x) ^ int("0x42", 0)
+      return x ^ 0x42
     if filetype == "tga":
-      return int(x) ^ int("0x00", 0)
+      return x ^ 0x00
     return 0
 
   def __predict_filetype(self) -> Optional[str]:
@@ -74,23 +73,23 @@ class SealTextureDecoder:
       return "tga"
 
     check = self.file.seek_at(header_zero, 3)
-    op = int(check[0]) ^ int("0x44", 0)
-    if int(check[1]) ^ op == int("0x44", 0) and int(check[2]) ^ op == int("0x53", 0):
+    op = check[0] ^ 0x44
+    if check[1] ^ op == 0x44 and check[2] ^ op == 0x53:
       return "dds"
 
     check_header = self.file.seek_at(header_zero, 3)
-    op = int(check_header[0]) ^ int("0xFF", 0)
+    op = check_header[0] ^ 0xFF
     check_footer = self.file.seek_at(self.file.size - 2 - 16 * 4, 2)
     if (
-      int(check_header[1]) ^ op == int("0xD8", 0)
-      and int(check_header[2]) ^ op == int("0xFF", 0)
+      check_header[1] ^ op == 0xD8
+      and check_header[2] ^ op == 0xFF
       and check_footer == b"\xff\xd9"
     ):
       return "jpg"
 
     check = self.file.seek_at(header_zero, 2)
-    op = int(check[0]) ^ int("0x42", 0)
-    if int(check[1]) ^ op == int("0x4D", 0):
+    op = check[0] ^ 0x42
+    if check[1] ^ op == 0x4D:
       return "bmp"
 
     return None

@@ -2,7 +2,7 @@ import re
 from PIL import Image
 
 from pathlib import Path
-from typing import Pattern, Type
+from typing import Pattern, Type, List
 import numpy as np
 
 from ..base import BaseFormat
@@ -37,4 +37,12 @@ class HeightmapFormat(BaseFormat[Terrain]):
 
     # Mode 'I;16' is for 16-bit unsigned integer grayscale
     img = Image.fromarray(altitudes, mode="I;16")
-    img.save(path)
+    img.save(path / f"{asset.name}.png")
+
+    terrain_layer_a = np.array(asset.terrain_layer_a, dtype=np.uint8).reshape(8, 8)
+    img_a = Image.fromarray(terrain_layer_a, mode="L")
+    img_a.save(path / f"{asset.name}_layer_a.png")
+
+    terrain_layer_b = np.array(asset.terrain_layer_b, dtype=np.uint8).reshape(8, 8)
+    img_b = Image.fromarray(terrain_layer_b, mode="L")
+    img_b.save(path / f"{asset.name}_layer_b.png")

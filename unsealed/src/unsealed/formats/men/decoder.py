@@ -4,6 +4,19 @@ from typing import Any, Dict, Optional, Union
 
 from ...utils.file import File
 
+_ELEMENT_TYPE_NAMES: Dict[int, str] = {
+  0: "image",
+  1: "button",
+  2: "animation",
+  3: "text",
+  4: "scrollbar",
+  5: "scrollarea",
+  6: "input",
+  7: "checkbox",
+  8: "dragdrop",
+  9: "tab",
+}
+
 
 class SealMenDecoder:
   def __init__(self, path: Path) -> None:
@@ -37,11 +50,11 @@ class SealMenDecoder:
     spr_file = self.file.read_string(100)
     interface["spr"] = spr_file
 
-    x = self.file.read_int()
+    _ = self.file.read_int()
 
     interface["elements"] = []
 
-    while self.file.is_end() is False:
+    while not self.file.is_end():
       interface["elements"].append(self._read_element_wrapper(version))
 
     # return interface
@@ -55,8 +68,8 @@ class SealMenDecoder:
 
     label = self.file.read_string(100)
     element["label"] = label
-    type = self.file.read_int()
-    element["type"] = self._decode_type(type)
+    element_type = self.file.read_int()
+    element["type"] = self._decode_type(element_type)
 
     element["spr_idx"] = self.file.read_int()
     element["ui_base_spr_idx"] = self.file.read_int()
@@ -65,17 +78,17 @@ class SealMenDecoder:
     element["ui_hover_spr_idx"] = self.file.read_int()
     element["ui_focus_spr_idx"] = self.file.read_int()
 
-    for i in range(5):
+    for _ in range(5):
       print(self.file.read_int())
 
     if version >= 3:
-      x = self.file.read(4)
+      _ = self.file.read(4)
     if version >= 4:
-      x = self.file.read(4)
+      _ = self.file.read(4)
     if version >= 5:
-      x = self.file.read(4)
+      _ = self.file.read(4)
     if version >= 7:
-      x = self.file.read(4)
+      _ = self.file.read(4)
 
     rectangle = [
       self.file.read_int(),
@@ -89,13 +102,12 @@ class SealMenDecoder:
     element["alpha"] = alpha
 
     if version >= 3:
-      x = self.file.read(24)
-      print(x)
+      _x = self.file.read(24)
 
     sublabel = self.file.read_string(100)
     element["sublabel"] = sublabel
 
-    y = self.file.read_int()
+    _ = self.file.read_int()
 
     return element
 
@@ -111,25 +123,5 @@ class SealMenDecoder:
 
     return element
 
-  def _decode_type(self, type: int) -> Union[str, int]:
-    if type == 0:
-      return "image"
-    if type == 1:
-      return "button"
-    if type == 2:
-      return "animation"
-    if type == 3:
-      return "text"
-    if type == 4:
-      return "scrollbar"
-    if type == 5:
-      return "scrollarea"
-    if type == 6:
-      return "input"
-    if type == 7:
-      return "checkbox"
-    if type == 8:
-      return "dragdrop"
-    if type == 9:
-      return "tab"
-    return type
+  def _decode_type(self, element_type: int) -> Union[str, int]:
+    return _ELEMENT_TYPE_NAMES.get(element_type, element_type)

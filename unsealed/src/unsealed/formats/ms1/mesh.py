@@ -65,10 +65,38 @@ class SealMeshMeshDecoder:
     mesh.add_transform_matrix(tm)
     # This could be transformation matrix or 0XCDCDCDCD,
     # that means uninitialized
-    _ = self.file.read(4 * 16)
-    _ = self.file.read(24)
-    _ = self.file.read(12)
-    _ = self.file.read(68)
+    _x = self.file.read(4 * 16)
+    _x = self.file.read(24)
+    _x = self.file.read(12)
+    _x = [
+      self.file.read_float(),
+      self.file.read_float(),
+      self.file.read_float(),
+    ]
+    _x = [
+      self.file.read_float(),
+      self.file.read_float(),
+      self.file.read_float(),
+    ]
+    _x = [
+      self.file.read_float(),
+      self.file.read_float(),
+      self.file.read_float(),
+    ]
+    _x = [
+      self.file.read_float(),
+      self.file.read_float(),
+      self.file.read_float(),
+    ]
+    _x = [
+      self.file.read_float(),
+      self.file.read_float(),
+      self.file.read_float(),
+    ]
+    _x = [
+      self.file.read_float(),
+      self.file.read_float(),
+    ]
 
     self.__decode_vertices(mesh, num_vertices)
     self.__decode_indices(mesh, num_faces)
@@ -78,15 +106,14 @@ class SealMeshMeshDecoder:
     return mesh
 
   def __decode_vertices(self, mesh: Mesh, num_vertices: int) -> None:
-    for x in range(num_vertices):
+    for _ in range(num_vertices):
       decoder = SealMeshVertexDecoder(self.file, mesh.tm)
-      v = decoder.decode()
-      mesh.add_vertex(v)
+      mesh.add_vertex(decoder.decode())
 
   def __decode_indices(self, mesh: Mesh, num_faces: int) -> None:
     num_face_index = num_faces * 3
     indices = []
-    for x in range(num_face_index):
+    for _ in range(num_face_index):
       idx = self.file.read_short()
       indices.append(idx)
     for x in range(num_faces):

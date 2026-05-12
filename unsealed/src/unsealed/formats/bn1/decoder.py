@@ -26,7 +26,7 @@ class SealBoneDecoder:
     _ = self.file.read(4)
     self.count = self.file.read_int()
 
-    for i in range(self.count):
+    for _ in range(self.count):
       decoder = SealBoneBoneDecoder(self.file)
       bone = decoder.decode()
       skeleton.bones[bone.name] = bone

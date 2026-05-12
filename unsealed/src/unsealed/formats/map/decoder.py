@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from ...utils.file import File
@@ -9,7 +8,7 @@ class SealMapDecoder:
   def __init__(self, path: Path) -> None:
     self.version: int = 1
     self.path: Path = path
-    self.filename: str = os.path.splitext(os.path.basename(path))[0].split(".")[0]
+    self.filename: str = path.stem.split(".")[0]
     try:
       with open(path, "rb") as dat:
         self.file: File = File(dat.read())
@@ -20,7 +19,7 @@ class SealMapDecoder:
     if self.file is None:
       raise Exception("File was not initialized properly")
 
-    terrain = Terrain(512, 512)
+    terrain = Terrain(self.filename, 512, 512)
     self.version = self.__decode_version()
 
     if self.version == 5:
@@ -30,13 +29,13 @@ class SealMapDecoder:
 
     s = self.file.read_string(20)
     if self.version > 10:
-      _ = self.file.read(1)
+      _x = self.file.read(1)
 
     s = self.file.read_string(172)
     if self.version == 10:
-      _ = self.file.read(1)
+      _x = self.file.read(1)
 
-    _ = self.file.read(7)
+    _x = self.file.read(7)
 
     if self.version >= 14:
       s = self.file.read_string(40)

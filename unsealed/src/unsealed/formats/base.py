@@ -29,7 +29,7 @@ class BaseFormat(ABC, Generic[T]):
         f"Cannot decode file with extension {path.suffix} with format for {self.extensions}"
       )
     if not path.is_file():
-      raise Exception(f"File not found: {path}")
+      raise FileNotFoundError(f"File not found: {path}")
     return self.decoder(path)
 
   def __can_decode(self, path: Path) -> bool:

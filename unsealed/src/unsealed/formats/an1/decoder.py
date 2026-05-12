@@ -32,7 +32,7 @@ class SealAnimationDecoder:
 
     self.nodes = self.file.read_int()
 
-    for i in range(self.nodes):
+    for _ in range(self.nodes):
       name = self.file.read_string(256)
       node = Animation(self.path, start_frame, end_frame, fps, ticks_per_frame, name)
 
@@ -47,7 +47,7 @@ class SealAnimationDecoder:
     size = self.file.read_int()
     hash_table = []
 
-    for j in range(size):
+    for _ in range(size):
       time = self.file.read_int()
       x = self.file.read_float()
       y = self.file.read_float()
@@ -72,7 +72,7 @@ class SealAnimationDecoder:
     size = self.file.read_int()
     hash_table = []
 
-    for j in range(size):
+    for _ in range(size):
       time = self.file.read_int()
       x = self.file.read_float()
       y = self.file.read_float()
@@ -106,7 +106,7 @@ class SealAnimationDecoder:
     size = self.file.read_int()
     hash_table = []
 
-    for j in range(size):
+    for _ in range(size):
       time = self.file.read_int()
       x = self.file.read_float()
       y = self.file.read_float()

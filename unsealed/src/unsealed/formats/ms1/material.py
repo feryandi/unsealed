@@ -12,26 +12,25 @@ class SealMeshMaterialDecoder:
     self.different_mode: bool = different_mode
 
   def decode(self) -> List[Material]:
-    if self.different_mode:
-      print("Warning: Material is in different_mode")
-
-    materials = []
+    materials: List[Material] = []
     self.count = self.file.read_int()
-    for x in range(self.count):
+    for _ in range(self.count):
       if not self.different_mode:
         material = self.__decode_normal_material()
         # These data block is not available on sub-material
-        _x = [
-          self.file.read_float(),
-          self.file.read_float(),
-          self.file.read_float(),
-          self.file.read_float(),
-          self.file.read_float(),
-          self.file.read_float(),
+        material.material_specular = [
           self.file.read_float(),
           self.file.read_float(),
           self.file.read_float(),
         ]
+        _pad = self.file.read_float()
+        _x = [
+          self.file.read_float(),
+          self.file.read_float(),
+          self.file.read_float(),
+        ]
+        _pad = self.file.read_float()
+        _y = self.file.read_float()
         alpha_mode = self.file.read(1)
         material.alpha_mode = int.from_bytes(alpha_mode, byteorder="little")
 
@@ -40,6 +39,7 @@ class SealMeshMaterialDecoder:
         while self.__is_still_material():
           material = self.__decode_special_material()
           materials.append(material)
+
     return materials
 
   def __decode_normal_material(self) -> Material:
@@ -48,34 +48,42 @@ class SealMeshMaterialDecoder:
     name = self.file.read_string(128)
     material = Material(name, bitmap)
 
-    _x = self.file.read_string(128)
+    material.shader_name = self.file.read_string(128)
+
     num_sub_material = self.file.read_int()
-    _x = [
-      self.file.read_float(),
-      self.file.read_float(),
-      self.file.read_float(),
-      self.file.read_float(),
-      self.file.read_float(),
+    material.material_ambient = [
       self.file.read_float(),
       self.file.read_float(),
       self.file.read_float(),
     ]
+    _pad = self.file.read_float()
+    material.material_diffuse = [
+      self.file.read_float(),
+      self.file.read_float(),
+      self.file.read_float(),
+    ]
+    _pad = self.file.read_float()
 
-    for y in range(num_sub_material):
-      _x = [
-        self.file.read_float(),
-        self.file.read_float(),
-        self.file.read_float(),
-        self.file.read_float(),
-      ]
-      _x = [
-        self.file.read_float(),
+    for _ in range(num_sub_material):
+      sub_material_specular = [
         self.file.read_float(),
         self.file.read_float(),
         self.file.read_float(),
       ]
-      _x = self.file.read(5)
+      _pad = self.file.read_float()
+      _x = [
+        self.file.read_float(),
+        self.file.read_float(),
+        self.file.read_float(),
+      ]
+      _pad = self.file.read_float()
+      _y = self.file.read_float()
+      alpha_mode = self.file.read(1)
+
       submaterial = self.__decode_normal_material()
+      submaterial.material_specular = sub_material_specular
+      submaterial.alpha_mode = int.from_bytes(alpha_mode, byteorder="little")
+
       material.sub_materials.append(submaterial)
     return material
 

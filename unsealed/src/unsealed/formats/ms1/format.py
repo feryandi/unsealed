@@ -8,6 +8,7 @@ from ...assets.model import Model
 from ..ms1.decoder import SealMeshDecoder
 from ..bn1.decoder import SealBoneDecoder
 from ..an1.decoder import SealAnimationDecoder
+from ..sha.decoder import SealShaDecoder
 
 
 class SealMeshFormat(BaseFormat[Model]):
@@ -26,6 +27,10 @@ class SealMeshFormat(BaseFormat[Model]):
     geometry_decoder = SealMeshDecoder(path)
     geometry = geometry_decoder.decode()
     model.add_geometry(geometry)
+
+    sha_path = path.with_suffix(".sha")
+    if sha_path.is_file():
+      model.add_shaders(SealShaDecoder(sha_path).decode())
 
     bone_path = path.with_suffix(".bn1")
     if bone_path.is_file():

@@ -2,6 +2,7 @@ from typing import Dict, List, Optional
 from .skeleton import Skeleton
 from .animation import Animation
 from .geometry import Geometry
+from .shader import Shaders
 from ..core.asset import Asset
 
 
@@ -18,11 +19,12 @@ class Model(Asset):
     self.geometry: Optional[Geometry] = None
     self.animations: Dict[str, List[Animation]] = {}
     self.skeleton: Optional[Skeleton] = None
+    self.shaders: Optional[Shaders] = None
 
   def add_geometry(self, geometry: Geometry) -> None:
     self.geometry = geometry
 
-  def add_animation(self, name: Optional[str], animation: Animation) -> None:
+  def add_animation(self, name: str, animation: Animation) -> None:
     # TODO: Properly support multi-animation
     if name not in self.animations:
       self.animations[name] = []
@@ -31,5 +33,13 @@ class Model(Asset):
   def add_skeleton(self, skeleton: Skeleton) -> None:
     self.skeleton = skeleton
 
+  def add_shaders(self, shaders: Shaders) -> None:
+    self.shaders = shaders
+
   def __repr__(self) -> str:
-    return f"<Model geometry:{self.geometry} skeleton:{self.skeleton} animations:{self.animations}>"
+    return (
+      f"<Model geometry:{self.geometry}"
+      f" skeleton:{self.skeleton}"
+      f" animations:{self.animations}>"
+      f" shaders:{self.shaders}>"
+    )

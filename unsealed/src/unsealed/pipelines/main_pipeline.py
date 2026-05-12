@@ -22,7 +22,7 @@ class MainPipeline:
       raise Exception(f"File not found: {filepath}")
 
     filetype = filepath.suffix
-    setup = SUPPORTED_FILE_TYPES.get(filetype, None)
+    setup = SUPPORTED_FILE_TYPES.get(filetype)
 
     if setup is None:
       raise Exception(f"No pipeline available for file type: {filetype}")
@@ -30,7 +30,4 @@ class MainPipeline:
     setup["pipeline"].run(filepath, output_dir)
 
   def get_supported_file_types(self) -> List[Tuple[str, str]]:
-    list: List[Tuple[str, str]] = []
-    for filetype, info in SUPPORTED_FILE_TYPES.items():
-      list.append((filetype, info["name"]))
-    return list
+    return [(filetype, info["name"]) for filetype, info in SUPPORTED_FILE_TYPES.items()]

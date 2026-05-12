@@ -43,4 +43,8 @@ class Mesh(Asset):
     self.tm = transform_matrix
 
   def __repr__(self) -> str:
-    return f'<Mesh name:"{self.name}">'
+    return (
+      f'<Mesh name:"{self.name}"'
+      f" material_index:{self.material_index}"
+      f" vertices:{len(self.vertices)}>"
+    )

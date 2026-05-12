@@ -23,7 +23,7 @@ class SealSfxDecoder:
 
     _unknown = self.file.read(68)
 
-    while self.file.is_end() is False:
+    while not self.file.is_end():
       _filename = self.file.read_string(256)
       _name = self.file.read_string(256)
 

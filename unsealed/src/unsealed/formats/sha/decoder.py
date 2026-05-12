@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from ...assets.shader import Shaders, Shader
 from ...utils.file import File
 
 
@@ -14,27 +15,27 @@ class SealShaDecoder:
     except Exception:
       raise Exception("Unable to open sha file")
 
-  def decode(self) -> Dict[str, Any]:
+  def decode(self) -> Shaders:
     """
     Decodes the SHA file and returns a list of tuples: (material, shader)
     """
     if self.file is None:
       raise Exception("File was not initialized properly")
 
+    shaders = Shaders()
     num_entries = self.file.read_int()
 
-    shaders = {}
     for _ in range(num_entries):
-      material = self.file.read_string(128)
-      shader = self.file.read_string(128)
+      material_name = self.file.read_string(128)
+      shader_name = self.file.read_string(128)
       sub_material_num = self.file.read_int()
-      item = {
-        "shader": shader,
-        "sub_materials": {},
-      }
+      shader = Shader(material_name, shader_name)
+
       for _ in range(sub_material_num):
-        sub_material = self.file.read_string(128)
-        shader = self.file.read_string(128)
-        item["sub_materials"][sub_material] = {"shader": shader}
-      shaders[material] = item
+        sub_material_name = self.file.read_string(128)
+        shader_name = self.file.read_string(128)
+        shader.sub_shaders.append(Shader(sub_material_name, shader_name))
+
+      shaders.shaders.append(shader)
+
     return shaders

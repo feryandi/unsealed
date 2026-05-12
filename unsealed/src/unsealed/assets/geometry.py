@@ -17,4 +17,4 @@ class Geometry(Asset):
     self.materials: List[Material] = []
 
   def __repr__(self) -> str:
-    return f"<Node meshes:{self.meshes}>"
+    return f"<Geometry meshes:{self.meshes}> materials:{self.materials}>"

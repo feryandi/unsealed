@@ -31,7 +31,7 @@ class SealActorDecoder:
 
     action_num = self.file.read_int()
 
-    for i in range(action_num):
+    for _ in range(action_num):
       # 0: Common
       # 11: Example: T_Pu1.act, N_boyA.act, N_adelA.act, T_Ni2.act
       _x = self.file.read_int()  # TODO

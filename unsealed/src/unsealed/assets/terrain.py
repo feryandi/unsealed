@@ -9,7 +9,8 @@ from ..core.asset import Asset
 
 
 class Terrain(Asset):
-  def __init__(self, width: int, height: int) -> None:
+  def __init__(self, name: str, width: int, height: int) -> None:
+    self.name: str = name
     self.heightmap: List[float] = []
     self.width: int = width
     self.height: int = height

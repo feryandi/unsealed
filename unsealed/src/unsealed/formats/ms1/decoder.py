@@ -24,12 +24,9 @@ class SealMeshDecoder:
     maybe_different_mode = False
 
     ukwn = self.file.read_int()  # Unknown value
-    if ukwn == 0:
-      # Normal mode
-      pass
     if ukwn == 1:
       maybe_non_first_object_has_pad = True
-    if ukwn == 10:
+    elif ukwn == 10:
       # T_Gube1_idle, T_Gube2_idle, T_Gube3_idle, and several other skills
       maybe_different_mode = True
 
@@ -40,7 +37,6 @@ class SealMeshDecoder:
       self.file, maybe_non_first_object_has_pad
     )
     geometry = geometry_decoder.decode()
-    for material in material_list:
-      geometry.materials.append(material)
+    geometry.materials.extend(material_list)
 
     return geometry
