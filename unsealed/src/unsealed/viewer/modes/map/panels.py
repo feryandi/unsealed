@@ -29,6 +29,7 @@ class MapControlPanel(HudPanel):
         "  WASD / Arrows       : Pan",
         "  Scroll              : Zoom (smart pivot)",
         "  O                   : Open file",
+        "  I                   : Inject .ms1 at camera target",
         "  Esc                 : Quit",
       ],
       x=10,

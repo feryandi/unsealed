@@ -69,3 +69,31 @@ class LoadSystem:
                 self.load(Path(path_str), world)
         except Exception as e:
             print(f"[viewer] file dialog error: {e}")
+
+    def open_inject_dialog(self, world: "AppWorld") -> None:
+        """Pick a model file and inject it into the currently-loaded map."""
+        inp = world.inp
+        if inp.captured:
+            inp.captured = False
+            pygame.mouse.set_visible(True)
+            pygame.event.set_grab(False)
+        inp.btn = [False, False, False]
+
+        try:
+            root = tk.Tk()
+            root.withdraw()
+            root.attributes("-topmost", True)
+            path_str = filedialog.askopenfilename(
+                title="Inject Model into Map",
+                filetypes=[
+                    ("Model files", "*.ms1 *.act"),
+                    ("Seal Mesh", "*.ms1"),
+                    ("Actor File", "*.act"),
+                    ("All files", "*.*"),
+                ],
+            )
+            root.destroy()
+            if path_str:
+                world.inject_model(Path(path_str))
+        except Exception as e:
+            print(f"[viewer] inject dialog error: {e}")

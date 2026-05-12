@@ -137,5 +137,74 @@ class AppWorld:
     def open_dialog(self) -> None:
         self._load_sys.open_dialog(self)
 
+    def open_inject_dialog(self) -> None:
+        self._load_sys.open_inject_dialog(self)
+
+    def inject_model(self, path: Path) -> None:
+        """Inject a .ms1 / .act model into the currently-loaded map at the
+        camera's look-at target. No-op if no map is loaded.
+
+        The model becomes one more AnimatedEntity in the map scene — same
+        animation/render path as any baked-in object — proving the Phase 3
+        entity model supports cross-mode composition.
+        """
+        import numpy as np
+
+        from ..modes.map.camera import MapCamera
+        from ..modes.model.mode import ModelMode
+        from ..scenes import AnimatedEntity
+
+        ctx = self.scene.context
+        if ctx is None or not isinstance(ctx.scene, MapScene):
+            print("[viewer] inject_model: no map loaded")
+            return
+
+        map_scene = ctx.scene
+        cam = cast(MapCamera, ctx.camera)
+
+        try:
+            model_scene = ModelMode().decode(path, self.shader_cache)
+        except Exception as e:
+            print(f"[viewer] inject_model decode failed: {e}")
+            return
+
+        if not model_scene.entities:
+            print(f"[viewer] inject_model: {path.name} has no entities")
+            return
+
+        src_entity = model_scene.entities[0]
+
+        # Placement: translate to camera target (already terrain-clamped by MapCamera).
+        placement = np.identity(4, dtype=np.float32)
+        placement[0, 3] = float(cam.target[0])
+        placement[1, 3] = float(cam.target[1])
+        placement[2, 3] = float(cam.target[2])
+        inst_arr = np.array([placement], dtype=np.float32)
+
+        injected_meshes = []
+        for mesh in src_entity.meshes:
+            mesh.instance_matrices = inst_arr
+            map_scene.meshes.append(mesh)
+            injected_meshes.append(mesh)
+
+        map_scene.entities.append(
+            AnimatedEntity(
+                name=path.stem,
+                meshes=injected_meshes,
+                skeleton=src_entity.skeleton,
+                animation_groups=src_entity.animation_groups,
+                source_file=path.name,
+            )
+        )
+
+        # Re-upload scene to GPU and rebuild animation state for new entities.
+        self.render.renderer.load_scene(map_scene)
+        self._anim_sys.load(self.scene.anim, map_scene)
+
+        print(
+            f"[viewer] injected {path.name} at "
+            f"({cam.target[0]:.1f}, {cam.target[1]:.1f}, {cam.target[2]:.1f})"
+        )
+
     def build_hud_panels(self) -> "List[HudPanel]":
         return self._hud_sys.build(self.scene, self.render.q3_enabled)

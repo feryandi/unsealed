@@ -69,6 +69,11 @@ class MapMode(BaseMode):
       panels.append(ObjectDetailPanel(mesh, entity))
     return panels
 
+  def on_key(self, key: int, app: "AppWorld") -> None:
+    from pygame.locals import K_i
+    if key == K_i:
+      app.open_inject_dialog()
+
   def on_mouse_down(self, button: int, pos: tuple[int, int], app: "AppWorld") -> None:
     if button == 1:
       app._lmb_down_pos = pos
