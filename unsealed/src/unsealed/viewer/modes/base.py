@@ -21,6 +21,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, List, Optional, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
+  from numpy.typing import NDArray
+
   from ..app.components.animation import AnimationComponent
   from ..app.context import ViewerContext
   from ..app.world import AppWorld
@@ -44,19 +46,35 @@ class RenderPhase(IntEnum):
 
 @runtime_checkable
 class RenderExtension(Protocol):
-  """A mode-provided draw step plugged into a specific RenderPhase."""
+  """A mode-provided draw step plugged into a specific RenderPhase.
+
+  Lifecycle (driven by the core Renderer):
+    init()              — once, after GL context is ready (compile shaders)
+    upload(scene)       — once per file load, when this extension is active
+    render(ctx, …)      — every frame, at this extension's phase
+    free_scene()        — when a different scene loads (release per-scene GPU state)
+    dispose()           — at Renderer.cleanup() (release everything incl. shaders)
+  """
   phase: RenderPhase
 
-  def upload(self, scene: "ViewerScene") -> None:
-    """Upload any GPU resources needed by this extension for *scene*."""
+  def init(self) -> None:
+    """Compile shaders / allocate one-time GL state. GL context must be active."""
     ...
 
-  def render(self, ctx: "RenderContext") -> None:
-    """Draw this extension's contribution for the current frame."""
+  def upload(self, scene: "ViewerScene") -> None:
+    """Upload per-scene GPU resources (VAOs, textures)."""
+    ...
+
+  def render(self, ctx: "RenderContext", view: "NDArray", proj: "NDArray") -> None:
+    """Draw this extension's contribution. view/proj are already mirror-x-adjusted."""
+    ...
+
+  def free_scene(self) -> None:
+    """Release per-scene GPU state. Keep one-time resources from init()."""
     ...
 
   def dispose(self) -> None:
-    """Release GPU resources owned by this extension."""
+    """Release ALL GPU resources owned by this extension."""
     ...
 
 

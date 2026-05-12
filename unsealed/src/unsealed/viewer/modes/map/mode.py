@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, Iterable, List, Optional, cast
 
-from ..base import BaseMode
+from ..base import BaseMode, RenderExtension
 from .camera import MapCamera
+from .extensions import SkyExtension, TerrainExtension
 from .panels import MapControlPanel
 from .pipeline import MapViewerPipeline
 from .scene import MapScene
@@ -24,6 +25,15 @@ class MapMode(BaseMode):
   name = "map"
   extensions = (".map",)
   scene_type = MapScene
+
+  def __init__(self) -> None:
+    self._render_extensions: List[RenderExtension] = [
+      SkyExtension(),
+      TerrainExtension(),
+    ]
+
+  def render_extensions(self) -> "Iterable[RenderExtension]":
+    return self._render_extensions
 
   def decode(
     self, path: Path, shader_cache: Optional[dict] = None

@@ -43,8 +43,8 @@ from OpenGL.GL import (
   GL_UNSIGNED_INT,
 )
 
-from .shaders import _compile_prog, _u_mat4, _upload_rgba, _TERRAIN_VERT, _TERRAIN_FRAG
-from ..modes.map.scene import MapScene
+from ...rendering.shaders import _compile_prog, _u_mat4, _upload_rgba, _TERRAIN_VERT, _TERRAIN_FRAG
+from .scene import MapScene
 
 
 class TerrainRenderer:

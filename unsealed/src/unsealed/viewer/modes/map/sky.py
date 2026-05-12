@@ -48,9 +48,9 @@ from OpenGL.GL import (
     GL_TRUE,
 )
 
-from .shaders import _SKY_FRAG, _SKY_VERT, _compile_prog, _u_mat4, _upload_rgba
-from ..scenes import ViewerMesh
-from .types import _STRIDE_PLAIN
+from ...rendering.shaders import _SKY_FRAG, _SKY_VERT, _compile_prog, _u_mat4, _upload_rgba
+from ...rendering.types import _STRIDE_PLAIN
+from ...scenes import ViewerMesh
 
 
 class SkyRenderer:

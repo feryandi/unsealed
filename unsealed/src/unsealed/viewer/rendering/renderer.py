@@ -1,20 +1,26 @@
 """
-OpenGL renderer — ECS + deferred rendering.
+OpenGL renderer — ECS + deferred rendering with mode-driven RenderExtensions.
 
-load_scene() uploads a ViewerScene to GPU and populates RenderRegistry.
-render(RenderContext) orchestrates:
-  1. G-Buffer pass  — opaque geometry → albedo + normal textures
-  2. Lighting pass  — fullscreen deferred Blinn-Phong quad
-  3. Depth blit     — G-Buffer depth → default FBO
-  4. Terrain pass   — forward (map mode only)
-  5. Transparent    — forward pass for alpha < 1 primitives
-  6. Overlays       — wireframe / selection highlight
+load_scene() uploads a ViewerScene to GPU, populates RenderRegistry, and asks
+the scene's Mode for the RenderExtensions it wants run this frame.
+
+render(RenderContext) orchestrates, in this fixed order:
+  1. G-Buffer pass        — opaque geometry → albedo + normal MRT
+  2. Lighting pass        — fullscreen deferred Blinn-Phong quad
+  3. Depth blit           — G-Buffer depth → default FBO
+  4. BACKGROUND phase     — mode extensions (e.g. sky)
+  5. FORWARD_OPAQUE phase — mode extensions (e.g. terrain)
+  6. FORWARD_Q3 phase     — mode extensions + core Q3 multi-stage pass
+  7. TRANSPARENT phase    — mode extensions + core alpha-blend pass
+  8. OVERLAY phase        — mode extensions + core wireframe / selection
 """
 
 from __future__ import annotations
 
 import ctypes
 from typing import Dict, List, Optional, Tuple
+
+from ..modes.base import RenderExtension, RenderPhase
 
 import numpy as np
 from numpy.typing import NDArray
@@ -76,8 +82,6 @@ from OpenGL.GL import (
 
 from ..modes.image.camera import ImageCamera
 from ..modes.image.scene import ImageScene
-from ..modes.map.camera import MapCamera
-from ..modes.map.scene import MapScene
 from ..modes.model.camera import OrbitCamera
 from ..scenes import ViewerScene
 from .components import BoundsComp, GpuBufferComp, MaterialComp, TransformComp
@@ -104,8 +108,6 @@ from .shaders import (
     _u_vec3,
     _upload_rgba,
 )
-from .sky import SkyRenderer
-from .terrain import TerrainRenderer
 from .types import (
     DrawCommand,
     HudPanel,
@@ -167,18 +169,17 @@ class Renderer:
         self._image_w: int = 0
         self._image_h: int = 0
 
-        # Map / terrain state
-        self._is_map: bool = False
-
         # Render passes
         self._gbuffer = GBufferPass()
         self._lighting = LightingPass()
         self._overlay: Optional[OverlayPass] = None
-
-        # Sub-renderers
-        self._sky = SkyRenderer()
-        self._terrain = TerrainRenderer()
         self._hud = HudRenderer()
+
+        # Mode-supplied render extensions. _all_extensions is the union across
+        # all modes (init+dispose lifecycle); _active_extensions is the subset
+        # for the currently-loaded scene (upload/render/free_scene lifecycle).
+        self._all_extensions: List[RenderExtension] = []
+        self._active_extensions: List[RenderExtension] = []
 
     # ── lifecycle ─────────────────────────────────────────────────────────────
 
@@ -204,9 +205,19 @@ class Renderer:
 
         self._q3_prog = _compile_prog(_Q3STAGE_VERT, _Q3STAGE_FRAG)
 
-        self._sky.init()
-        self._terrain.init()
         self._hud.init()
+
+        # Eagerly init render extensions from every registered Mode so terrain
+        # /sky shaders compile once at startup, not on first map load.
+        from ..modes import MODES
+        seen: set = set()
+        for mode in MODES:
+            for ext in mode.render_extensions():
+                if id(ext) in seen:
+                    continue
+                seen.add(id(ext))
+                self._all_extensions.append(ext)
+                ext.init()
 
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
@@ -217,8 +228,10 @@ class Renderer:
     def cleanup(self) -> None:
         self._registry.free()
         self._free_image()
-        self._sky.cleanup()
-        self._terrain.cleanup()
+        for ext in self._all_extensions:
+            ext.dispose()
+        self._all_extensions = []
+        self._active_extensions = []
         self._hud.cleanup()
         self._gbuffer.cleanup()
         self._lighting.cleanup()
@@ -245,10 +258,23 @@ class Renderer:
         """Upload a ViewerScene to GPU memory. Replaces any previously loaded scene."""
         self._registry.free()
         self._free_image()
-        self._sky.free_scene()
-        self._terrain.free_scene()
+        # Drop per-scene state from the previously-active extensions before
+        # rebinding _active_extensions to the new mode's set.
+        for ext in self._active_extensions:
+            ext.free_scene()
         self._is_2d = isinstance(scene, ImageScene)
-        self._is_map = isinstance(scene, MapScene)
+
+        # Resolve the scene's Mode and snapshot its render extensions.
+        from ..modes import for_scene
+        try:
+            active_mode = for_scene(scene)
+        except ValueError:
+            active_mode = None
+        self._active_extensions = (
+            list(active_mode.render_extensions()) if active_mode else []
+        )
+        for ext in self._active_extensions:
+            ext.upload(scene)
 
         if isinstance(scene, ImageScene):
             if scene.image is not None:
@@ -256,11 +282,6 @@ class Renderer:
             self._image_w = scene.image_w
             self._image_h = scene.image_h
             return
-
-        if isinstance(scene, MapScene):
-            self._terrain.upload(scene)
-            self._sky.upload(scene.sky_meshes)
-            # Fall through to also upload object meshes (scene.meshes)
 
         for eid, mesh in enumerate(scene.meshes):  # type: ignore[union-attr]
             vao = glGenVertexArrays(1)
@@ -405,44 +426,48 @@ class Renderer:
         light_dir = np.array([0.45, -0.85, 0.35], dtype=np.float32)
         light_dir /= np.linalg.norm(light_dir)
 
-        if not self._registry.buffers:
-            if self._is_map:
-                self._sky.render(view, proj, ctx.time)
-                self._terrain.render(view, proj)
+        has_meshes = bool(self._registry.buffers)
+
+        if has_meshes:
+            opaque, transparent, q3_commands = self._build_commands(ctx)
+
+            # 1. G-Buffer pass — opaque geometry
+            self._gbuffer.begin(ctx.width, ctx.height)
+            self._gbuffer.draw(self._registry, opaque, view, proj)
+            self._gbuffer.end()
+
+            # 2. Deferred lighting fullscreen quad
+            self._lighting.render(self._gbuffer.albedo_tex, self._gbuffer.normal_tex, light_dir)
+
+            # 3. Blit G-Buffer depth → default FBO
+            self._gbuffer.blit_depth(ctx.width, ctx.height)
+        else:
+            transparent = []
+            q3_commands = []
+
+        # 4. BACKGROUND phase — sky / environment
+        self._run_phase(RenderPhase.BACKGROUND, ctx, view, proj)
+
+        # 5. FORWARD_OPAQUE phase — terrain / other forward opaque
+        self._run_phase(RenderPhase.FORWARD_OPAQUE, ctx, view, proj)
+
+        if not has_meshes:
             return
 
-        opaque, transparent, q3_commands = self._build_commands(ctx)
-
-        # 1. G-Buffer pass — opaque geometry
-        self._gbuffer.begin(ctx.width, ctx.height)
-        self._gbuffer.draw(self._registry, opaque, view, proj)
-        self._gbuffer.end()
-
-        # 2. Deferred lighting fullscreen quad
-        self._lighting.render(self._gbuffer.albedo_tex, self._gbuffer.normal_tex, light_dir)
-
-        # 3. Blit G-Buffer depth → default FBO
-        self._gbuffer.blit_depth(ctx.width, ctx.height)
-
-        # 4. Sky dome (map mode) — drawn at depth 1.0, behind all geometry
-        if self._is_map:
-            self._sky.render(view, proj, ctx.time)
-
-        # 4b. Terrain forward pass (map mode)
-        if self._is_map:
-            self._terrain.render(view, proj)
-
-        # 5. Q3 shader stage pass
+        # 6. FORWARD_Q3 phase — extensions + core Q3 multi-stage pass
+        self._run_phase(RenderPhase.FORWARD_Q3, ctx, view, proj)
         if q3_commands and ctx.q3_enabled:
             self._draw_q3_stages(q3_commands, ctx, view, proj)
 
-        # 5b. Transparent forward pass — alpha < 1 primitives excluded from G-Buffer
+        # 7. TRANSPARENT phase — extensions + core alpha-blend pass
+        self._run_phase(RenderPhase.TRANSPARENT, ctx, view, proj)
         if transparent:
             self._draw_forward(transparent, ctx, view, proj, light_dir)
 
         glDepthMask(GL_TRUE)
 
-        # 6. Overlays
+        # 8. OVERLAY phase — extensions + core wireframe / selection
+        self._run_phase(RenderPhase.OVERLAY, ctx, view, proj)
         if self._overlay is not None:
             if ctx.wireframe:
                 self._overlay.render_wireframe(self._registry, view, proj)
@@ -450,6 +475,18 @@ class Renderer:
                 self._overlay.render_selection(
                     self._registry, ctx.selected_mesh_idx, view, proj
                 )
+
+    def _run_phase(
+        self,
+        phase: RenderPhase,
+        ctx: RenderContext,
+        view: NDArray,
+        proj: NDArray,
+    ) -> None:
+        """Call render(ctx, view, proj) on every active extension with this phase."""
+        for ext in self._active_extensions:
+            if ext.phase == phase:
+                ext.render(ctx, view, proj)
 
     def render_hud(
         self,
