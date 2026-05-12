@@ -54,7 +54,12 @@ class ViewerPrimitive:
 
 @dataclass
 class ViewerMesh:
-  """One mesh: interleaved GPU-ready vertex buffer + one primitive per sub-material."""
+  """One mesh: interleaved GPU-ready vertex buffer + one primitive per sub-material.
+
+  Animation membership (skeleton + animation_groups) and origin (source_file)
+  live on the owning AnimatedEntity, not on the mesh — a mesh is a pure
+  geometry container.
+  """
 
   name: str
   # float32, interleaved layout:
@@ -68,11 +73,6 @@ class ViewerMesh:
   # If set, mesh is drawn via glDrawElementsInstanced.
   # Shape (N, 4, 4) float32 row-major — one world transform per instance.
   instance_matrices: Optional[NDArray] = None
-  # Set for animated map objects so the renderer can run skeletal animation.
-  skeleton: Optional[ViewerSkeleton] = None
-  animation_groups: List[ViewerAnimationGroup] = field(default_factory=list)
-  # Original source file name (e.g. "fence01.ms1") — set for map object meshes.
-  source_file: Optional[str] = None
   # Parent mesh name (from ms1 hierarchy). None for root meshes.
   parent_name: Optional[str] = None
   # Local transform relative to the parent mesh — inv(parent_world) @ child_world.

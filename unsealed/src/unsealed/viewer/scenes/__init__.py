@@ -1,3 +1,4 @@
+from .entity import AnimatedEntity
 from .scene import (
   ViewerAnimationGroup,
   ViewerBone,
@@ -12,6 +13,7 @@ from .three_dimensional_scene import ThreeDimensionalScene
 from .viewer_scene import ViewerScene
 
 __all__ = [
+  "AnimatedEntity",
   "ThreeDimensionalScene",
   "ViewerAnimationGroup",
   "ViewerBone",

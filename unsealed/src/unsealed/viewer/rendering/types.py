@@ -122,15 +122,20 @@ class DrawCommand:
 
 @dataclass
 class RenderContext:
-    """All per-frame inputs the renderer needs."""
+    """All per-frame inputs the renderer needs.
+
+    `bone_matrices` and `node_matrices` are unified across model/map modes:
+    keyed by GLOBAL mesh index (index into `scene.meshes`), produced by
+    `AnimationSystem.update()`. A mesh that's not animated this frame simply
+    has no entry — the renderer falls back to its static `model_matrix`.
+    """
 
     camera: object  # OrbitCamera | ImageCamera | MapCamera
     width: int
     height: int
     wireframe: bool = False
-    bone_matrices: Optional[List[NDArray]] = None
-    map_bone_matrices: Optional[Dict[int, List[NDArray]]] = None
-    map_node_matrices: Optional[Dict[int, NDArray]] = None
+    bone_matrices: Dict[int, List[NDArray]] = field(default_factory=dict)
+    node_matrices: Dict[int, NDArray] = field(default_factory=dict)
     selected_mesh_idx: Optional[int] = None
     time: float = 0.0
     q3_enabled: bool = True

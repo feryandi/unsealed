@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from ...scenes import ViewerMesh
+from ...scenes import AnimatedEntity, ViewerMesh
 from ..image.pipeline import TexViewerPipeline
 from ..model.pipeline import ModelViewerPipeline
 from .scene import MapScene
@@ -139,22 +139,32 @@ class MapViewerPipeline:
 
       inst_arr = np.stack(inst_mats, axis=0).astype(np.float32)
 
+      # All this obj file's meshes form one AnimatedEntity. The entity's
+      # skeleton + animation_groups come from the obj_scene's single entity.
+      obj_entity = obj_scene.entities[0] if obj_scene.entities else None
+      entity_meshes: List[ViewerMesh] = []
       for mesh in obj_scene.meshes:
-        scene.meshes.append(
-          ViewerMesh(
-            name=mesh.name,
-            vertex_data=mesh.vertex_data,
-            model_matrix=mesh.model_matrix,
-            is_skinned=mesh.is_skinned,
-            primitives=mesh.primitives,
-            instance_matrices=inst_arr,
-            skeleton=obj_scene.skeleton,
-            animation_groups=obj_scene.animation_groups,
-            source_file=filename,
-            parent_name=mesh.parent_name,
-            local_model_matrix=mesh.local_model_matrix,
-          )
+        new_mesh = ViewerMesh(
+          name=mesh.name,
+          vertex_data=mesh.vertex_data,
+          model_matrix=mesh.model_matrix,
+          is_skinned=mesh.is_skinned,
+          primitives=mesh.primitives,
+          instance_matrices=inst_arr,
+          parent_name=mesh.parent_name,
+          local_model_matrix=mesh.local_model_matrix,
         )
+        scene.meshes.append(new_mesh)
+        entity_meshes.append(new_mesh)
+      scene.entities.append(
+        AnimatedEntity(
+          name=Path(filename).stem,
+          meshes=entity_meshes,
+          skeleton=obj_entity.skeleton if obj_entity is not None else None,
+          animation_groups=obj_entity.animation_groups if obj_entity is not None else [],
+          source_file=filename,
+        )
+      )
 
       total_types += 1
 

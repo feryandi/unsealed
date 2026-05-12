@@ -1,108 +1,173 @@
-"""AnimationSystem — stateless processor for AnimationComponent."""
+"""AnimationSystem — stateless processor for AnimationComponent.
+
+Iterates `scene.entities` uniformly: each entity has its own playback state
+in `component.states[i]`. After update(), `component.bone_matrices` and
+`component.node_matrices` are flat dicts keyed by global mesh index, which
+the renderer consumes through RenderContext.
+"""
 
 from __future__ import annotations
 
-from typing import Iterable, Optional, Tuple
+from typing import Optional
 
 import numpy as np
-from numpy.typing import NDArray
 
 from ...animation import Animator, NodeAnimator
-from ...modes import MapScene, ModelScene
-from ..components.animation import AnimationComponent
+from ...modes import ModelScene
+from ...scenes import AnimatedEntity, ThreeDimensionalScene
+from ..components.animation import AnimationComponent, EntityAnimState
 
 
 class AnimationSystem:
-  def load(self, component: AnimationComponent, scene: ModelScene | MapScene) -> None:
-    """Reset all animation state and initialise animators for the new scene."""
+  # ── lifecycle ─────────────────────────────────────────────────────────────
+
+  def load(self, component: AnimationComponent, scene: object) -> None:
+    """Build EntityAnimState per entity and prime mesh lookups."""
     self._reset(component)
 
-    # Build name → mesh_idx lookup (scoped by source_file for map objects)
-    component.mesh_src_name_to_idx = {
-      (m.name.lower(), m.source_file): i for i, m in enumerate(scene.meshes)
-    }
+    if not isinstance(scene, ThreeDimensionalScene):
+      return
 
-    if isinstance(scene, MapScene):
-      self._init_map_animators(component, scene)
-    elif isinstance(scene, ModelScene) and scene.animation_groups:
-      component.enabled = True
-      self.select(component, scene, 0)
+    mesh_to_idx = {id(m): i for i, m in enumerate(scene.meshes)}
+
+    for ent_idx, entity in enumerate(scene.entities):
+      state = EntityAnimState()
+
+      for local_idx, mesh in enumerate(entity.meshes):
+        gm_idx = mesh_to_idx.get(id(mesh))
+        if gm_idx is None:
+          continue
+        component.mesh_to_entity[gm_idx] = ent_idx
+        component.mesh_to_local[gm_idx] = local_idx
+        component.mesh_src_name_to_idx[(mesh.name.lower(), entity.source_file)] = gm_idx
+
+      if entity.animation_groups:
+        state.enabled = True
+        self._select_entity(state, entity, 0)
+
+      component.states.append(state)
+
+    # UI semantics: ModelScene → first enabled entity is primary, starts paused.
+    # MapScene → no primary, auto-play every enabled entity.
+    if isinstance(scene, ModelScene):
+      for i, s in enumerate(component.states):
+        if s.enabled:
+          component.primary_entity = i
+          break
+    else:
+      for s in component.states:
+        if s.enabled:
+          s.playing = True
+
+  # ── primary-entity controls (UI) ─────────────────────────────────────────
+
+  def select(self, component: AnimationComponent, scene: object, idx: int) -> None:
+    """Switch the primary entity's active animation group."""
+    state = component.primary
+    if state is None or not isinstance(scene, ThreeDimensionalScene):
+      return
+    entity = scene.entities[component.primary_entity]  # type: ignore[index]
+    self._select_entity(state, entity, idx)
+
+  def toggle_play(self, component: AnimationComponent) -> None:
+    state = component.primary
+    if state is not None and state.enabled:
+      state.playing = not state.playing
+
+  def stop(self, component: AnimationComponent) -> None:
+    state = component.primary
+    if state is None or not state.enabled:
+      return
+    state.playing = False
+    state.time = 0.0
+    if state.animator is not None:
+      state.bone_matrices = state.animator.compute(0.0)
+
+  def scrub(self, component: AnimationComponent, scene: object, delta: float) -> None:
+    """Move primary entity's playback cursor (only when paused)."""
+    state = component.primary
+    if state is None or not state.enabled or state.playing:
+      return
+    state.time = max(0.0, min(state.duration, state.time + delta))
+    if state.animator is not None:
+      state.bone_matrices = state.animator.compute(state.time)
+
+  # ── per-frame update ─────────────────────────────────────────────────────
+
+  def update(self, component: AnimationComponent, scene: object, dt: float) -> None:
+    """Advance every entity's clock and rebuild renderer-facing matrices."""
+    if not isinstance(scene, ThreeDimensionalScene):
+      return
+
+    # 1. Advance each entity's time + compute per-entity matrices.
+    for state in component.states:
+      if not state.enabled or state.duration <= 0.0:
+        continue
+      if state.playing:
+        state.time = (state.time + dt) % state.duration
+      if state.animator is not None:
+        state.bone_matrices = state.animator.compute(state.time)
+      for local_idx, na in state.node_animators.items():
+        state.node_matrices[local_idx] = na.compute(state.time)
+
+    # 2. Flatten to renderer-facing per-mesh dicts. Process in scene.meshes
+    #    order so children see their parents' already-composed world matrix.
+    component.bone_matrices = {}
+    component.node_matrices = {}
+
+    for gm_idx, mesh in enumerate(scene.meshes):
+      ent_idx = component.mesh_to_entity.get(gm_idx)
+      if ent_idx is None:
+        continue
+      state = component.states[ent_idx]
+      entity = scene.entities[ent_idx]
+      local_idx = component.mesh_to_local[gm_idx]
+
+      if mesh.is_skinned:
+        if state.bone_matrices is not None:
+          component.bone_matrices[gm_idx] = state.bone_matrices
+        continue
+
+      if local_idx not in state.node_matrices:
+        continue
+      local_animated = state.node_matrices[local_idx]
+      component.node_matrices[gm_idx] = self._compose_parent(
+        component, scene, entity, mesh, local_animated
+      )
+
+  # ── private ──────────────────────────────────────────────────────────────
 
   def _reset(self, component: AnimationComponent) -> None:
-    """Clear all fields back to defaults."""
-    component.enabled = False
-    component.group_idx = 0
-    component.time = 0.0
-    component.playing = False
-    component.animator = None
-    component.bone_matrices = None
-    component.node_animators = {}
-    component.node_matrices = {}
-    component.map_anim_states = {}
-    component.mesh_skel_id = {}
-    component.map_bone_matrices = {}
-    component.map_node_anim_states = {}
-    component.map_node_matrices = {}
-    component.mesh_src_name_to_idx = {}
+    component.states.clear()
+    component.primary_entity = None
+    component.bone_matrices.clear()
+    component.node_matrices.clear()
+    component.mesh_to_entity.clear()
+    component.mesh_to_local.clear()
+    component.mesh_src_name_to_idx.clear()
 
-  def _init_map_animators(
-    self, component: AnimationComponent, scene: MapScene
+  def _select_entity(
+    self, state: EntityAnimState, entity: AnimatedEntity, idx: int
   ) -> None:
-    """Set up per-object animators for map mode (mirrors viewer.js one-mixer-per-clone)."""
-    for mesh_idx, mesh in enumerate(scene.meshes):
-      if not mesh.animation_groups:
-        continue
-      group = mesh.animation_groups[0]
-
-      if mesh.is_skinned and mesh.skeleton:
-        skel_id = id(mesh.skeleton)
-        component.mesh_skel_id[mesh_idx] = skel_id
-        if skel_id not in component.map_anim_states:
-          anim = Animator(mesh.skeleton, group)
-          component.map_anim_states[skel_id] = [anim, 0.0, group.duration]
-
-      elif not mesh.is_skinned:
-        mesh_name_lc = mesh.name.lower()
-        ba_match = next(
-          (ba for ba in group.bone_animations if ba.bone_name.lower() == mesh_name_lc),
-          None,
-        )
-        if ba_match is not None:
-          local_mat = (
-            mesh.local_model_matrix
-            if mesh.local_model_matrix is not None
-            else mesh.model_matrix
-          )
-          na = NodeAnimator(ba_match, local_mat)
-          component.map_node_anim_states[mesh_idx] = [na, 0.0, group.duration]
-
-
-  def select(
-    self, component: AnimationComponent, scene: ModelScene, idx: int
-  ) -> None:
-    """Switch to a different animation group and rebuild standalone animators."""
-    if not scene.animation_groups:
+    """Bind the entity's animator(s) to animation_groups[idx]; reset clock."""
+    if not entity.animation_groups:
       return
-    component.group_idx = idx
-    component.time = 0.0
-    group = scene.animation_groups[idx]
+    state.group_idx = idx
+    state.time = 0.0
+    group = entity.animation_groups[idx]
+    state.duration = group.duration
 
-    # Use bone animation only when the scene actually has skinned meshes.
-    # A file can have a skeleton (e.g. a single dummy bone) without any
-    # physique data — in that case node-transform animation must be used.
-    has_skinned = any(m.is_skinned for m in scene.meshes)
-    if scene.skeleton is not None and has_skinned:
-      component.animator = Animator(scene.skeleton, group)
-      component.bone_matrices = component.animator.compute(0.0)
+    has_skinned = any(m.is_skinned for m in entity.meshes)
+    if entity.skeleton is not None and has_skinned:
+      state.animator = Animator(entity.skeleton, group)
+      state.bone_matrices = state.animator.compute(0.0)
     else:
-      component.animator = None
-      component.bone_matrices = None
+      state.animator = None
+      state.bone_matrices = None
 
-    # Always build node animators for non-skinned meshes regardless of whether
-    # a skeleton is present (bone and node animation are orthogonal).
-    component.node_animators = {}
-    component.node_matrices = {}
-    for mesh_idx, mesh in enumerate(scene.meshes):
+    state.node_animators = {}
+    state.node_matrices = {}
+    for local_idx, mesh in enumerate(entity.meshes):
       if mesh.is_skinned:
         continue
       mesh_name_lc = mesh.name.lower()
@@ -110,131 +175,33 @@ class AnimationSystem:
         (ba for ba in group.bone_animations if ba.bone_name.lower() == mesh_name_lc),
         None,
       )
-      if ba_match is not None:
-        local_mat = (
-          mesh.local_model_matrix
-          if mesh.local_model_matrix is not None
-          else mesh.model_matrix
-        )
-        component.node_animators[mesh_idx] = NodeAnimator(ba_match, local_mat)
-        component.node_matrices[mesh_idx] = component.node_animators[mesh_idx].compute(0.0)
-
-  def toggle_play(self, component: AnimationComponent) -> None:
-    if component.enabled:
-      component.playing = not component.playing
-
-  def stop(self, component: AnimationComponent) -> None:
-    if component.enabled:
-      component.playing = False
-      component.time = 0.0
-      if component.animator is not None:
-        component.bone_matrices = component.animator.compute(0.0)
-
-  def scrub(
-    self, component: AnimationComponent, scene: ModelScene, delta: float
-  ) -> None:
-    """Move the playback cursor by delta seconds (only when paused)."""
-    if not component.enabled or component.playing:
-      return
-    group = scene.animation_groups[component.group_idx]
-    component.time = max(0.0, min(group.duration, component.time + delta))
-    if component.animator is not None:
-      component.bone_matrices = component.animator.compute(component.time)
-
-  def update(
-    self,
-    component: AnimationComponent,
-    scene: Optional[ModelScene | MapScene],
-    dt: float,
-  ) -> None:
-    """Advance all active animators by dt seconds."""
-    if scene is None:
-      return
-
-    if isinstance(scene, MapScene):
-      self._update_map(component, scene, dt)
-
-    self._update_standalone(component, scene, dt)
-
-  def _compose_node_mats(
-    self,
-    component: AnimationComponent,
-    scene: ModelScene | MapScene,
-    animated_pairs: Iterable[Tuple[int, NDArray]],
-  ) -> dict:
-    """
-    Compose local animated matrices with parent world matrices.
-
-    Accepts an iterable of (mesh_idx, local_animated_matrix) pairs and returns
-    a dict of world matrices, honouring parent_name hierarchy within the scene.
-    """
-    result: dict = {}
-    for mesh_idx, local_animated in animated_pairs:
-      mesh = scene.meshes[mesh_idx]
-      if mesh.parent_name:
-        p_idx = component.mesh_src_name_to_idx.get(
-          (mesh.parent_name.lower(), mesh.source_file)
-        )
-        if p_idx is not None:
-          parent_world = result.get(p_idx, scene.meshes[p_idx].model_matrix)
-          result[mesh_idx] = np.asarray(parent_world @ local_animated, dtype=np.float32)
-        else:
-          result[mesh_idx] = local_animated
-      else:
-        result[mesh_idx] = local_animated
-    return result
-
-  def _update_map(
-    self, component: AnimationComponent, scene: MapScene, dt: float
-  ) -> None:
-    """Advance map object animators (bone-based + node-transform)."""
-    # Type A: bone-based (physique ms1 with skeleton)
-    for state in component.map_anim_states.values():
-      anim, t, dur = state
-      if dur > 0.0:
-        state[1] = (t + dt) % dur
-
-    component.map_bone_matrices = {
-      mesh_idx: component.map_anim_states[skel_id][0].compute(
-        component.map_anim_states[skel_id][1]
+      if ba_match is None:
+        continue
+      local_mat = (
+        mesh.local_model_matrix
+        if mesh.local_model_matrix is not None
+        else mesh.model_matrix
       )
-      for mesh_idx, skel_id in component.mesh_skel_id.items()
-    }
+      state.node_animators[local_idx] = NodeAnimator(ba_match, local_mat)
+      state.node_matrices[local_idx] = state.node_animators[local_idx].compute(0.0)
 
-    # Type B: node-transform (non-physique ms1, .an1 targets mesh node)
-    for state in component.map_node_anim_states.values():
-      na, t, dur = state
-      if dur > 0.0:
-        state[1] = (t + dt) % dur
-
-    component.map_node_matrices = self._compose_node_mats(
-      component,
-      scene,
-      ((idx, state[0].compute(state[1])) for idx, state in component.map_node_anim_states.items()),
+  def _compose_parent(
+    self,
+    component: AnimationComponent,
+    scene: ThreeDimensionalScene,
+    entity: AnimatedEntity,
+    mesh,
+    local_animated,
+  ):
+    """Multiply local_animated by the parent's world matrix (animated or bind)."""
+    if not mesh.parent_name:
+      return local_animated
+    p_idx = component.mesh_src_name_to_idx.get(
+      (mesh.parent_name.lower(), entity.source_file)
     )
-
-  def _update_standalone(
-    self,
-    component: AnimationComponent,
-    scene: ModelScene | MapScene,
-    dt: float,
-  ) -> None:
-    """Advance the standalone scene animation cursor and compute matrices."""
-    if not component.enabled or not isinstance(scene, ModelScene):
-      return
-
-    group = scene.animation_groups[component.group_idx]
-
-    if component.playing and group.duration > 0.0:
-      component.time += dt
-      component.time %= group.duration
-
-    if component.animator is not None:
-      component.bone_matrices = component.animator.compute(component.time)
-    if component.node_animators:
-      # Non-physique standalone ms1: compose parent_world @ local_animated
-      component.node_matrices = self._compose_node_mats(
-        component,
-        scene,
-        ((idx, na.compute(component.time)) for idx, na in component.node_animators.items()),
-      )
+    if p_idx is None:
+      return local_animated
+    parent_world = component.node_matrices.get(p_idx)
+    if parent_world is None:
+      parent_world = scene.meshes[p_idx].model_matrix
+    return np.asarray(parent_world @ local_animated, dtype=np.float32)

@@ -79,11 +79,7 @@ class ViewerApp:
                     height=win.height,
                     wireframe=rend.wireframe,
                     bone_matrices=scene.anim.bone_matrices,
-                    map_bone_matrices=scene.anim.map_bone_matrices,
-                    map_node_matrices={
-                        **scene.anim.map_node_matrices,
-                        **scene.anim.node_matrices,
-                    },
+                    node_matrices=scene.anim.node_matrices,
                     selected_mesh_idx=scene.selected_mesh_idx,
                     time=_time,
                     q3_enabled=rend.q3_enabled,

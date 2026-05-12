@@ -59,7 +59,14 @@ class MapMode(BaseMode):
     scene = cast(MapScene, ctx.scene)
     panels: "List[HudPanel]" = [MapControlPanel(scene, ctx.path, q3_enabled)]
     if selected_idx is not None and 0 <= selected_idx < len(scene.meshes):
-      panels.append(ObjectDetailPanel(scene.meshes[selected_idx]))
+      mesh = scene.meshes[selected_idx]
+      ent_idx = anim.mesh_to_entity.get(selected_idx)
+      entity = (
+        scene.entities[ent_idx]
+        if ent_idx is not None and ent_idx < len(scene.entities)
+        else None
+      )
+      panels.append(ObjectDetailPanel(mesh, entity))
     return panels
 
   def on_mouse_down(self, button: int, pos: tuple[int, int], app: "AppWorld") -> None:

@@ -11,6 +11,7 @@ from unsealed.assets import Material
 
 from ...camera import compute_bounds
 from ...scenes import (
+  AnimatedEntity,
   ViewerAnimationGroup,
   ViewerBone,
   ViewerBoneAnimation,
@@ -218,11 +219,18 @@ class ModelViewerPipeline:
       pts = np.stack(all_pos)
       scene.bounds_center, scene.bounds_radius = compute_bounds(pts)
 
-    if model.skeleton is not None:
-      scene.skeleton = cls._build_skeleton(model.skeleton)
-
-    if model.animations:
-      scene.animation_groups = cls._build_animation_groups(model.animations)
+    # Wrap all the file's meshes in one AnimatedEntity. The entity owns the
+    # skeleton + animation groups (formerly scene-level fields).
+    skeleton = cls._build_skeleton(model.skeleton) if model.skeleton is not None else None
+    anim_groups = cls._build_animation_groups(model.animations) if model.animations else []
+    scene.entities.append(
+      AnimatedEntity(
+        name=path.stem,
+        meshes=list(scene.meshes),
+        skeleton=skeleton,
+        animation_groups=anim_groups,
+      )
+    )
 
     return scene
 

@@ -47,16 +47,18 @@ class ModelMode(BaseMode):
 
     scene = cast(ModelScene, ctx.scene)
     panels: "List[HudPanel]" = [ModelControlPanel(scene, ctx.path, q3_enabled)]
-    if anim.enabled:
-      group = scene.animation_groups[anim.group_idx]
-      anim_names = [g.name for g in scene.animation_groups]
-      panels.append(AnimationListPanel(anim_names, anim.group_idx))
+    primary = anim.primary
+    if primary is not None and primary.enabled and scene.entities:
+      entity = scene.entities[anim.primary_entity]  # type: ignore[index]
+      group = entity.animation_groups[primary.group_idx]
+      anim_names = [g.name for g in entity.animation_groups]
+      panels.append(AnimationListPanel(anim_names, primary.group_idx))
       panels.append(
         PlaybackControlPanel(
           group_name=group.name,
-          current_time=anim.time,
+          current_time=primary.time,
           duration=group.duration,
-          playing=anim.playing,
+          playing=primary.playing,
         )
       )
     return panels
@@ -81,19 +83,23 @@ class ModelMode(BaseMode):
     elif key == K_BACKSPACE:
       app.anim_stop()
     elif key == K_UP:
-      if app.scene.anim.enabled:
-        ctx = app.scene.context
-        if ctx is not None:
-          scene = cast(ModelScene, ctx.scene)
-          n = len(scene.animation_groups)
-          app.anim_select((app.scene.anim.group_idx - 1) % n)
+      primary = app.scene.anim.primary
+      ctx = app.scene.context
+      if primary is not None and primary.enabled and ctx is not None:
+        scene = cast(ModelScene, ctx.scene)
+        if scene.entities:
+          n = len(scene.entities[app.scene.anim.primary_entity].animation_groups)  # type: ignore[index]
+          if n > 0:
+            app.anim_select((primary.group_idx - 1) % n)
     elif key == K_DOWN:
-      if app.scene.anim.enabled:
-        ctx = app.scene.context
-        if ctx is not None:
-          scene = cast(ModelScene, ctx.scene)
-          n = len(scene.animation_groups)
-          app.anim_select((app.scene.anim.group_idx + 1) % n)
+      primary = app.scene.anim.primary
+      ctx = app.scene.context
+      if primary is not None and primary.enabled and ctx is not None:
+        scene = cast(ModelScene, ctx.scene)
+        if scene.entities:
+          n = len(scene.entities[app.scene.anim.primary_entity].animation_groups)  # type: ignore[index]
+          if n > 0:
+            app.anim_select((primary.group_idx + 1) % n)
     elif key == K_LEFT:
       app.anim_scrub(-_SCRUB_STEP)
     elif key == K_RIGHT:

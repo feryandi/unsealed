@@ -34,13 +34,17 @@ class ModelControlPanel(HudPanel):
     path: Path,
     q3_enabled: bool = True,
   ) -> None:
+    # A ModelScene always has one entity (built by the model pipeline).
+    primary_entity = scene.entities[0] if scene.entities else None
+    anim_count = len(primary_entity.animation_groups) if primary_entity is not None else 0
+
     lines: List[str] = [
       f"File       : {path.name}",
       f"Meshes     : {len(scene.mesh_names)}",
       f"Triangles  : {scene.tri_count:,}",
     ]
-    if scene.animation_groups:
-      lines += [f"Animations : {len(scene.animation_groups)}", ""]
+    if anim_count:
+      lines += [f"Animations : {anim_count}", ""]
       lines += self._ANIM_CONTROLS
     lines += ["", *self._CONTROLS]
 

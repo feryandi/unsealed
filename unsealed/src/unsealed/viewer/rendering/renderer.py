@@ -566,10 +566,12 @@ class Renderer:
             # — one per logical draw call for this entity
             draw_params: List[Tuple[NDArray, Optional[NDArray], int, ShaderVariant]] = []
 
+            bones = ctx.bone_matrices.get(eid)
+            node_world = ctx.node_matrices.get(eid)
+
             if xform.is_skinned and buf.inst_mats_cpu is not None:
                 # Animated skinned instances — draw each separately
-                if ctx.map_bone_matrices and eid in ctx.map_bone_matrices:
-                    bones = ctx.map_bone_matrices[eid]
+                if bones is not None:
                     bc = min(len(bones), _MAX_BONES)
                     bf: Optional[NDArray] = np.array(
                         [m.flatten() for m in bones[:bc]], dtype=np.float32
@@ -581,15 +583,14 @@ class Renderer:
                     model = buf.inst_mats_cpu[k] @ xform.model_matrix
                     draw_params.append((model, bf, bc, ShaderVariant.SKINNED))
 
-            elif not xform.is_skinned and ctx.map_node_matrices and eid in ctx.map_node_matrices:
+            elif not xform.is_skinned and node_world is not None:
                 # Node-transform animated
-                anim_model = ctx.map_node_matrices[eid]
                 if buf.inst_mats_cpu is not None:
                     for k in range(buf.instance_count):
-                        model = buf.inst_mats_cpu[k] @ anim_model
+                        model = buf.inst_mats_cpu[k] @ node_world
                         draw_params.append((model, None, 0, ShaderVariant.PLAIN))
                 else:
-                    draw_params.append((anim_model, None, 0, ShaderVariant.PLAIN))
+                    draw_params.append((node_world, None, 0, ShaderVariant.PLAIN))
 
             else:
                 # Static — multi-instance GL instancing or single draw
@@ -599,10 +600,10 @@ class Renderer:
                     )
                 elif xform.is_skinned:
                     # Standalone bone animation
-                    if ctx.bone_matrices:
-                        bc = min(len(ctx.bone_matrices), _MAX_BONES)
+                    if bones is not None:
+                        bc = min(len(bones), _MAX_BONES)
                         bf = np.array(
-                            [m.flatten() for m in ctx.bone_matrices[:bc]], dtype=np.float32
+                            [m.flatten() for m in bones[:bc]], dtype=np.float32
                         ).flatten()
                     else:
                         bc = _MAX_BONES
