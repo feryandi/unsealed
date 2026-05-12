@@ -7,6 +7,40 @@ from ...rendering.types import HudAction, HudButton, HudPanel
 from .scene import ModelScene
 
 
+class AnimationListPanel(HudPanel):
+  """Right-side panel listing all animations as a clickable list."""
+
+  def __init__(self, anim_names: List[str], current_idx: int) -> None:
+    super().__init__(
+      lines=["Animations:"],
+      list_items=[
+        HudButton("", name, HudAction.SELECT_ANIM, i) for i, name in enumerate(anim_names)
+      ],
+      list_highlight_idx=current_idx,
+      x=-10,
+      y=10,
+    )
+
+
+class PlaybackControlPanel(HudPanel):
+  """Bottom-left panel: animation info + Play/Pause and Stop buttons."""
+
+  def __init__(
+    self, group_name: str, current_time: float, duration: float, playing: bool
+  ) -> None:
+    play_btn = (
+      HudButton("||", "Pause", HudAction.PLAY)
+      if playing
+      else HudButton("▶", "Play", HudAction.PLAY)
+    )
+    super().__init__(
+      lines=[f"[{group_name}]  {current_time:.2f} / {duration:.2f}s"],
+      buttons=[play_btn, HudButton("■", "Stop", HudAction.STOP)],
+      x=10,
+      y=-10,
+    )
+
+
 class ModelControlPanel(HudPanel):
   _CONTROLS = [
     "Controls:",

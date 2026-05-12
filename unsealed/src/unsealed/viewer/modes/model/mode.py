@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, List, Optional, cast
 
 from ..base import BaseMode
 from .camera import OrbitCamera
-from .panels import ModelControlPanel
+from .panels import AnimationListPanel, ModelControlPanel, PlaybackControlPanel
 from .pipeline import ModelViewerPipeline
 from .scene import ModelScene
 
@@ -43,8 +43,6 @@ class ModelMode(BaseMode):
     selected_idx: Optional[int],
     q3_enabled: bool = True,
   ) -> "List[HudPanel]":
-    from ...app.panels import AnimationListPanel, PlaybackControlPanel
-
     scene = cast(ModelScene, ctx.scene)
     panels: "List[HudPanel]" = [ModelControlPanel(scene, ctx.path, q3_enabled)]
     primary = anim.primary

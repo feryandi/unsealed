@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Iterable, List, Optional, cast
 from ..base import BaseMode, RenderExtension
 from .camera import MapCamera
 from .extensions import SkyExtension, TerrainExtension
-from .panels import MapControlPanel
+from .panels import MapControlPanel, ObjectDetailPanel
 from .pipeline import MapViewerPipeline
 from .scene import MapScene
 
@@ -54,8 +54,6 @@ class MapMode(BaseMode):
     selected_idx: Optional[int],
     q3_enabled: bool = True,
   ) -> "List[HudPanel]":
-    from ...app.panels import ObjectDetailPanel
-
     scene = cast(MapScene, ctx.scene)
     panels: "List[HudPanel]" = [MapControlPanel(scene, ctx.path, q3_enabled)]
     if selected_idx is not None and 0 <= selected_idx < len(scene.meshes):

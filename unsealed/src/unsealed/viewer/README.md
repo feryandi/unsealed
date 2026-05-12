@@ -86,9 +86,8 @@ viewer/
 │   ├── world.py       — AppWorld: holds all components/systems
 │   ├── context.py     — ViewerContext: scene + camera + config per file
 │   ├── components/    — pure @dataclass state (animation, input, render, scene, window)
-│   ├── systems/       — stateless logic (animation, input, load, update)
-│   ├── scene_configs.py — per-scene-type input/camera config
-│   └── hud_imgui.py   — ImGui HUD panels
+│   ├── systems/       — stateless logic (animation, hud, input, load, update)
+│   └── panels/        — cross-mode HUD panels (welcome only; mode-specific in modes/&lt;m&gt;/panels.py)
 │
 ├── scenes/            — file-decoded CPU data (no GL)
 ├── animation/         — Animator + NodeAnimator + keyframe sampling
