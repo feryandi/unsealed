@@ -1,9 +1,9 @@
 from __future__ import annotations
+
 from pathlib import Path
 
-
-from ...rendering import HudAction, HudButton, HudPanel
-from ...scenes import MapScene
+from ...rendering.types import HudAction, HudButton, HudPanel
+from .scene import MapScene
 
 
 class MapControlPanel(HudPanel):
@@ -25,7 +25,7 @@ class MapControlPanel(HudPanel):
         "  LMB drag            : Pan",
         "  MMB drag            : Pan (grab)",
         "  RMB drag L/R        : Rotate (yaw)",
-        "  RMB drag U/D        : Tilt (pitch 15\u00b0\u201375\u00b0)",
+        "  RMB drag U/D        : Tilt (pitch 15°–75°)",
         "  WASD / Arrows       : Pan",
         "  Scroll              : Zoom (smart pivot)",
         "  O                   : Open file",

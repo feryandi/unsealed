@@ -1,25 +1,36 @@
-"""ModelConfig — 3-D mesh/actor viewer: OrbitCamera, model HUD, orbit/anim keys."""
+"""ModelMode — viewer mode for .ms1 / .act files (skinned/animated meshes)."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, cast
 
-from .base import SceneConfig
+from ..base import BaseMode
+from .camera import OrbitCamera
+from .panels import ModelControlPanel
+from .pipeline import ModelViewerPipeline
+from .scene import ModelScene
 
 if TYPE_CHECKING:
   from ...app.components.animation import AnimationComponent
+  from ...app.context import ViewerContext
+  from ...app.world import AppWorld
   from ...camera import Camera
   from ...rendering import HudPanel
   from ...scenes import ViewerScene
-  from ..context import ViewerContext
-  from ..world import AppWorld
 
 
-class ModelConfig(SceneConfig):
+class ModelMode(BaseMode):
+  name = "model"
+  extensions = (".ms1", ".act")
+  scene_type = ModelScene
+
+  def decode(
+    self, path: Path, shader_cache: Optional[dict] = None
+  ) -> "ViewerScene":
+    return ModelViewerPipeline().run(path, shader_cache)
+
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
-    from ...camera import OrbitCamera
-    from ...scenes import ModelScene
-
     cam = OrbitCamera()
     if isinstance(scene, ModelScene) and scene.bounds_radius > 0:
       cam.fit_bounds(scene.bounds_center, scene.bounds_radius)
@@ -32,11 +43,10 @@ class ModelConfig(SceneConfig):
     selected_idx: Optional[int],
     q3_enabled: bool = True,
   ) -> "List[HudPanel]":
-    from ...scenes import ModelScene
-    from ..panels import AnimationListPanel, ModelControlPanel, PlaybackControlPanel
+    from ...app.panels import AnimationListPanel, PlaybackControlPanel
 
     scene = cast(ModelScene, ctx.scene)
-    panels: List[HudPanel] = [ModelControlPanel(scene, ctx.path, q3_enabled)]
+    panels: "List[HudPanel]" = [ModelControlPanel(scene, ctx.path, q3_enabled)]
     if anim.enabled:
       group = scene.animation_groups[anim.group_idx]
       anim_names = [g.name for g in scene.animation_groups]
@@ -62,7 +72,7 @@ class ModelConfig(SceneConfig):
       K_w,
     )
 
-    from ..constants import _SCRUB_STEP
+    from ...app.constants import _SCRUB_STEP
 
     if key == K_w:
       app._wireframe = not app._wireframe
@@ -74,7 +84,6 @@ class ModelConfig(SceneConfig):
       if app.scene.anim.enabled:
         ctx = app.scene.context
         if ctx is not None:
-          from ...scenes import ModelScene
           scene = cast(ModelScene, ctx.scene)
           n = len(scene.animation_groups)
           app.anim_select((app.scene.anim.group_idx - 1) % n)
@@ -82,7 +91,6 @@ class ModelConfig(SceneConfig):
       if app.scene.anim.enabled:
         ctx = app.scene.context
         if ctx is not None:
-          from ...scenes import ModelScene
           scene = cast(ModelScene, ctx.scene)
           n = len(scene.animation_groups)
           app.anim_select((app.scene.anim.group_idx + 1) % n)
@@ -100,8 +108,6 @@ class ModelConfig(SceneConfig):
       app._set_capture(False)
 
   def on_mouse_motion(self, dx: int, dy: int, app: "AppWorld") -> None:
-    from ...camera import OrbitCamera
-
     cam = cast(OrbitCamera, app._camera)
     if app._btn[2] or app._btn[0]:
       cam.orbit(-dx, dy)
@@ -109,6 +115,4 @@ class ModelConfig(SceneConfig):
       cam.pan(-dx, dy)
 
   def on_scroll(self, direction: int, mx: int, my: int, app: "AppWorld") -> None:
-    from ...camera import OrbitCamera
-
     cast(OrbitCamera, app._camera).zoom(direction)

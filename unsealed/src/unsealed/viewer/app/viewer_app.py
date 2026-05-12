@@ -7,7 +7,9 @@ from typing import Optional
 
 import pygame
 
-from ..camera import ImageCamera, MapCamera, OrbitCamera
+from ..modes.image.camera import ImageCamera
+from ..modes.map.camera import MapCamera
+from ..modes.model.camera import OrbitCamera
 from ..rendering import RenderContext
 from .world import AppWorld
 

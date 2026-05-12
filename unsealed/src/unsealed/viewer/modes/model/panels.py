@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import List
 from pathlib import Path
+from typing import List
 
-from ...rendering import HudAction, HudButton, HudPanel
-from ...scenes import ModelScene
+from ...rendering.types import HudAction, HudButton, HudPanel
+from .scene import ModelScene
 
 
 class ModelControlPanel(HudPanel):

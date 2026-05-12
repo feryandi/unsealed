@@ -1,6 +1,5 @@
-"""
-WoW-style 3D orbit camera for the mesh / actor viewer.
-"""
+"""OrbitCamera — WoW-style 3D orbit camera for the mesh / actor viewer."""
+
 from __future__ import annotations
 
 import math
@@ -8,7 +7,7 @@ import math
 import numpy as np
 from numpy.typing import NDArray
 
-from .base import Camera
+from ...camera.base import Camera
 
 
 class OrbitCamera(Camera):

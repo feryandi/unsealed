@@ -9,9 +9,8 @@ import numpy as np
 
 from unsealed.assets import Material
 
-from ..camera import compute_bounds
-from ..scenes import (
-  ModelScene,
+from ...camera import compute_bounds
+from ...scenes import (
   ViewerAnimationGroup,
   ViewerBone,
   ViewerBoneAnimation,
@@ -21,7 +20,8 @@ from ..scenes import (
   ViewerQ3Stage,
   ViewerSkeleton,
 )
-from .tex import TexViewerPipeline
+from ..image.pipeline import TexViewerPipeline
+from .scene import ModelScene
 
 
 class ModelViewerPipeline:
@@ -40,11 +40,11 @@ class ModelViewerPipeline:
     shaders = shader_cache
 
     if path.suffix.lower() == ".act":
-      from ...formats.act.format import SealActorFormat
+      from unsealed.formats.act.format import SealActorFormat
 
       model = SealActorFormat().decode(path)
     else:
-      from ...formats.ms1.format import SealMeshFormat
+      from unsealed.formats.ms1.format import SealMeshFormat
 
       model = SealMeshFormat().decode(path)
     return ModelViewerPipeline._model_to_scene(model, path, shaders)

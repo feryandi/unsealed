@@ -1,10 +1,12 @@
+"""ModelScene — scene type for .ms1 / .act files."""
+
 from dataclasses import dataclass, field
 from typing import List
 
-from numpy.typing import NDArray
 import numpy as np
+from numpy.typing import NDArray
 
-from .three_dimensional_scene import ThreeDimensionalScene
+from ...scenes.three_dimensional_scene import ThreeDimensionalScene
 
 
 @dataclass

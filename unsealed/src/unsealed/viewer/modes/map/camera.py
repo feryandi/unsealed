@@ -1,6 +1,5 @@
-"""
-RTS-style open-world camera for the map viewer.
-"""
+"""MapCamera — RTS-style open-world camera for the map viewer."""
+
 from __future__ import annotations
 
 import math
@@ -9,7 +8,7 @@ from typing import Optional
 import numpy as np
 from numpy.typing import NDArray
 
-from .base import Camera
+from ...camera.base import Camera
 
 
 class MapCamera(Camera):

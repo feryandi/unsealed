@@ -9,9 +9,9 @@ from typing import TYPE_CHECKING
 
 from imgui_bundle import imgui
 
-from ..scenes.image_scene import ImageScene
-from ..scenes.map_scene import MapScene
-from ..scenes.model_scene import ModelScene
+from ..modes.image.scene import ImageScene
+from ..modes.map.scene import MapScene
+from ..modes.model.scene import ModelScene
 
 if TYPE_CHECKING:
     from .context import ViewerContext

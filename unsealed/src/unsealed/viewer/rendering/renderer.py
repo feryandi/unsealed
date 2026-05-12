@@ -74,8 +74,12 @@ from OpenGL.GL import (
     glVertexAttribPointer,
 )
 
-from ..camera import ImageCamera, MapCamera, OrbitCamera
-from ..scenes import ImageScene, MapScene, ViewerScene
+from ..modes.image.camera import ImageCamera
+from ..modes.image.scene import ImageScene
+from ..modes.map.camera import MapCamera
+from ..modes.map.scene import MapScene
+from ..modes.model.camera import OrbitCamera
+from ..scenes import ViewerScene
 from .components import BoundsComp, GpuBufferComp, MaterialComp, TransformComp
 from .hud import HudRenderer
 from .passes import GBufferPass, LightingPass, OverlayPass

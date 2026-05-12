@@ -44,7 +44,7 @@ from OpenGL.GL import (
 )
 
 from .shaders import _compile_prog, _u_mat4, _upload_rgba, _TERRAIN_VERT, _TERRAIN_FRAG
-from ..scenes import MapScene
+from ..modes.map.scene import MapScene
 
 
 class TerrainRenderer:

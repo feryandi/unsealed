@@ -1,12 +1,11 @@
-"""
-Orthographic 2D camera for the texture viewer.
-"""
+"""ImageCamera — orthographic 2D camera for the texture viewer."""
+
 from __future__ import annotations
 
 import numpy as np
 from numpy.typing import NDArray
 
-from .base import Camera
+from ...camera.base import Camera
 
 
 class ImageCamera(Camera):

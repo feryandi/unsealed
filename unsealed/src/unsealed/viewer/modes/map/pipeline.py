@@ -9,9 +9,10 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from ..scenes import MapScene, ViewerMesh
-from .model import ModelViewerPipeline
-from .tex import TexViewerPipeline
+from ...scenes import ViewerMesh
+from ..image.pipeline import TexViewerPipeline
+from ..model.pipeline import ModelViewerPipeline
+from .scene import MapScene
 
 
 class MapViewerPipeline:
@@ -20,7 +21,7 @@ class MapViewerPipeline:
   _MAX_OBJECT_TYPES: int = 200
 
   def run(self, path: Path, shader_cache: Optional[Dict] = None) -> MapScene:
-    from ...formats.map.format import SealMapFormat
+    from unsealed.formats.map.format import SealMapFormat
 
     terrain = SealMapFormat().decode(path)
     return MapViewerPipeline._terrain_to_scene(terrain, path, shader_cache)
@@ -175,7 +176,7 @@ class MapViewerPipeline:
     if not mdt_path.exists():
       return {}
     try:
-      from ...formats.mdt.decoder import SealMdtDecoder
+      from unsealed.formats.mdt.decoder import SealMdtDecoder
 
       directory = SealMdtDecoder(mdt_path).decode()
       return {

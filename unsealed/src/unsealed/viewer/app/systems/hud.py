@@ -1,4 +1,4 @@
-"""HudSystem — delegates panel construction to the active SceneConfig."""
+"""HudSystem — delegates panel construction to the active Mode."""
 
 from __future__ import annotations
 
@@ -13,6 +13,6 @@ class HudSystem:
     def build(self, scene: SceneComponent, q3_enabled: bool = True) -> List[HudPanel]:
         if scene.context is None:
             return [WelcomePanel()]
-        return scene.context.config.build_hud_panels(
+        return scene.context.mode.build_hud_panels(
             scene.context, scene.anim, scene.selected_mesh_idx, q3_enabled
         )

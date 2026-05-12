@@ -1,25 +1,36 @@
-"""ImageConfig — 2-D texture viewer: ImageCamera, image HUD, pan/zoom."""
+"""ImageMode — viewer mode for .tex / .te1 texture files."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, cast
 
-from .base import SceneConfig
+from ..base import BaseMode
+from .camera import ImageCamera
+from .panels import ImageControlPanel
+from .pipeline import TexViewerPipeline
+from .scene import ImageScene
 
 if TYPE_CHECKING:
   from ...app.components.animation import AnimationComponent
+  from ...app.context import ViewerContext
+  from ...app.world import AppWorld
   from ...camera import Camera
   from ...rendering import HudPanel
   from ...scenes import ViewerScene
-  from ..context import ViewerContext
-  from ..world import AppWorld
 
 
-class ImageConfig(SceneConfig):
+class ImageMode(BaseMode):
+  name = "image"
+  extensions = (".tex", ".te1")
+  scene_type = ImageScene
+
+  def decode(
+    self, path: Path, shader_cache: Optional[dict] = None
+  ) -> "ViewerScene":
+    return TexViewerPipeline().run(path)
+
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
-    from ...camera import ImageCamera
-    from ...scenes import ImageScene
-
     cam = ImageCamera()
     if isinstance(scene, ImageScene):
       cam.fit_image(scene.image_w, scene.image_h, win_w, win_h)
@@ -32,10 +43,6 @@ class ImageConfig(SceneConfig):
     selected_idx: Optional[int],
     q3_enabled: bool = True,
   ) -> "List[HudPanel]":
-    from ...camera import ImageCamera
-    from ...scenes import ImageScene
-    from ..panels import ImageControlPanel
-
     scene = cast(ImageScene, ctx.scene)
     cam = cast(ImageCamera, ctx.camera)
     return [
@@ -48,12 +55,10 @@ class ImageConfig(SceneConfig):
     ]
 
   def on_mouse_motion(self, dx: int, dy: int, app: "AppWorld") -> None:
-    from ...camera import ImageCamera
-
     if any(app._btn):
       cast(ImageCamera, app._camera).pan(dx, dy)
 
   def on_scroll(self, direction: int, mx: int, my: int, app: "AppWorld") -> None:
-    from ...camera import ImageCamera
-
-    cast(ImageCamera, app._camera).zoom_step(direction, mx, my, app._width, app._height)
+    cast(ImageCamera, app._camera).zoom_step(
+      direction, mx, my, app._width, app._height
+    )

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import pygame
 from pygame.locals import K_DOWN, K_LEFT, K_RIGHT, K_UP, K_a, K_d, K_s, K_w
 
-from ...camera import MapCamera
+from ...modes.map.camera import MapCamera
 
 if TYPE_CHECKING:
     from ..world import AppWorld

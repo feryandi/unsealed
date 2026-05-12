@@ -9,7 +9,7 @@ import io
 from pathlib import Path
 from typing import Optional, Tuple
 
-from ..scenes import ImageScene, MapScene, ModelScene
+from .scene import ImageScene
 
 
 class TexViewerPipeline:
@@ -33,7 +33,7 @@ class TexViewerPipeline:
   def _decode_seal_texture(path: Path) -> Tuple[Optional[bytes], int, int]:
     """Decode a .tex / .te1 file via SealTextureDecoder → raw RGBA bytes."""
     try:
-      from ...formats.tex.decoder import SealTextureDecoder
+      from unsealed.formats.tex.decoder import SealTextureDecoder
 
       blob = SealTextureDecoder(path).decode()
       if blob.value:

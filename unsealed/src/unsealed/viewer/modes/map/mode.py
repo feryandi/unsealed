@@ -1,25 +1,36 @@
-"""MapConfig — RTS-style map viewer: MapCamera, map HUD, pan/orbit mouse."""
+"""MapMode — viewer mode for .map files (terrain + object instances + sky)."""
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, cast
 
-from .base import SceneConfig
+from ..base import BaseMode
+from .camera import MapCamera
+from .panels import MapControlPanel
+from .pipeline import MapViewerPipeline
+from .scene import MapScene
 
 if TYPE_CHECKING:
   from ...app.components.animation import AnimationComponent
+  from ...app.context import ViewerContext
+  from ...app.world import AppWorld
   from ...camera import Camera
   from ...rendering import HudPanel
   from ...scenes import ViewerScene
-  from ..context import ViewerContext
-  from ..world import AppWorld
 
 
-class MapConfig(SceneConfig):
+class MapMode(BaseMode):
+  name = "map"
+  extensions = (".map",)
+  scene_type = MapScene
+
+  def decode(
+    self, path: Path, shader_cache: Optional[dict] = None
+  ) -> "ViewerScene":
+    return MapViewerPipeline().run(path, shader_cache)
+
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
-    from ...camera import MapCamera
-    from ...scenes import MapScene
-
     cam = MapCamera()
     cam.fit_map()
     if isinstance(scene, MapScene) and scene.terrain_heights is not None:
@@ -33,11 +44,10 @@ class MapConfig(SceneConfig):
     selected_idx: Optional[int],
     q3_enabled: bool = True,
   ) -> "List[HudPanel]":
-    from ...scenes import MapScene
-    from ..panels import MapControlPanel, ObjectDetailPanel
+    from ...app.panels import ObjectDetailPanel
 
     scene = cast(MapScene, ctx.scene)
-    panels: List[HudPanel] = [MapControlPanel(scene, ctx.path, q3_enabled)]
+    panels: "List[HudPanel]" = [MapControlPanel(scene, ctx.path, q3_enabled)]
     if selected_idx is not None and 0 <= selected_idx < len(scene.meshes):
       panels.append(ObjectDetailPanel(scene.meshes[selected_idx]))
     return panels
@@ -55,8 +65,6 @@ class MapConfig(SceneConfig):
       app._lmb_down_pos = None
 
   def on_mouse_motion(self, dx: int, dy: int, app: "AppWorld") -> None:
-    from ...camera import MapCamera
-
     cam = cast(MapCamera, app._camera)
     if app._btn[2]:
       cam.orbit(dx, -dy)
@@ -66,6 +74,4 @@ class MapConfig(SceneConfig):
       cam.pan_mouse(dx, dy)
 
   def on_scroll(self, direction: int, mx: int, my: int, app: "AppWorld") -> None:
-    from ...camera import MapCamera
-
     cast(MapCamera, app._camera).zoom(direction)

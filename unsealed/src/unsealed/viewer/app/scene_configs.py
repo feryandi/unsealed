@@ -22,10 +22,12 @@ from pygame.locals import (
   K_w,
 )
 
-from ..camera import ImageCamera, MapCamera, OrbitCamera
-from ..scenes.image_scene import ImageScene
-from ..scenes.map_scene import MapScene
-from ..scenes.model_scene import ModelScene
+from ..modes.image.camera import ImageCamera
+from ..modes.image.scene import ImageScene
+from ..modes.map.camera import MapCamera
+from ..modes.map.scene import MapScene
+from ..modes.model.camera import OrbitCamera
+from ..modes.model.scene import ModelScene
 from .constants import _SCRUB_STEP
 
 if TYPE_CHECKING:

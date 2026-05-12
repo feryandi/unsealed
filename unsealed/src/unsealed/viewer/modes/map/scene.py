@@ -1,10 +1,12 @@
+"""MapScene — scene type for .map files."""
+
 from dataclasses import dataclass, field
 from typing import List, Optional, Tuple
 
 from numpy.typing import NDArray
 
-from .scene import ViewerMesh
-from .three_dimensional_scene import ThreeDimensionalScene
+from ...scenes import ViewerMesh
+from ...scenes.three_dimensional_scene import ThreeDimensionalScene
 
 
 @dataclass

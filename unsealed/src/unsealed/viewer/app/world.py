@@ -5,9 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
-from ..camera import MapCamera
+from ..modes import MapScene, ModelScene
+from ..modes.map.camera import MapCamera
 from ..rendering import HudAction
-from ..scenes import MapScene, ModelScene
 from .components import InputComponent, RenderComponent, SceneComponent, WindowComponent
 from .systems import AnimationSystem, HudSystem, InputSystem, LoadSystem, UpdateSystem
 

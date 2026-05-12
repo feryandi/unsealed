@@ -1,7 +1,9 @@
+"""ImageScene — scene type for .tex / .te1 / plain image files."""
+
 from dataclasses import dataclass
 from typing import Optional
 
-from .viewer_scene import ViewerScene
+from ...scenes.viewer_scene import ViewerScene
 
 
 @dataclass
