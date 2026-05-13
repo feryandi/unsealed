@@ -4,8 +4,10 @@ Base Camera class: shared constants and matrix / bounds utilities.
 All matrix functions return row-major float32 numpy arrays (standard convention
 throughout the renderer — matrices are uploaded with GL_TRUE transpose flag).
 """
+
 from __future__ import annotations
 
+from abc import ABC
 import math
 from typing import Tuple
 
@@ -13,7 +15,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 
-class Camera:
+class Camera(ABC):
   """Base camera; provides shared constants and static matrix / bounds helpers."""
 
   # How quickly smooth-zoom snaps to the target (higher = snappier, ~100 ms at 14).
@@ -28,6 +30,10 @@ class Camera:
   MAP_PAN_SENS: float = 0.003
   # Per-tick zoom factor for ImageCamera scroll.
   IMAGE_ZOOM_FACTOR: float = 1.15
+
+  def position(self) -> NDArray:
+    """Return the camera's world-space position as a (3,) float32 array."""
+    raise NotImplementedError
 
   # ── matrix helpers ───────────────────────────────────────────────────────
 
@@ -72,13 +78,13 @@ class Camera:
   ) -> NDArray:
     """Standard column-major orthographic projection matrix (row-major numpy storage)."""
     m = np.zeros((4, 4), dtype=np.float32)
-    m[0, 0] =  2.0 / (right - left)
-    m[1, 1] =  2.0 / (top   - bottom)
-    m[2, 2] = -2.0 / (far   - near)
-    m[0, 3] = -(right + left)   / (right - left)
-    m[1, 3] = -(top   + bottom) / (top   - bottom)
-    m[2, 3] = -(far   + near)   / (far   - near)
-    m[3, 3] =  1.0
+    m[0, 0] = 2.0 / (right - left)
+    m[1, 1] = 2.0 / (top - bottom)
+    m[2, 2] = -2.0 / (far - near)
+    m[0, 3] = -(right + left) / (right - left)
+    m[1, 3] = -(top + bottom) / (top - bottom)
+    m[2, 3] = -(far + near) / (far - near)
+    m[3, 3] = 1.0
     return m
 
   @staticmethod

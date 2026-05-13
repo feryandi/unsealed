@@ -8,7 +8,7 @@ Contains only plain Python/numpy data — no file handles, no GL objects.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from numpy.typing import NDArray
 
@@ -16,7 +16,7 @@ from numpy.typing import NDArray
 # Vertex buffer strides in bytes for ViewerMesh.vertex_data.
 # Live here (not in rendering/) because they describe the CPU mesh layout the
 # pipeline writes; the renderer reads them when uploading to GL.
-_STRIDE_PLAIN = 32   # [pos(3) | normal(3) | uv(2)] × 4 bytes
+_STRIDE_PLAIN = 32  # [pos(3) | normal(3) | uv(2)] × 4 bytes
 _STRIDE_SKINNED = 64  # [pos(3) | normal(3) | uv(2) | joints(4) | weights(4)] × 4 bytes
 
 
@@ -54,6 +54,7 @@ class ViewerPrimitive:
   image_w: int = 0
   image_h: int = 0
   base_color: Tuple[float, float, float, float] = (0.72, 0.72, 0.72, 1.0)
+  shader: Any = None
   # If set, this primitive is rendered via the Q3 multi-stage pass instead of
   # the normal opaque/transparent forward paths.
   q3_stages: Optional[List[ViewerQ3Stage]] = None

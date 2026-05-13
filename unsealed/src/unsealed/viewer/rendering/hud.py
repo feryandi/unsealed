@@ -146,6 +146,9 @@ class HudRenderer:
     px = panel.x if panel.x >= 0 else width  + panel.x - total_w
     py = panel.y if panel.y >= 0 else height + panel.y - total_h
 
+    # Store screen-space bounds so InputSystem can hit-test scroll events.
+    panel.rect = (px, py, total_w, total_h)
+
     # ── draw to pygame surface ────────────────────────────────────────────────
     surf = pygame.Surface((total_w, total_h), pygame.SRCALPHA)
     surf.fill(_BG)

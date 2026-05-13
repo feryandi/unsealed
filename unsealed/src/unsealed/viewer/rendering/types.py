@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from numpy.typing import NDArray
+from unsealed.viewer.camera.base import Camera
 
 
 # Maximum bones supported by the skinning shader.
@@ -22,6 +23,7 @@ _IDENTITY_BONE_FLAT = np.tile(np.identity(4, dtype=np.float32).flatten(), _MAX_B
 @dataclass
 class _Q3GpuStage:
   """GPU-side representation of one Q3 shader stage (uploaded texture + blend params)."""
+
   tex_id: Optional[int]
   blend_src: int
   blend_dst: int
@@ -44,40 +46,40 @@ class _GpuPrimitive:
 
 
 class ShaderVariant(Enum):
-    PLAIN = "plain"
-    SKINNED = "skinned"
-    INSTANCED = "instanced"
+  PLAIN = "plain"
+  SKINNED = "skinned"
+  INSTANCED = "instanced"
 
 
 @dataclass
 class DrawCommand:
-    """One draw call: entity + primitive + fully-resolved model matrix."""
+  """One draw call: entity + primitive + fully-resolved model matrix."""
 
-    entity_id: int
-    variant: ShaderVariant
-    model_matrix: NDArray  # (4,4) float32, inst_mats_cpu[k] already folded in
-    primitive_idx: int
-    instance_count: int = 1  # >1 only for GL instanced draws (INSTANCED variant)
-    bone_matrices_flat: Optional[NDArray] = None
-    bone_count: int = 0
+  entity_id: int
+  variant: ShaderVariant
+  model_matrix: NDArray  # (4,4) float32, inst_mats_cpu[k] already folded in
+  primitive_idx: int
+  instance_count: int = 1  # >1 only for GL instanced draws (INSTANCED variant)
+  bone_matrices_flat: Optional[NDArray] = None
+  bone_count: int = 0
 
 
 @dataclass
 class RenderContext:
-    """All per-frame inputs the renderer needs.
+  """All per-frame inputs the renderer needs.
 
-    `bone_matrices` and `node_matrices` are unified across model/map modes:
-    keyed by GLOBAL mesh index (index into `scene.meshes`), produced by
-    `AnimationSystem.update()`. A mesh that's not animated this frame simply
-    has no entry — the renderer falls back to its static `model_matrix`.
-    """
+  `bone_matrices` and `node_matrices` are unified across model/map modes:
+  keyed by GLOBAL mesh index (index into `scene.meshes`), produced by
+  `AnimationSystem.update()`. A mesh that's not animated this frame simply
+  has no entry — the renderer falls back to its static `model_matrix`.
+  """
 
-    camera: object  # OrbitCamera | ImageCamera | MapCamera
-    width: int
-    height: int
-    wireframe: bool = False
-    bone_matrices: Dict[int, List[NDArray]] = field(default_factory=dict)
-    node_matrices: Dict[int, NDArray] = field(default_factory=dict)
-    selected_mesh_idx: Optional[int] = None
-    time: float = 0.0
-    q3_enabled: bool = True
+  camera: Camera
+  width: int
+  height: int
+  wireframe: bool = False
+  bone_matrices: Dict[int, List[NDArray]] = field(default_factory=dict)
+  node_matrices: Dict[int, NDArray] = field(default_factory=dict)
+  selected_mesh_idx: Optional[int] = None
+  time: float = 0.0
+  q3_enabled: bool = True

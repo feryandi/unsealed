@@ -6,14 +6,18 @@ from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, cast
 
 from ..base import AnimationPolicy, BaseMode
+from .extensions import InfiniteGridExtension
 from .camera import OrbitCamera
 from .panels import AnimationListPanel, ModelControlPanel, PlaybackControlPanel
 from .pipeline import ModelViewerPipeline
 from .scene import ModelScene
 
 if TYPE_CHECKING:
+  from typing import Iterable
+
   from ...camera import Camera
   from ...hud_types import HudPanel
+  from ...rendering.extension import RenderExtension
   from ...scenes import ViewerScene
   from ..context import ModeContext
 
@@ -24,9 +28,13 @@ class ModelMode(BaseMode):
   scene_type = ModelScene
   animation_policy = AnimationPolicy(has_primary=True)
 
-  def decode(
-    self, path: Path, shader_cache: Optional[dict] = None
-  ) -> "ViewerScene":
+  def __init__(self) -> None:
+    self._render_extensions = [InfiniteGridExtension()]
+
+  def render_extensions(self) -> "Iterable[RenderExtension]":
+    return self._render_extensions
+
+  def decode(self, path: Path, shader_cache: Optional[dict] = None) -> "ViewerScene":
     return ModelViewerPipeline().run(path, shader_cache)
 
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
@@ -100,7 +108,9 @@ class ModelMode(BaseMode):
     elif key == K_RIGHT:
       mctx.anim_scrub(_SCRUB_STEP)
 
-  def on_mouse_down(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None:
+  def on_mouse_down(
+    self, button: int, pos: tuple[int, int], mctx: "ModeContext"
+  ) -> None:
     if button == 3:
       mctx.set_capture(True)
 

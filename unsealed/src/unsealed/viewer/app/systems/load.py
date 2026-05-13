@@ -34,6 +34,8 @@ class LoadSystem:
                 ctx.scene, ctx.mode.render_extensions()
             )
             world.scene.selected_mesh_idx = None
+            world.scene.selected_shader = None
+            world.scene.shader_scroll = 0
             if not isinstance(ctx.scene, ImageScene):
                 world._anim_sys.load(world.scene.anim, ctx.scene)
             pygame.display.set_caption(f"{_TITLE} — {path.name}")

@@ -10,7 +10,7 @@ import numpy as np
 from ..base import AnimationPolicy, BaseMode, RenderExtension
 from .camera import MapCamera
 from .extensions import SkyExtension, TerrainExtension
-from .panels import MapControlPanel, ObjectDetailPanel
+from .panels import MapControlPanel, ObjectDetailPanel, ShaderDetailPanel
 from .pipeline import MapViewerPipeline
 from .scene import MapScene
 
@@ -36,9 +36,7 @@ class MapMode(BaseMode):
   def render_extensions(self) -> "Iterable[RenderExtension]":
     return self._render_extensions
 
-  def decode(
-    self, path: Path, shader_cache: Optional[dict] = None
-  ) -> "ViewerScene":
+  def decode(self, path: Path, shader_cache: Optional[dict] = None) -> "ViewerScene":
     return MapViewerPipeline().run(path, shader_cache)
 
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
@@ -65,14 +63,28 @@ class MapMode(BaseMode):
         else None
       )
       panels.append(ObjectDetailPanel(mesh, entity))
+    # Shader-detail viewer stacks under the object panel on the right edge.
+    # 20 px gap between the two; ObjectDetailPanel's exact height isn't known
+    # here so we use a fixed offset that's a sane stacking distance.
+    if mctx.selected_shader is not None:
+      panels.append(
+        ShaderDetailPanel(
+          shader=mctx.selected_shader,
+          scroll_offset=mctx.shader_scroll,
+          anchor_y=420,
+        )
+      )
     return panels
 
   def on_key(self, key: int, mctx: "ModeContext") -> None:
     from pygame.locals import K_i
+
     if key == K_i:
       mctx.open_inject_dialog()
 
-  def on_mouse_down(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None:
+  def on_mouse_down(
+    self, button: int, pos: tuple[int, int], mctx: "ModeContext"
+  ) -> None:
     if button == 1:
       mctx.set_lmb_down(pos)
 

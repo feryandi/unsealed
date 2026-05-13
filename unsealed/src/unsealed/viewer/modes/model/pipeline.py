@@ -51,7 +51,9 @@ class ModelViewerPipeline:
     return ModelViewerPipeline._model_to_scene(model, path, shaders)
 
   @classmethod
-  def _model_to_scene(cls, model, path: Path, shaders: Optional[Dict] = None) -> ModelScene:
+  def _model_to_scene(
+    cls, model, path: Path, shaders: Optional[Dict] = None
+  ) -> ModelScene:
     """Convert a decoded Model asset into a ModelScene."""
     scene = ModelScene()
     all_pos: List[np.ndarray] = []
@@ -161,7 +163,6 @@ class ModelViewerPipeline:
         #   2. shader_name embedded in the material asset itself (ms1)
         # Both are tried against the Q3 shader cache; the embedded ms1 name is always
         # guaranteed to resolve, so it acts as the reliable fallback.
-        q3_shader_name = ""
         q3_key = ""
         if material is not None:
           mat_shader = shader_by_mat.get(material.name.lower())
@@ -183,10 +184,8 @@ class ModelViewerPipeline:
           sha_key = Path(sha_name).stem.lower() if sha_name else ""
           ms1_key = Path(ms1_name).stem.lower() if ms1_name else ""
           if shaders and sha_key and sha_key in shaders:
-            q3_shader_name = sha_name
             q3_key = sha_key
           elif shaders and ms1_key and ms1_key in shaders:
-            q3_shader_name = ms1_name
             q3_key = ms1_key
 
         if shaders and q3_key and q3_key in shaders:
@@ -196,6 +195,7 @@ class ModelViewerPipeline:
             ViewerPrimitive(
               indices=np.array(raw_indices, dtype=np.uint16),
               base_color=base_color,
+              shader=q3_shader,
               q3_stages=q3_stages,
               two_sided=q3_shader.cull_mode is None,
               is_billboard=q3_shader.is_autosprite,
@@ -221,8 +221,12 @@ class ModelViewerPipeline:
 
     # Wrap all the file's meshes in one AnimatedEntity. The entity owns the
     # skeleton + animation groups (formerly scene-level fields).
-    skeleton = cls._build_skeleton(model.skeleton) if model.skeleton is not None else None
-    anim_groups = cls._build_animation_groups(model.animations) if model.animations else []
+    skeleton = (
+      cls._build_skeleton(model.skeleton) if model.skeleton is not None else None
+    )
+    anim_groups = (
+      cls._build_animation_groups(model.animations) if model.animations else []
+    )
     scene.entities.append(
       AnimatedEntity(
         name=path.stem,

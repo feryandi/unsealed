@@ -12,3 +12,5 @@ class RenderComponent:
     wireframe: bool = False
     q3_enabled: bool = True
     hud_buttons: List = field(default_factory=list)  # List[HudButton] — set each frame
+    hud_panels: List = field(default_factory=list)   # List[HudPanel]  — set each frame
+                                                     # (for scroll-wheel hit-testing)

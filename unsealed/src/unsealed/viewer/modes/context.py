@@ -9,7 +9,7 @@ event/frame; modes read fields and call methods for state changes.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, List, Optional, Tuple
 
 if TYPE_CHECKING:
   from ..app.components.animation import AnimationComponent
@@ -36,6 +36,8 @@ class ModeContext:
   selected_mesh_idx: Optional[int]
   q3_enabled: bool
   wireframe: bool
+  selected_shader: Optional[Any]
+  shader_scroll: int
 
   _app: "AppWorld" = field(repr=False)
 

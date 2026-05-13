@@ -32,8 +32,13 @@ class InputSystem:
             elif ev.type == MOUSEBUTTONDOWN:
                 if ev.button in (4, 5):
                     direction = 1 if ev.button == 4 else -1
-                    if ctx is not None:
-                        ctx.mode.on_scroll(direction, *pygame.mouse.get_pos(), world.mode_context())
+                    mx, my = pygame.mouse.get_pos()
+                    # If the mouse is over a panel that captures scroll
+                    # (e.g. ShaderDetailPanel), dispatch the panel's action
+                    # instead of forwarding to the mode's camera zoom.
+                    if not self._dispatch_panel_scroll(mx, my, direction, world):
+                        if ctx is not None:
+                            ctx.mode.on_scroll(direction, mx, my, world.mode_context())
                 elif self._dispatch_hud_click(ev.pos, world):
                     pass  # HUD button consumed the click; don't update btn state or notify scene
                 else:
@@ -77,6 +82,26 @@ class InputSystem:
             bx, by, bw, bh = btn.rect
             if bx <= mx < bx + bw and by <= my < by + bh:
                 world.dispatch_action(btn.action, btn.action_data)
+                return True
+        return False
+
+    @staticmethod
+    def _dispatch_panel_scroll(mx: int, my: int, direction: int, world: "AppWorld") -> bool:
+        """If the mouse is over a panel that declares a `scroll_action`, fire it.
+
+        Returns True if a panel consumed the scroll event. Direction is +1 for
+        scroll-up (wheel forward) and -1 for scroll-down — passed through as the
+        action's data so the handler can interpret it however it likes. The
+        ShaderDetailPanel inverts this so wheel-down advances the text.
+        """
+        for panel in world.render.hud_panels:
+            if panel.scroll_action is None:
+                continue
+            bx, by, bw, bh = panel.rect
+            if bw <= 0 or bh <= 0:
+                continue
+            if bx <= mx < bx + bw and by <= my < by + bh:
+                world.dispatch_action(panel.scroll_action, -direction)
                 return True
         return False
 

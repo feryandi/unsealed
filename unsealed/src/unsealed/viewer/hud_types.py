@@ -10,7 +10,7 @@ GL — eliminating the old circular-import workaround between `rendering` and
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 
 class HudAction:
@@ -21,6 +21,10 @@ class HudAction:
   STOP = "stop"
   SELECT_ANIM = "select_anim"
   TOGGLE_Q3 = "toggle_q3"
+  # Shader-detail viewer actions
+  SELECT_SHADER = "select_shader"   # action_data = Q3Shader instance (toggle)
+  SCROLL_SHADER = "scroll_shader"   # action_data = +1 or -1 (scroll direction)
+  CLOSE_SHADER  = "close_shader"
 
 
 @dataclass
@@ -56,6 +60,10 @@ class HudPanel:
   buttons            : horizontal row of HudButton drawn below text lines
   list_items         : vertical list of HudButton drawn below the button row
   list_highlight_idx : index in list_items to highlight as the active selection
+  scroll_action      : if set, the HUD captures the mouse wheel over this panel's
+                       rect and dispatches this action with `+1 / -1` data instead
+                       of forwarding to the active Mode's on_scroll
+  rect               : screen-space (x, y, w, h) — filled by HudRenderer each frame
   """
 
   lines: List[str]
@@ -65,3 +73,5 @@ class HudPanel:
   buttons: List[HudButton] = field(default_factory=list)
   list_items: List[HudButton] = field(default_factory=list)
   list_highlight_idx: int = -1
+  scroll_action: Optional[str] = None
+  rect: Tuple[int, int, int, int] = field(default_factory=lambda: (0, 0, 0, 0))

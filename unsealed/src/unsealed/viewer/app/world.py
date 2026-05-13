@@ -49,6 +49,8 @@ class AppWorld:
             selected_mesh_idx=self.scene.selected_mesh_idx,
             q3_enabled=self.render.q3_enabled,
             wireframe=self.render.wireframe,
+            selected_shader=self.scene.selected_shader,
+            shader_scroll=self.scene.shader_scroll,
             _app=self,
         )
 
@@ -89,8 +91,28 @@ class AppWorld:
                     self.anim_select(data)
             case HudAction.TOGGLE_Q3:
                 self.render.q3_enabled = not self.render.q3_enabled
+            case HudAction.SELECT_SHADER:
+                self._select_shader(data)
+            case HudAction.SCROLL_SHADER:
+                if isinstance(data, int) and self.scene.selected_shader is not None:
+                    self.scene.shader_scroll = max(0, self.scene.shader_scroll + data)
+            case HudAction.CLOSE_SHADER:
+                self.scene.selected_shader = None
+                self.scene.shader_scroll = 0
             case _:
                 pass
+
+    def _select_shader(self, shader: object) -> None:
+        """Toggle the shader-detail panel for `shader`. Same shader clicked twice closes it."""
+        if shader is None:
+            return
+        current = self.scene.selected_shader
+        if current is not None and current is shader:
+            self.scene.selected_shader = None
+            self.scene.shader_scroll = 0
+        else:
+            self.scene.selected_shader = shader
+            self.scene.shader_scroll = 0
 
     # ── input / picking helpers ───────────────────────────────────────────────
 
