@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from ...scenes.viewer_scene import ViewerScene
+from ...scenes import ViewerScene
 
 
 @dataclass

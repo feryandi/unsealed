@@ -1,20 +1,18 @@
-"""AppWorld — component registry and Protocol interface for scenes."""
+"""AppWorld — component registry and host for Mode plugins."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 
-from ..modes import MapScene, ModelScene
+from ..hud_types import HudAction
+from ..modes import MODES, MapScene, ModeContext, ModelScene
 from ..modes.map.camera import MapCamera
-from ..rendering import HudAction
 from .components import InputComponent, RenderComponent, SceneComponent, WindowComponent
 from .systems import AnimationSystem, HudSystem, InputSystem, LoadSystem, UpdateSystem
 
 if TYPE_CHECKING:
-    from .components.animation import AnimationComponent
-    from ..camera import Camera
-    from ..rendering import HudPanel
+    from ..hud_types import HudPanel
 
 
 class AppWorld:
@@ -34,35 +32,27 @@ class AppWorld:
         self._load_sys = LoadSystem()
         self._update_sys = UpdateSystem()
 
-    # ── Protocol interface (used by scenes/ configs) ──────────────────────────
+    # ── ModeContext factory ────────────────────────────────────────────────────
 
-    @property
-    def _camera(self) -> "Camera":
-        return self.scene.context.camera  # type: ignore[union-attr]
+    def mode_context(self) -> ModeContext:
+        """Build a fresh ModeContext snapshot for a Mode call."""
+        ctx = self.scene.context
+        camera = ctx.camera if ctx is not None else None
+        return ModeContext(
+            camera=camera,  # type: ignore[arg-type]
+            width=self.window.width,
+            height=self.window.height,
+            buttons=self.inp.btn,
+            lmb_down_pos=self.inp.lmb_down_pos,
+            scene_context=ctx,
+            anim=self.scene.anim,
+            selected_mesh_idx=self.scene.selected_mesh_idx,
+            q3_enabled=self.render.q3_enabled,
+            wireframe=self.render.wireframe,
+            _app=self,
+        )
 
-    @property
-    def _btn(self) -> List[bool]:
-        return self.inp.btn
-
-    @property
-    def _lmb_down_pos(self) -> Optional[tuple[int, int]]:
-        return self.inp.lmb_down_pos
-
-    @_lmb_down_pos.setter
-    def _lmb_down_pos(self, value: Optional[tuple[int, int]]) -> None:
-        self.inp.lmb_down_pos = value
-
-    @property
-    def _wireframe(self) -> bool:
-        return self.render.wireframe
-
-    @_wireframe.setter
-    def _wireframe(self, value: bool) -> None:
-        self.render.wireframe = value
-
-    @property
-    def _anim(self) -> "AnimationComponent":
-        return self.scene.anim
+    # ── animation helpers ─────────────────────────────────────────────────────
 
     def anim_toggle_play(self) -> None:
         self._anim_sys.toggle_play(self.scene.anim)
@@ -79,6 +69,11 @@ class AppWorld:
         ctx = self.scene.context
         if ctx is not None and isinstance(ctx.scene, ModelScene):
             self._anim_sys.scrub(self.scene.anim, ctx.scene, delta)
+
+    def reload_animation(self, scene: object) -> None:
+        """Rebuild animation state after the scene's entities have changed
+        (e.g. model injection into a map)."""
+        self._anim_sys.load(self.scene.anim, scene)
 
     def dispatch_action(self, action: str, data: object = None) -> None:
         """Dispatch a HUD button action by name."""
@@ -97,21 +92,12 @@ class AppWorld:
             case _:
                 pass
 
-    @property
-    def _width(self) -> int:
-        return self.window.width
+    # ── input / picking helpers ───────────────────────────────────────────────
 
-    @property
-    def _height(self) -> int:
-        return self.window.height
-
-    def _set_capture(self, on: bool) -> None:
+    def set_capture(self, on: bool) -> None:
         self._input_sys.set_capture(self.inp, on)
 
-    def _open_dialog(self) -> None:
-        self._load_sys.open_dialog(self)
-
-    def _do_pick(self, mx: int, my: int) -> None:
+    def pick_at(self, mx: int, my: int) -> None:
         """Ray-cast pick at screen position (mx, my) and update selection."""
         ctx = self.scene.context
         if ctx is None or not isinstance(ctx.scene, MapScene):
@@ -124,6 +110,22 @@ class AppWorld:
         self.scene.selected_mesh_idx = None if hit == self.scene.selected_mesh_idx else hit
 
     # ── system dispatch ────────────────────────────────────────────────────────
+
+    def register_render_extensions(self) -> None:
+        """Hand the renderer the union of RenderExtensions from every registered Mode.
+
+        Called after `Renderer.init()` so the renderer can compile their
+        shaders once and own their lifecycle without importing modes/.
+        """
+        extensions = []
+        seen: set = set()
+        for mode in MODES:
+            for ext in mode.render_extensions():
+                if id(ext) in seen:
+                    continue
+                seen.add(id(ext))
+                extensions.append(ext)
+        self.render.renderer.register_extensions(extensions)
 
     def process_events(self) -> None:
         self._input_sys.process(self)
@@ -138,73 +140,18 @@ class AppWorld:
         self._load_sys.open_dialog(self)
 
     def open_inject_dialog(self) -> None:
-        self._load_sys.open_inject_dialog(self)
-
-    def inject_model(self, path: Path) -> None:
-        """Inject a .ms1 / .act model into the currently-loaded map at the
-        camera's look-at target. No-op if no map is loaded.
-
-        The model becomes one more AnimatedEntity in the map scene — same
-        animation/render path as any baked-in object — proving the Phase 3
-        entity model supports cross-mode composition.
-        """
-        import numpy as np
-
-        from ..modes.map.camera import MapCamera
-        from ..modes.model.mode import ModelMode
-        from ..scenes import AnimatedEntity
-
+        """Pick a model file and ask the active Mode to inject it."""
+        path = self._load_sys.ask_model_file(self)
+        if path is None:
+            return
         ctx = self.scene.context
-        if ctx is None or not isinstance(ctx.scene, MapScene):
-            print("[viewer] inject_model: no map loaded")
+        if ctx is None:
             return
-
-        map_scene = ctx.scene
-        cam = cast(MapCamera, ctx.camera)
-
-        try:
-            model_scene = ModelMode().decode(path, self.shader_cache)
-        except Exception as e:
-            print(f"[viewer] inject_model decode failed: {e}")
+        inject = getattr(ctx.mode, "inject_model", None)
+        if inject is None:
+            print(f"[viewer] active mode {ctx.mode.name!r} does not support inject_model")
             return
-
-        if not model_scene.entities:
-            print(f"[viewer] inject_model: {path.name} has no entities")
-            return
-
-        src_entity = model_scene.entities[0]
-
-        # Placement: translate to camera target (already terrain-clamped by MapCamera).
-        placement = np.identity(4, dtype=np.float32)
-        placement[0, 3] = float(cam.target[0])
-        placement[1, 3] = float(cam.target[1])
-        placement[2, 3] = float(cam.target[2])
-        inst_arr = np.array([placement], dtype=np.float32)
-
-        injected_meshes = []
-        for mesh in src_entity.meshes:
-            mesh.instance_matrices = inst_arr
-            map_scene.meshes.append(mesh)
-            injected_meshes.append(mesh)
-
-        map_scene.entities.append(
-            AnimatedEntity(
-                name=path.stem,
-                meshes=injected_meshes,
-                skeleton=src_entity.skeleton,
-                animation_groups=src_entity.animation_groups,
-                source_file=path.name,
-            )
-        )
-
-        # Re-upload scene to GPU and rebuild animation state for new entities.
-        self.render.renderer.load_scene(map_scene)
-        self._anim_sys.load(self.scene.anim, map_scene)
-
-        print(
-            f"[viewer] injected {path.name} at "
-            f"({cam.target[0]:.1f}, {cam.target[1]:.1f}, {cam.target[2]:.1f})"
-        )
+        inject(path, self.mode_context())
 
     def build_hud_panels(self) -> "List[HudPanel]":
-        return self._hud_sys.build(self.scene, self.render.q3_enabled)
+        return self._hud_sys.build(self)

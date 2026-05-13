@@ -7,10 +7,10 @@ from .scene import (
   ViewerMesh,
   ViewerPrimitive,
   ViewerQ3Stage,
+  ViewerScene,
   ViewerSkeleton,
 )
 from .three_dimensional_scene import ThreeDimensionalScene
-from .viewer_scene import ViewerScene
 
 __all__ = [
   "AnimatedEntity",

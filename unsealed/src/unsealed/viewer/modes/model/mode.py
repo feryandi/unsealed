@@ -5,25 +5,24 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional, cast
 
-from ..base import BaseMode
+from ..base import AnimationPolicy, BaseMode
 from .camera import OrbitCamera
 from .panels import AnimationListPanel, ModelControlPanel, PlaybackControlPanel
 from .pipeline import ModelViewerPipeline
 from .scene import ModelScene
 
 if TYPE_CHECKING:
-  from ...app.components.animation import AnimationComponent
-  from ...app.context import ViewerContext
-  from ...app.world import AppWorld
   from ...camera import Camera
-  from ...rendering import HudPanel
+  from ...hud_types import HudPanel
   from ...scenes import ViewerScene
+  from ..context import ModeContext
 
 
 class ModelMode(BaseMode):
   name = "model"
   extensions = (".ms1", ".act")
   scene_type = ModelScene
+  animation_policy = AnimationPolicy(has_primary=True)
 
   def decode(
     self, path: Path, shader_cache: Optional[dict] = None
@@ -36,15 +35,13 @@ class ModelMode(BaseMode):
       cam.fit_bounds(scene.bounds_center, scene.bounds_radius)
     return cam
 
-  def build_hud_panels(
-    self,
-    ctx: "ViewerContext",
-    anim: "AnimationComponent",
-    selected_idx: Optional[int],
-    q3_enabled: bool = True,
-  ) -> "List[HudPanel]":
+  def build_hud_panels(self, mctx: "ModeContext") -> "List[HudPanel]":
+    ctx = mctx.scene_context
+    if ctx is None:
+      return []
     scene = cast(ModelScene, ctx.scene)
-    panels: "List[HudPanel]" = [ModelControlPanel(scene, ctx.path, q3_enabled)]
+    panels: "List[HudPanel]" = [ModelControlPanel(scene, ctx.path, mctx.q3_enabled)]
+    anim = mctx.anim
     primary = anim.primary
     if primary is not None and primary.enabled and scene.entities:
       entity = scene.entities[anim.primary_entity]  # type: ignore[index]
@@ -61,7 +58,7 @@ class ModelMode(BaseMode):
       )
     return panels
 
-  def on_key(self, key: int, app: "AppWorld") -> None:
+  def on_key(self, key: int, mctx: "ModeContext") -> None:
     from pygame.locals import (
       K_BACKSPACE,
       K_DOWN,
@@ -75,48 +72,48 @@ class ModelMode(BaseMode):
     from ...app.constants import _SCRUB_STEP
 
     if key == K_w:
-      app._wireframe = not app._wireframe
+      mctx.toggle_wireframe()
     elif key == K_SPACE:
-      app.anim_toggle_play()
+      mctx.anim_toggle_play()
     elif key == K_BACKSPACE:
-      app.anim_stop()
+      mctx.anim_stop()
     elif key == K_UP:
-      primary = app.scene.anim.primary
-      ctx = app.scene.context
+      primary = mctx.anim.primary
+      ctx = mctx.scene_context
       if primary is not None and primary.enabled and ctx is not None:
         scene = cast(ModelScene, ctx.scene)
         if scene.entities:
-          n = len(scene.entities[app.scene.anim.primary_entity].animation_groups)  # type: ignore[index]
+          n = len(scene.entities[mctx.anim.primary_entity].animation_groups)  # type: ignore[index]
           if n > 0:
-            app.anim_select((primary.group_idx - 1) % n)
+            mctx.anim_select((primary.group_idx - 1) % n)
     elif key == K_DOWN:
-      primary = app.scene.anim.primary
-      ctx = app.scene.context
+      primary = mctx.anim.primary
+      ctx = mctx.scene_context
       if primary is not None and primary.enabled and ctx is not None:
         scene = cast(ModelScene, ctx.scene)
         if scene.entities:
-          n = len(scene.entities[app.scene.anim.primary_entity].animation_groups)  # type: ignore[index]
+          n = len(scene.entities[mctx.anim.primary_entity].animation_groups)  # type: ignore[index]
           if n > 0:
-            app.anim_select((primary.group_idx + 1) % n)
+            mctx.anim_select((primary.group_idx + 1) % n)
     elif key == K_LEFT:
-      app.anim_scrub(-_SCRUB_STEP)
+      mctx.anim_scrub(-_SCRUB_STEP)
     elif key == K_RIGHT:
-      app.anim_scrub(_SCRUB_STEP)
+      mctx.anim_scrub(_SCRUB_STEP)
 
-  def on_mouse_down(self, button: int, pos: tuple[int, int], app: "AppWorld") -> None:
+  def on_mouse_down(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None:
     if button == 3:
-      app._set_capture(True)
+      mctx.set_capture(True)
 
-  def on_mouse_up(self, button: int, pos: tuple[int, int], app: "AppWorld") -> None:
+  def on_mouse_up(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None:
     if button == 3:
-      app._set_capture(False)
+      mctx.set_capture(False)
 
-  def on_mouse_motion(self, dx: int, dy: int, app: "AppWorld") -> None:
-    cam = cast(OrbitCamera, app._camera)
-    if app._btn[2] or app._btn[0]:
+  def on_mouse_motion(self, dx: int, dy: int, mctx: "ModeContext") -> None:
+    cam = cast(OrbitCamera, mctx.camera)
+    if mctx.buttons[2] or mctx.buttons[0]:
       cam.orbit(-dx, dy)
-    elif app._btn[1]:
+    elif mctx.buttons[1]:
       cam.pan(-dx, dy)
 
-  def on_scroll(self, direction: int, mx: int, my: int, app: "AppWorld") -> None:
-    cast(OrbitCamera, app._camera).zoom(direction)
+  def on_scroll(self, direction: int, mx: int, my: int, mctx: "ModeContext") -> None:
+    cast(OrbitCamera, mctx.camera).zoom(direction)

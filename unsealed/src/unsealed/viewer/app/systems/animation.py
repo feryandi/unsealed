@@ -8,12 +8,10 @@ the renderer consumes through RenderContext.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from ...animation import Animator, NodeAnimator
-from ...modes import ModelScene
+from ...modes import AnimationPolicy, for_scene
 from ...scenes import AnimatedEntity, ThreeDimensionalScene
 from ..components.animation import AnimationComponent, EntityAnimState
 
@@ -47,14 +45,18 @@ class AnimationSystem:
 
       component.states.append(state)
 
-    # UI semantics: ModelScene → first enabled entity is primary, starts paused.
-    # MapScene → no primary, auto-play every enabled entity.
-    if isinstance(scene, ModelScene):
+    # Apply the mode's policy for how to treat fresh entities.
+    try:
+      policy = for_scene(scene).animation_policy
+    except ValueError:
+      policy = AnimationPolicy()
+
+    if policy.has_primary:
       for i, s in enumerate(component.states):
         if s.enabled:
           component.primary_entity = i
           break
-    else:
+    if policy.auto_play_all:
       for s in component.states:
         if s.enabled:
           s.playing = True

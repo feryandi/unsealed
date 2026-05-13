@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-from typing import List
+from typing import TYPE_CHECKING, List
 
-from ...rendering import HudPanel
-from ..components.scene_state import SceneComponent
+from ...hud_types import HudPanel
 from ..panels import WelcomePanel
+
+if TYPE_CHECKING:
+    from ..world import AppWorld
 
 
 class HudSystem:
-    def build(self, scene: SceneComponent, q3_enabled: bool = True) -> List[HudPanel]:
-        if scene.context is None:
+    def build(self, world: "AppWorld") -> List[HudPanel]:
+        ctx = world.scene.context
+        if ctx is None:
             return [WelcomePanel()]
-        return scene.context.mode.build_hud_panels(
-            scene.context, scene.anim, scene.selected_mesh_idx, q3_enabled
-        )
+        return ctx.mode.build_hud_panels(world.mode_context())

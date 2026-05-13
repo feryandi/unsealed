@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from .base import (
   MODES,
+  AnimationPolicy,
   BaseMode,
   Mode,
   RenderExtension,
@@ -18,6 +19,7 @@ from .base import (
   for_scene,
   register,
 )
+from .context import ModeContext
 from .image import ImageMode, ImageScene
 from .map import MapMode, MapScene
 from .model import ModelMode, ModelScene
@@ -27,9 +29,11 @@ register(MapMode())
 register(ImageMode())
 
 __all__ = [
+  "AnimationPolicy",
   "BaseMode",
   "MODES",
   "Mode",
+  "ModeContext",
   "RenderExtension",
   "RenderPhase",
   "for_path",

@@ -2,8 +2,7 @@ from dataclasses import dataclass, field
 from typing import List
 
 from .entity import AnimatedEntity
-from .scene import ViewerMesh
-from .viewer_scene import ViewerScene
+from .scene import ViewerMesh, ViewerScene
 
 
 @dataclass

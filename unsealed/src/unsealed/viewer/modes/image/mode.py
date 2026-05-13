@@ -3,27 +3,32 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, Iterable, List, Optional, cast
 
-from ..base import BaseMode
+from ..base import BaseMode, RenderExtension
 from .camera import ImageCamera
+from .extensions import ImageExtension
 from .panels import ImageControlPanel
 from .pipeline import TexViewerPipeline
 from .scene import ImageScene
 
 if TYPE_CHECKING:
-  from ...app.components.animation import AnimationComponent
-  from ...app.context import ViewerContext
-  from ...app.world import AppWorld
   from ...camera import Camera
-  from ...rendering import HudPanel
+  from ...hud_types import HudPanel
   from ...scenes import ViewerScene
+  from ..context import ModeContext
 
 
 class ImageMode(BaseMode):
   name = "image"
   extensions = (".tex", ".te1")
   scene_type = ImageScene
+
+  def __init__(self) -> None:
+    self._render_extensions: List[RenderExtension] = [ImageExtension()]
+
+  def render_extensions(self) -> "Iterable[RenderExtension]":
+    return self._render_extensions
 
   def decode(
     self, path: Path, shader_cache: Optional[dict] = None
@@ -36,13 +41,10 @@ class ImageMode(BaseMode):
       cam.fit_image(scene.image_w, scene.image_h, win_w, win_h)
     return cam
 
-  def build_hud_panels(
-    self,
-    ctx: "ViewerContext",
-    anim: "AnimationComponent",
-    selected_idx: Optional[int],
-    q3_enabled: bool = True,
-  ) -> "List[HudPanel]":
+  def build_hud_panels(self, mctx: "ModeContext") -> "List[HudPanel]":
+    ctx = mctx.scene_context
+    if ctx is None:
+      return []
     scene = cast(ImageScene, ctx.scene)
     cam = cast(ImageCamera, ctx.camera)
     return [
@@ -54,11 +56,11 @@ class ImageMode(BaseMode):
       )
     ]
 
-  def on_mouse_motion(self, dx: int, dy: int, app: "AppWorld") -> None:
-    if any(app._btn):
-      cast(ImageCamera, app._camera).pan(dx, dy)
+  def on_mouse_motion(self, dx: int, dy: int, mctx: "ModeContext") -> None:
+    if any(mctx.buttons):
+      cast(ImageCamera, mctx.camera).pan(dx, dy)
 
-  def on_scroll(self, direction: int, mx: int, my: int, app: "AppWorld") -> None:
-    cast(ImageCamera, app._camera).zoom_step(
-      direction, mx, my, app._width, app._height
+  def on_scroll(self, direction: int, mx: int, my: int, mctx: "ModeContext") -> None:
+    cast(ImageCamera, mctx.camera).zoom_step(
+      direction, mx, my, mctx.width, mctx.height
     )

@@ -6,76 +6,54 @@ its decoder, camera, HUD wiring, and any mode-specific render extensions.
 New modes (e.g. .spr, .men) plug in by registering a Mode subclass — no
 edits to the core viewer.
 
-`RenderPhase` and `RenderExtension` are the plug points for mode-specific
-draw passes (e.g. terrain + sky for map mode). The renderer iterates
-phases in order and runs registered extensions at each phase. Phase 1
-defines the shape; the renderer still uses its inline branches until
-Phase 2 wires extensions in.
+Render-phase types live in `rendering/extension.py` so the renderer can use
+them without depending on this package; they are re-exported here for
+convenience so mode implementations can import everything from one place.
+
+Mode↔Host interactions all flow through `ModeContext` (see `context.py`).
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from enum import IntEnum
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, List, Optional, Protocol, runtime_checkable
 
+from ..rendering.extension import RenderExtension, RenderPhase
+
 if TYPE_CHECKING:
-  from numpy.typing import NDArray
-
-  from ..app.components.animation import AnimationComponent
-  from ..app.context import ViewerContext
-  from ..app.world import AppWorld
   from ..camera import Camera
-  from ..rendering import HudPanel, RenderContext
+  from ..hud_types import HudPanel
   from ..scenes import ViewerScene
+  from .context import ModeContext
 
 
-class RenderPhase(IntEnum):
-  """Ordered draw phases the core renderer iterates each frame.
+__all__ = [
+  "AnimationPolicy",
+  "BaseMode",
+  "MODES",
+  "Mode",
+  "RenderExtension",
+  "RenderPhase",
+  "for_path",
+  "for_scene",
+  "register",
+]
 
-  Mode-supplied `RenderExtension`s declare a phase; the renderer runs them
-  at the right time relative to its built-in passes.
+
+@dataclass(frozen=True)
+class AnimationPolicy:
+  """How AnimationSystem should treat freshly-loaded entities for this mode.
+
+  has_primary    — set `primary_entity` to the first enabled entity (UI-controlled, paused).
+  auto_play_all  — every enabled entity starts `playing=True` immediately.
+
+  Modes set the combination that matches their UI semantics. Both False
+  means animations are loaded but neither playing nor UI-controlled.
   """
-  BACKGROUND     = 10  # sky dome, environment (after deferred lighting + depth blit)
-  FORWARD_OPAQUE = 20  # terrain or other forward opaque geometry
-  FORWARD_Q3     = 30  # core: Q3 multi-stage shaders
-  TRANSPARENT    = 40  # core: alpha-blend pass
-  OVERLAY        = 50  # core: wireframe, selection highlight
-
-
-@runtime_checkable
-class RenderExtension(Protocol):
-  """A mode-provided draw step plugged into a specific RenderPhase.
-
-  Lifecycle (driven by the core Renderer):
-    init()              — once, after GL context is ready (compile shaders)
-    upload(scene)       — once per file load, when this extension is active
-    render(ctx, …)      — every frame, at this extension's phase
-    free_scene()        — when a different scene loads (release per-scene GPU state)
-    dispose()           — at Renderer.cleanup() (release everything incl. shaders)
-  """
-  phase: RenderPhase
-
-  def init(self) -> None:
-    """Compile shaders / allocate one-time GL state. GL context must be active."""
-    ...
-
-  def upload(self, scene: "ViewerScene") -> None:
-    """Upload per-scene GPU resources (VAOs, textures)."""
-    ...
-
-  def render(self, ctx: "RenderContext", view: "NDArray", proj: "NDArray") -> None:
-    """Draw this extension's contribution. view/proj are already mirror-x-adjusted."""
-    ...
-
-  def free_scene(self) -> None:
-    """Release per-scene GPU state. Keep one-time resources from init()."""
-    ...
-
-  def dispose(self) -> None:
-    """Release ALL GPU resources owned by this extension."""
-    ...
+  has_primary: bool = False
+  auto_play_all: bool = False
 
 
 @runtime_checkable
@@ -89,6 +67,7 @@ class Mode(Protocol):
   name: str
   extensions: tuple[str, ...]      # e.g. (".ms1", ".act")
   scene_type: type["ViewerScene"]  # concrete ViewerScene subclass
+  animation_policy: AnimationPolicy
 
   # ── file → scene ──────────────────────────────────────────────────────────
   def decode(self, path: Path, shader_cache: Optional[dict] = None) -> "ViewerScene":
@@ -98,22 +77,15 @@ class Mode(Protocol):
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
     ...
 
-  def build_hud_panels(
-    self,
-    ctx: "ViewerContext",
-    anim: "AnimationComponent",
-    selected_idx: Optional[int],
-    q3_enabled: bool = True,
-  ) -> "List[HudPanel]":
-    ...
+  def build_hud_panels(self, mctx: "ModeContext") -> "List[HudPanel]": ...
 
-  def on_key(self, key: int, app: "AppWorld") -> None: ...
-  def on_mouse_down(self, button: int, pos: tuple[int, int], app: "AppWorld") -> None: ...
-  def on_mouse_up(self, button: int, pos: tuple[int, int], app: "AppWorld") -> None: ...
-  def on_mouse_motion(self, dx: int, dy: int, app: "AppWorld") -> None: ...
-  def on_scroll(self, direction: int, mx: int, my: int, app: "AppWorld") -> None: ...
+  def on_key(self, key: int, mctx: "ModeContext") -> None: ...
+  def on_mouse_down(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None: ...
+  def on_mouse_up(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None: ...
+  def on_mouse_motion(self, dx: int, dy: int, mctx: "ModeContext") -> None: ...
+  def on_scroll(self, direction: int, mx: int, my: int, mctx: "ModeContext") -> None: ...
 
-  # ── renderer extensions (Phase 2 wires these in) ──────────────────────────
+  # ── renderer extensions ───────────────────────────────────────────────────
   def render_extensions(self) -> "Iterable[RenderExtension]": ...
 
 
@@ -130,6 +102,7 @@ class BaseMode(ABC):
   name: str = ""
   extensions: tuple[str, ...] = ()
   scene_type: type = type(None)  # subclasses override
+  animation_policy: AnimationPolicy = AnimationPolicy()
 
   @abstractmethod
   def decode(self, path: Path, shader_cache: Optional[dict] = None) -> "ViewerScene":
@@ -140,28 +113,22 @@ class BaseMode(ABC):
     ...
 
   @abstractmethod
-  def build_hud_panels(
-    self,
-    ctx: "ViewerContext",
-    anim: "AnimationComponent",
-    selected_idx: Optional[int],
-    q3_enabled: bool = True,
-  ) -> "List[HudPanel]":
+  def build_hud_panels(self, mctx: "ModeContext") -> "List[HudPanel]":
     ...
 
-  def on_key(self, key: int, app: "AppWorld") -> None:
+  def on_key(self, key: int, mctx: "ModeContext") -> None:
     pass
 
-  def on_mouse_down(self, button: int, pos: tuple[int, int], app: "AppWorld") -> None:
+  def on_mouse_down(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None:
     pass
 
-  def on_mouse_up(self, button: int, pos: tuple[int, int], app: "AppWorld") -> None:
+  def on_mouse_up(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None:
     pass
 
-  def on_mouse_motion(self, dx: int, dy: int, app: "AppWorld") -> None:
+  def on_mouse_motion(self, dx: int, dy: int, mctx: "ModeContext") -> None:
     pass
 
-  def on_scroll(self, direction: int, mx: int, my: int, app: "AppWorld") -> None:
+  def on_scroll(self, direction: int, mx: int, my: int, mctx: "ModeContext") -> None:
     pass
 
   def render_extensions(self) -> "Iterable[RenderExtension]":

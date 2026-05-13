@@ -1,9 +1,8 @@
 """
 OverlayPass — wireframe toggle and selection highlight.
 
-Logic is verbatim from the old Renderer._draw_wireframe /
-_draw_selection_highlight; only the data source changes from
-List[_GpuMesh] to RenderRegistry.
+Reads geometry from the RenderRegistry and draws line-mode polygons offset
+slightly toward the camera, on top of the deferred-lit colour buffer.
 """
 from __future__ import annotations
 

@@ -3,8 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional
 
-from ...rendering.types import _STRIDE_PLAIN, _STRIDE_SKINNED, HudAction, HudButton, HudPanel
+from ...hud_types import HudAction, HudButton, HudPanel
 from ...scenes import AnimatedEntity, ViewerMesh
+from ...scenes.scene import _STRIDE_PLAIN, _STRIDE_SKINNED
 from .scene import MapScene
 
 

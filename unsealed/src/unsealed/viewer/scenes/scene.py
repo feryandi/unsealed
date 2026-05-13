@@ -13,6 +13,17 @@ from typing import Dict, List, Optional, Tuple
 from numpy.typing import NDArray
 
 
+# Vertex buffer strides in bytes for ViewerMesh.vertex_data.
+# Live here (not in rendering/) because they describe the CPU mesh layout the
+# pipeline writes; the renderer reads them when uploading to GL.
+_STRIDE_PLAIN = 32   # [pos(3) | normal(3) | uv(2)] × 4 bytes
+_STRIDE_SKINNED = 64  # [pos(3) | normal(3) | uv(2) | joints(4) | weights(4)] × 4 bytes
+
+
+class ViewerScene:
+  """Base type for all viewer scenes. Use ImageScene, ModelScene, or MapScene."""
+
+
 @dataclass
 class ViewerQ3Stage:
   """One Q3 shader stage resolved to pixel data + GL blend parameters.

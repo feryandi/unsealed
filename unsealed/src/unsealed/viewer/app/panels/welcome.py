@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ...rendering import HudAction, HudButton, HudPanel
+from ...hud_types import HudAction, HudButton, HudPanel
 
 
 class WelcomePanel(HudPanel):

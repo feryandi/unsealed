@@ -18,8 +18,8 @@ from typing import List, Tuple
 import numpy as np
 from OpenGL.GL import *  # noqa: F401, F403
 
+from ..hud_types import HudButton, HudPanel
 from .shaders import _compile_prog, _HUD_VERT, _HUD_FRAG
-from .types import HudButton, HudPanel
 
 # ── layout constants ──────────────────────────────────────────────────────────
 _PAD = 10          # panel outer padding (px)

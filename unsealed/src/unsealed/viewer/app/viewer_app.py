@@ -7,8 +7,7 @@ from typing import Optional
 
 import pygame
 
-from ..modes.image.camera import ImageCamera
-from ..modes.map.camera import MapCamera
+from ..camera import Camera
 from ..modes.model.camera import OrbitCamera
 from ..rendering import RenderContext
 from .world import AppWorld
@@ -44,6 +43,7 @@ class ViewerApp:
 
         world = self._world
         world.render.renderer.init()
+        world.register_render_extensions()
         world.window.font = pygame.font.SysFont(
             "malgunsl,malgun gothic,gulim,dotum,noto sans cjk kr,consolas,arial",
             14,
@@ -67,9 +67,9 @@ class ViewerApp:
             win = world.window
             scene = world.scene
             rend = world.render
-            cam: OrbitCamera | ImageCamera | MapCamera
+            cam: Camera
             if scene.context is not None:
-                cam = scene.context.camera  # type: ignore[assignment]
+                cam = scene.context.camera
             else:
                 cam = OrbitCamera()
             rend.renderer.render(
@@ -94,6 +94,6 @@ class ViewerApp:
             )
             pygame.display.flip()
 
-        world._set_capture(False)
+        world.set_capture(False)
         world.render.renderer.cleanup()
         pygame.quit()

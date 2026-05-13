@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List
 
-from ...rendering.types import HudAction, HudButton, HudPanel
+from ...hud_types import HudAction, HudButton, HudPanel
 from .scene import ModelScene
 
 

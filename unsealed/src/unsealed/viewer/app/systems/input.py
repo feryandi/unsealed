@@ -33,7 +33,7 @@ class InputSystem:
                 if ev.button in (4, 5):
                     direction = 1 if ev.button == 4 else -1
                     if ctx is not None:
-                        ctx.mode.on_scroll(direction, *pygame.mouse.get_pos(), world)
+                        ctx.mode.on_scroll(direction, *pygame.mouse.get_pos(), world.mode_context())
                 elif self._dispatch_hud_click(ev.pos, world):
                     pass  # HUD button consumed the click; don't update btn state or notify scene
                 else:
@@ -41,21 +41,21 @@ class InputSystem:
                     if 0 <= btn_idx <= 2:
                         inp.btn[btn_idx] = True
                     if ctx is not None:
-                        ctx.mode.on_mouse_down(ev.button, ev.pos, world)
+                        ctx.mode.on_mouse_down(ev.button, ev.pos, world.mode_context())
 
             elif ev.type == MOUSEBUTTONUP:
                 btn_idx = ev.button - 1
                 if 0 <= btn_idx <= 2:
                     inp.btn[btn_idx] = False
                 if ctx is not None:
-                    ctx.mode.on_mouse_up(ev.button, ev.pos, world)
+                    ctx.mode.on_mouse_up(ev.button, ev.pos, world.mode_context())
 
             elif ev.type == MOUSEMOTION:
                 dx, dy = ev.rel
                 if dx == 0 and dy == 0:
                     continue
                 if ctx is not None:
-                    ctx.mode.on_mouse_motion(dx, dy, world)
+                    ctx.mode.on_mouse_motion(dx, dy, world.mode_context())
 
     def _on_key(self, key: int, world: "AppWorld") -> None:
         if key == K_ESCAPE:
@@ -67,7 +67,7 @@ class InputSystem:
         elif key == K_o:
             world.open_dialog()
         elif world.scene.context is not None:
-            world.scene.context.mode.on_key(key, world)
+            world.scene.context.mode.on_key(key, world.mode_context())
 
     @staticmethod
     def _dispatch_hud_click(pos: tuple, world: "AppWorld") -> bool:
