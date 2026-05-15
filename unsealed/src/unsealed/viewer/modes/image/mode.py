@@ -5,16 +5,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, List, Optional, cast
 
+from imgui_bundle import imgui
+
 from ..base import BaseMode, RenderExtension
 from .camera import ImageCamera
 from .extensions import ImageExtension
-from .panels import ImageControlPanel
 from .pipeline import TexViewerPipeline
 from .scene import ImageScene
 
 if TYPE_CHECKING:
+  from ...app.world import AppWorld
   from ...camera import Camera
-  from ...hud_types import HudPanel
   from ...scenes import ViewerScene
   from ..context import ModeContext
 
@@ -41,20 +42,25 @@ class ImageMode(BaseMode):
       cam.fit_image(scene.image_w, scene.image_h, win_w, win_h)
     return cam
 
-  def build_hud_panels(self, mctx: "ModeContext") -> "List[HudPanel]":
-    ctx = mctx.scene_context
+  def draw_hud(self, world: "AppWorld") -> None:
+    ctx = world.scene.context
     if ctx is None:
-      return []
+      return
     scene = cast(ImageScene, ctx.scene)
     cam = cast(ImageCamera, ctx.camera)
-    return [
-      ImageControlPanel(
-        filename=ctx.path.name,
-        image_w=scene.image_w,
-        image_h=scene.image_h,
-        zoom_pct=int(cam.zoom * 100),
-      )
-    ]
+
+    imgui.set_next_window_pos((10, 10), imgui.Cond_.first_use_ever.value)
+    imgui.begin("Image")
+    imgui.text(f"File : {ctx.path.name}")
+    imgui.text(f"Size : {scene.image_w} × {scene.image_h} px")
+    imgui.text(f"Zoom : {int(cam.zoom * 100)}%")
+    imgui.separator()
+    if imgui.button("Open File"):
+      world.open_dialog()
+    imgui.separator()
+    imgui.text_disabled("Drag : pan   Scroll : zoom")
+    imgui.text_disabled("R / F : fit   O : open   Esc : quit")
+    imgui.end()
 
   def on_mouse_motion(self, dx: int, dy: int, mctx: "ModeContext") -> None:
     if any(mctx.buttons):

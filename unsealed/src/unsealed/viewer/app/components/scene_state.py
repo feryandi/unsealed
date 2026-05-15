@@ -16,8 +16,7 @@ class SceneComponent:
     anim: AnimationComponent = field(default_factory=AnimationComponent)
     current_path: Optional[Path] = None
     selected_mesh_idx: Optional[int] = None
-    # Shader-detail viewer state: which shader to display + scroll offset.
+    # Shader-detail viewer state: which shader to display.
     # `selected_shader` holds a Q3Shader instance (typed Any to avoid pulling
     # the shader package into the components layer).
     selected_shader: Optional[Any] = None
-    shader_scroll: int = 0

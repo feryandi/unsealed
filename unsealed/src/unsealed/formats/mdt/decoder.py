@@ -39,7 +39,7 @@ class SealMdtDecoder:
       blob = Blob()
       blob.value = self.file.read(size)
       parts = filename.split(".", 1)
-      blob.filename = parts[0]
+      blob.name = parts[0]
       blob.extension = parts[1] if len(parts) > 1 else None
       decoded_files.append(blob)
 

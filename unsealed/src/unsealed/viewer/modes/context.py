@@ -37,7 +37,6 @@ class ModeContext:
   q3_enabled: bool
   wireframe: bool
   selected_shader: Optional[Any]
-  shader_scroll: int
 
   _app: "AppWorld" = field(repr=False)
 

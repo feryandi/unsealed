@@ -3,23 +3,41 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional, cast
+from typing import TYPE_CHECKING, Optional, cast
+
+from imgui_bundle import imgui
 
 from ..base import AnimationPolicy, BaseMode
 from .extensions import InfiniteGridExtension
 from .camera import OrbitCamera
-from .panels import AnimationListPanel, ModelControlPanel, PlaybackControlPanel
 from .pipeline import ModelViewerPipeline
 from .scene import ModelScene
 
 if TYPE_CHECKING:
   from typing import Iterable
 
+  from ...app.world import AppWorld
   from ...camera import Camera
-  from ...hud_types import HudPanel
   from ...rendering.extension import RenderExtension
   from ...scenes import ViewerScene
   from ..context import ModeContext
+
+
+_MODEL_CONTROLS = [
+  "RMB drag    : Orbit (locked)",
+  "LMB drag    : Orbit (free)",
+  "MMB drag    : Pan",
+  "Scroll      : Zoom",
+  "R / F       : Reset / Fit",
+  "W           : Wireframe",
+  "O / Esc     : Open / Quit",
+]
+_ANIM_CONTROLS = [
+  "Space       : Play / Pause",
+  "Backspace   : Stop",
+  "Up / Down   : Change anim",
+  "Left/Right  : Scrub (paused)",
+]
 
 
 class ModelMode(BaseMode):
@@ -43,28 +61,86 @@ class ModelMode(BaseMode):
       cam.fit_bounds(scene.bounds_center, scene.bounds_radius)
     return cam
 
-  def build_hud_panels(self, mctx: "ModeContext") -> "List[HudPanel]":
-    ctx = mctx.scene_context
+  def draw_hud(self, world: "AppWorld") -> None:
+    ctx = world.scene.context
     if ctx is None:
-      return []
+      return
     scene = cast(ModelScene, ctx.scene)
-    panels: "List[HudPanel]" = [ModelControlPanel(scene, ctx.path, mctx.q3_enabled)]
-    anim = mctx.anim
+    self._draw_control_window(world, scene, ctx.path)
+    anim = world.scene.anim
     primary = anim.primary
     if primary is not None and primary.enabled and scene.entities:
       entity = scene.entities[anim.primary_entity]  # type: ignore[index]
+      self._draw_animation_list(world, entity, primary.group_idx)
       group = entity.animation_groups[primary.group_idx]
-      anim_names = [g.name for g in entity.animation_groups]
-      panels.append(AnimationListPanel(anim_names, primary.group_idx))
-      panels.append(
-        PlaybackControlPanel(
-          group_name=group.name,
-          current_time=primary.time,
-          duration=group.duration,
-          playing=primary.playing,
-        )
+      self._draw_playback_window(
+        world,
+        group_name=group.name,
+        current_time=primary.time,
+        duration=group.duration,
+        playing=primary.playing,
       )
-    return panels
+
+  def _draw_control_window(
+    self, world: "AppWorld", scene: ModelScene, path: Path
+  ) -> None:
+    primary_entity = scene.entities[0] if scene.entities else None
+    anim_count = (
+      len(primary_entity.animation_groups) if primary_entity is not None else 0
+    )
+
+    imgui.set_next_window_pos((10, 10), imgui.Cond_.first_use_ever.value)
+    imgui.begin("Model")
+    imgui.text(f"File       : {path.name}")
+    imgui.text(f"Meshes     : {len(scene.mesh_names)}")
+    imgui.text(f"Triangles  : {scene.tri_count:,}")
+    if anim_count:
+      imgui.text(f"Animations : {anim_count}")
+    imgui.separator()
+    if imgui.button("Open File"):
+      world.open_dialog()
+    imgui.same_line()
+    shader_label = "Shader: ON" if world.render.q3_enabled else "Shader: OFF"
+    if imgui.button(shader_label):
+      world.toggle_q3()
+    imgui.separator()
+    if anim_count:
+      for line in _ANIM_CONTROLS:
+        imgui.text_disabled(line)
+      imgui.separator()
+    for line in _MODEL_CONTROLS:
+      imgui.text_disabled(line)
+    imgui.end()
+
+  def _draw_animation_list(self, world: "AppWorld", entity, current_idx: int) -> None:
+    win_w = world.window.width
+    imgui.set_next_window_pos((win_w - 280, 10), imgui.Cond_.first_use_ever.value)
+    imgui.set_next_window_size((270, 400), imgui.Cond_.first_use_ever.value)
+    imgui.begin("Animations")
+    for i, group in enumerate(entity.animation_groups):
+      selected = (i == current_idx)
+      if imgui.selectable(f"{group.name}##anim{i}", selected)[0]:
+        world.anim_select(i)
+    imgui.end()
+
+  def _draw_playback_window(
+    self,
+    world: "AppWorld",
+    group_name: str,
+    current_time: float,
+    duration: float,
+    playing: bool,
+  ) -> None:
+    win_h = world.window.height
+    imgui.set_next_window_pos((10, win_h - 80), imgui.Cond_.first_use_ever.value)
+    imgui.begin("Playback")
+    imgui.text(f"[{group_name}]  {current_time:.2f} / {duration:.2f}s")
+    if imgui.button("Pause" if playing else "Play"):
+      world.anim_toggle_play()
+    imgui.same_line()
+    if imgui.button("Stop"):
+      world.anim_stop()
+    imgui.end()
 
   def on_key(self, key: int, mctx: "ModeContext") -> None:
     from pygame.locals import (

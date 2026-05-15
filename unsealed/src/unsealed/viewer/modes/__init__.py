@@ -22,11 +22,15 @@ from .base import (
 from .context import ModeContext
 from .image import ImageMode, ImageScene
 from .map import MapMode, MapScene
+from .men import MenMode, MenScene
 from .model import ModelMode, ModelScene
+from .spr import SprMode, SprScene
 
 register(ModelMode())
 register(MapMode())
 register(ImageMode())
+register(SprMode())
+register(MenMode())
 
 __all__ = [
   "AnimationPolicy",
@@ -43,6 +47,10 @@ __all__ = [
   "ImageScene",
   "MapMode",
   "MapScene",
+  "MenMode",
+  "MenScene",
   "ModelMode",
   "ModelScene",
+  "SprMode",
+  "SprScene",
 ]

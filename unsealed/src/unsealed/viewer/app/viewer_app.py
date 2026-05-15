@@ -44,12 +44,13 @@ class ViewerApp:
     world = self._world
     world.render.renderer.init()
     world.register_render_extensions()
-    world.window.font = pygame.font.SysFont(
-      "consolas",
-      14,
-    )
     world.window.width = self.WIDTH
     world.window.height = self.HEIGHT
+
+    # ImGui setup — must come AFTER pygame.display.set_mode (GL context
+    # exists) but the imgui renderer is owned by AppWorld so the input
+    # system + modes can reach it for `want_capture_*` gating.
+    world.imgui.init(self.WIDTH, self.HEIGHT)
 
     if self._initial_file is not None:
       world.load(self._initial_file)
@@ -85,17 +86,33 @@ class ViewerApp:
           q3_enabled=rend.q3_enabled,
         )
       )
-      panels = world.build_hud_panels()
-      world.render.hud_panels = panels
-      world.render.hud_buttons = rend.renderer.render_hud(
-        panels,
-        win.font,
-        win.width,
-        win.height,
-        pygame.mouse.get_pos(),
-      )
+
+      # HUD pass — fully driven by imgui. Modes (or the welcome fallback)
+      # call begin/widget/end inline. State mutations happen via direct
+      # calls on AppWorld; no action dispatch.
+      world.imgui.new_frame()
+      if scene.context is not None:
+        scene.context.mode.draw_hud(world)
+      else:
+        _draw_welcome(world)
+      world.imgui.render()
+
       pygame.display.flip()
 
     world.set_capture(False)
+    world.imgui.shutdown()
     world.render.renderer.cleanup()
     pygame.quit()
+
+
+def _draw_welcome(world: AppWorld) -> None:
+  """Welcome window shown when no scene is loaded."""
+  from imgui_bundle import imgui
+
+  imgui.set_next_window_pos((10, 10), imgui.Cond_.first_use_ever.value)
+  imgui.begin("Unsealed Viewer")
+  imgui.text("Unsealed 3D Viewer")
+  imgui.separator()
+  if imgui.button("Open File"):
+    world.open_dialog()
+  imgui.end()

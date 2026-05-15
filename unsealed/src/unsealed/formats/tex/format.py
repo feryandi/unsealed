@@ -20,7 +20,7 @@ class SealTextureFormat(BaseFormat[Blob]):
   def decoder(self, path: Path) -> Blob:
     decoder = SealTextureDecoder(path)
     texture = decoder.decode()
-    texture.filename = path.stem
+    texture.name = path.stem
     return texture
 
   def encoder(self, asset: Blob, path: Path) -> None:

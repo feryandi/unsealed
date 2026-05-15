@@ -1,4 +1,13 @@
-"""InputSystem — pygame event loop and keyboard/mouse dispatch."""
+"""InputSystem — pygame event loop + keyboard/mouse dispatch.
+
+Per event:
+  1. Feed it to imgui first.
+  2. If imgui has captured the mouse (over an imgui window) or keyboard
+     (text input focused), DROP the event — don't propagate to camera /
+     mode handlers. This is what keeps a drag-over-a-panel from also
+     panning the scene.
+  3. Otherwise dispatch to the active Mode's on_* handlers.
+"""
 
 from __future__ import annotations
 
@@ -14,6 +23,10 @@ if TYPE_CHECKING:
     from ..world import AppWorld
 
 
+_MOUSE_EVENTS = {MOUSEBUTTONDOWN, MOUSEBUTTONUP, MOUSEMOTION, pygame.MOUSEWHEEL}
+_KEY_EVENTS = {pygame.KEYDOWN, pygame.KEYUP}
+
+
 class InputSystem:
     def process(self, world: "AppWorld") -> None:
         ctx = world.scene.context
@@ -21,26 +34,34 @@ class InputSystem:
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
                 world.window.running = False
+                continue
 
-            elif ev.type == pygame.VIDEORESIZE:
+            if ev.type == pygame.VIDEORESIZE:
                 world.window.width, world.window.height = ev.w, ev.h
                 glViewport(0, 0, ev.w, ev.h)
+                world.imgui.on_resize(ev.w, ev.h)
+                continue
 
-            elif ev.type == pygame.KEYDOWN:
+            # Hand the event to imgui first. PygameRenderer reads it into
+            # its IO state regardless of capture — capture only affects
+            # whether we forward it onward to mode handlers below.
+            world.imgui.process_event(ev)
+
+            if ev.type in _MOUSE_EVENTS and world.imgui.want_capture_mouse:
+                # ImGui is over a window — eat the event.
+                continue
+            if ev.type in _KEY_EVENTS and world.imgui.want_capture_keyboard:
+                continue
+
+            if ev.type == pygame.KEYDOWN:
                 self._on_key(ev.key, world)
 
             elif ev.type == MOUSEBUTTONDOWN:
                 if ev.button in (4, 5):
                     direction = 1 if ev.button == 4 else -1
                     mx, my = pygame.mouse.get_pos()
-                    # If the mouse is over a panel that captures scroll
-                    # (e.g. ShaderDetailPanel), dispatch the panel's action
-                    # instead of forwarding to the mode's camera zoom.
-                    if not self._dispatch_panel_scroll(mx, my, direction, world):
-                        if ctx is not None:
-                            ctx.mode.on_scroll(direction, mx, my, world.mode_context())
-                elif self._dispatch_hud_click(ev.pos, world):
-                    pass  # HUD button consumed the click; don't update btn state or notify scene
+                    if ctx is not None:
+                        ctx.mode.on_scroll(direction, mx, my, world.mode_context())
                 else:
                     btn_idx = ev.button - 1
                     if 0 <= btn_idx <= 2:
@@ -73,37 +94,6 @@ class InputSystem:
             world.open_dialog()
         elif world.scene.context is not None:
             world.scene.context.mode.on_key(key, world.mode_context())
-
-    @staticmethod
-    def _dispatch_hud_click(pos: tuple, world: "AppWorld") -> bool:
-        """Return True and dispatch the action if pos hits any HUD button."""
-        mx, my = pos
-        for btn in world.render.hud_buttons:
-            bx, by, bw, bh = btn.rect
-            if bx <= mx < bx + bw and by <= my < by + bh:
-                world.dispatch_action(btn.action, btn.action_data)
-                return True
-        return False
-
-    @staticmethod
-    def _dispatch_panel_scroll(mx: int, my: int, direction: int, world: "AppWorld") -> bool:
-        """If the mouse is over a panel that declares a `scroll_action`, fire it.
-
-        Returns True if a panel consumed the scroll event. Direction is +1 for
-        scroll-up (wheel forward) and -1 for scroll-down — passed through as the
-        action's data so the handler can interpret it however it likes. The
-        ShaderDetailPanel inverts this so wheel-down advances the text.
-        """
-        for panel in world.render.hud_panels:
-            if panel.scroll_action is None:
-                continue
-            bx, by, bw, bh = panel.rect
-            if bw <= 0 or bh <= 0:
-                continue
-            if bx <= mx < bx + bw and by <= my < by + bh:
-                world.dispatch_action(panel.scroll_action, -direction)
-                return True
-        return False
 
     @staticmethod
     def set_capture(inp: InputComponent, on: bool) -> None:

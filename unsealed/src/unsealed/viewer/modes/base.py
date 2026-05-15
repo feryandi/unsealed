@@ -23,8 +23,8 @@ from typing import TYPE_CHECKING, Iterable, List, Optional, Protocol, runtime_ch
 from ..rendering.extension import RenderExtension, RenderPhase
 
 if TYPE_CHECKING:
+  from ..app.world import AppWorld
   from ..camera import Camera
-  from ..hud_types import HudPanel
   from ..scenes import ViewerScene
   from .context import ModeContext
 
@@ -77,7 +77,7 @@ class Mode(Protocol):
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
     ...
 
-  def build_hud_panels(self, mctx: "ModeContext") -> "List[HudPanel]": ...
+  def draw_hud(self, world: "AppWorld") -> None: ...
 
   def on_key(self, key: int, mctx: "ModeContext") -> None: ...
   def on_mouse_down(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None: ...
@@ -113,7 +113,14 @@ class BaseMode(ABC):
     ...
 
   @abstractmethod
-  def build_hud_panels(self, mctx: "ModeContext") -> "List[HudPanel]":
+  def draw_hud(self, world: "AppWorld") -> None:
+    """Emit this mode's HUD using imgui-bundle widgets.
+
+    Called once per frame between `imgui.new_frame()` and `imgui.render()`.
+    Implementations should `imgui.begin(...)` / `imgui.end()` their own
+    windows and mutate AppWorld state inline (e.g. on a button click,
+    call `world.anim_toggle_play()` directly — no action dispatch).
+    """
     ...
 
   def on_key(self, key: int, mctx: "ModeContext") -> None:

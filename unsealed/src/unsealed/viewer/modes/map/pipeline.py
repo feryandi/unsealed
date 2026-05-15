@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+from unsealed.assets.blob import Blob
 
 from ...scenes import AnimatedEntity, ViewerMesh
 from ..image.pipeline import TexViewerPipeline
@@ -27,7 +28,9 @@ class MapViewerPipeline:
     return MapViewerPipeline._terrain_to_scene(terrain, path, shader_cache)
 
   @staticmethod
-  def _terrain_to_scene(terrain, path: Path, shader_cache: Optional[Dict] = None) -> MapScene:
+  def _terrain_to_scene(
+    terrain, path: Path, shader_cache: Optional[Dict] = None
+  ) -> MapScene:
     """Convert a decoded Terrain asset into a MapScene with terrain + objects."""
     scene = MapScene()
 
@@ -161,7 +164,9 @@ class MapViewerPipeline:
           name=Path(filename).stem,
           meshes=entity_meshes,
           skeleton=obj_entity.skeleton if obj_entity is not None else None,
-          animation_groups=obj_entity.animation_groups if obj_entity is not None else [],
+          animation_groups=obj_entity.animation_groups
+          if obj_entity is not None
+          else [],
           source_file=filename,
         )
       )
@@ -190,7 +195,9 @@ class MapViewerPipeline:
 
       directory = SealMdtDecoder(mdt_path).decode()
       return {
-        blob.filename.lower(): blob.value for blob in directory.list if blob.value
+        blob.name.lower(): blob.value
+        for blob in directory.list
+        if isinstance(blob, Blob) and blob.value and blob.name
       }
     except Exception:
       return {}

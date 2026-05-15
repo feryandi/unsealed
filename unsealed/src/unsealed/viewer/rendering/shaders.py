@@ -7,6 +7,7 @@ The module-level constants (_MESH_VERT, etc.) are loaded once at import time.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
@@ -90,34 +91,75 @@ def _u_vec3(prog: int, name: str, vec: NDArray) -> None:
     glUniform3f(loc, float(vec[0]), float(vec[1]), float(vec[2]))
 
 
-def _upload_rgba(data: bytes, w: int, h: int) -> int:
-  """
-  Upload raw top-to-bottom RGBA bytes to a new GL texture.
-  Flips rows via numpy so GL v=0 maps to the bottom of the image.
-  The mesh shader then flips V (1-v) so game UVs (v=0 at top) render correctly.
-  """
-  pixels = np.frombuffer(data, dtype=np.uint8).reshape(h, w, 4)
-  pixels = np.ascontiguousarray(np.flip(pixels, axis=0))
+# Anisotropic-filtering capability is queried once. `glGetFloatv` is a
+# synchronous GL state query and was being called per-texture before;
+# caching here keeps `_upload_rgba` cheap when uploading many sprites.
+_ANISO_TEX_PARAM: Optional[int] = None  # GL_TEXTURE_MAX_ANISOTROPY_EXT, or None
+_ANISO_MAX: float = 0.0
 
-  tex_id = glGenTextures(1)
-  glBindTexture(GL_TEXTURE_2D, tex_id)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
-  # Anisotropic filtering — reduces blurriness of flat planes viewed at oblique angles.
+
+def _aniso_setup() -> None:
+  """Lazy first-time probe of the anisotropic-filter extension."""
+  global _ANISO_TEX_PARAM, _ANISO_MAX
+  if _ANISO_TEX_PARAM is not None or _ANISO_MAX < 0:
+    return
   try:
     from OpenGL.GL.EXT.texture_filter_anisotropic import (
       GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT,
       GL_TEXTURE_MAX_ANISOTROPY_EXT,
     )
-    max_aniso = float(glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT))
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, min(max_aniso, 16.0))
+    _ANISO_MAX = float(glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT))
+    _ANISO_TEX_PARAM = GL_TEXTURE_MAX_ANISOTROPY_EXT
   except Exception:
-    pass
+    _ANISO_MAX = -1.0  # sentinel: probed and unavailable
+
+
+def _upload_rgba(
+  data: bytes,
+  w: int,
+  h: int,
+  *,
+  mipmaps: bool = True,
+  flip_y: bool = True,
+) -> int:
+  """Upload raw RGBA bytes to a new GL texture.
+
+  `flip_y=True` (default) flips rows so GL v=0 maps to image bottom — needed
+  for 3D mesh textures where the existing shader logic expects that
+  orientation. UI sprite callers pass `flip_y=False` and arrange their quad
+  UVs accordingly; this skips a numpy copy per sprite.
+
+  `mipmaps=True` (default) generates a mipmap pyramid + enables anisotropic
+  filtering. Pass `mipmaps=False` for 2D UI textures shown near 1:1 — those
+  don't sample at oblique angles or shrink across many pixels, so the per-
+  texture mipmap + aniso cost is pure overhead.
+  """
+  if flip_y:
+    pixels = np.frombuffer(data, dtype=np.uint8).reshape(h, w, 4)
+    pixels = np.ascontiguousarray(np.flip(pixels, axis=0))
+    upload_bytes = pixels.tobytes()
+  else:
+    upload_bytes = data
+
+  tex_id = glGenTextures(1)
+  glBindTexture(GL_TEXTURE_2D, tex_id)
+  if mipmaps:
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR)
+  else:
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT)
+
+  if mipmaps:
+    _aniso_setup()
+    if _ANISO_TEX_PARAM is not None and _ANISO_MAX > 0:
+      glTexParameterf(GL_TEXTURE_2D, _ANISO_TEX_PARAM, min(_ANISO_MAX, 16.0))
+
   glTexImage2D(
-    GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.tobytes()
+    GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, upload_bytes
   )
-  glGenerateMipmap(GL_TEXTURE_2D)
+  if mipmaps:
+    glGenerateMipmap(GL_TEXTURE_2D)
   glBindTexture(GL_TEXTURE_2D, 0)
   return tex_id

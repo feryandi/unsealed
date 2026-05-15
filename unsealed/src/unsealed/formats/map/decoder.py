@@ -19,30 +19,40 @@ class SealMapDecoder:
     if self.file is None:
       raise Exception("File was not initialized properly")
 
-    terrain = Terrain(self.filename, 512, 512)
     self.version = self.__decode_version()
+    terrain = Terrain(self.filename, self.version)
 
     if self.version == 5:
       # Unsupported even by the game?
       # Example: 67.map
-      return terrain
+      return Terrain(self.filename, 5)
 
     s = self.file.read_string(20)
     if self.version > 10:
       _x = self.file.read(1)
+    if self.version == 17:
+      _x = self.file.read(9)
 
     s = self.file.read_string(172)
+
     if self.version == 10:
       _x = self.file.read(1)
 
     _x = self.file.read(7)
 
-    if self.version >= 14:
+    if self.version == 14:
       s = self.file.read_string(40)
 
     if self.version > 10:
       s = self.file.read_string(32)
       s = self.file.read_string(32)
+
+    if self.version == 17:
+      s = self.file.read_string(32)
+
+    div = 1
+    if self.version == 17:
+      div = 4
 
     # Textures
     n = self.file.read_int()
@@ -55,35 +65,66 @@ class SealMapDecoder:
     s = self.file.read_string(16 * 4)
     terrain.add_lightmap(s)
 
+    if self.version == 17:
+      s = self.file.read_string(64)
+
     # Texture Layer 1
     a = []
-    for _ in range(64):
+    for _ in range(64 // div):
       x = self.file.read_int()
       a.append(x)
     terrain.add_terrain_layer_a(a)
 
+    # Texture Layer 1 -- Ecila Map
+    if self.version == 17:
+      a = []
+      for _ in range(64 // div):
+        x = self.file.read_int()
+        a.append(x)
+      # terrain.add_terrain_layer_a(a)
+
     # Texture Layer 2
     a = []
-    for _ in range(64):
+    for _ in range(64 // div):
       x = self.file.read_int()
       a.append(x)
     terrain.add_terrain_layer_b(a)
 
+    # Texture Layer 2 -- Ecila Map
+    if self.version == 17:
+      a = []
+      for _ in range(64 // div):
+        x = self.file.read_int()
+        a.append(x)
+      # terrain.add_terrain_layer_b(a)
+
     # Heightmap
     n = []
-    for _ in range(512 * 512):
+    for _ in range((512 * 512) // div):
       x = self.file.read_float()
       n.append(x)
     terrain.add_heightmap(n)
 
+    # Heightmap -- Ecila Map
+    if self.version == 17:
+      n = []
+      for _ in range((512 * 512) // div):
+        x = self.file.read_float()
+        n.append(x)
+      # terrain.add_heightmap(n)
+
     # Walkable area
     n = []
-    for _ in range(512 * 512):
+    for _ in range((512 * 512) // div):
       x = self.file.read_int()
       n.append(x)
 
     # Object placement
-    a = self.file.read_int()
+    if self.version == 17:
+      a = self.file.read_short()
+    else:
+      a = self.file.read_int()
+    print(f"Object count: {a}")
     for x in range(a):
       n = self.file.read_int()  # This could be related to object index
       p = [self.file.read_float(), self.file.read_float(), self.file.read_float()]
@@ -113,4 +154,6 @@ class SealMapDecoder:
       return 13
     if header == "Map File v.14":
       return 14
+    if header == "Map File v.17":
+      return 17
     return 10

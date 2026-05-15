@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from unsealed.assets.blob import Blob
+
 from ..formats.map.format import SealMapFormat
 from ..formats.blob.format import BlobFormat
 from ..formats.heightmap.format import HeightmapFormat
@@ -23,12 +25,13 @@ class MapPipeline:
     directory = mdt_format.decode(filepath.with_suffix(".mdt"))
 
     for file in directory.list:
-      blob_format = BlobFormat()
-      blob_format.encode(file, output_dir / f"{file.filename}.{file.extension}")
+      if isinstance(file, Blob):
+        blob_format = BlobFormat()
+        blob_format.encode(file, output_dir / f"{file.name}.{file.extension}")
 
     tex_pipeline = TexturePipeline()
     tex_pipeline.run(filepath.with_suffix(".tex"), output_dir)
 
-    # object_pipeline = ObjectPipeline()
-    # for obj in terrain.object_files:
-    #   object_pipeline.run(filepath.with_name(obj), output_dir)
+    object_pipeline = ObjectPipeline()
+    for obj in terrain.object_files:
+      object_pipeline.run(filepath.with_name(obj), output_dir)

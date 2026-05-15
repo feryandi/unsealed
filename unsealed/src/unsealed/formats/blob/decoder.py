@@ -25,6 +25,6 @@ class BlobDecoder:
     path = self.path
     while path.suffix:
       path = path.with_suffix("")
-    blob.filename = path.name
+    blob.name = path.name
 
     return blob

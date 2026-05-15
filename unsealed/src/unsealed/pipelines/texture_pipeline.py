@@ -6,7 +6,9 @@ from ..formats.blob.format import BlobFormat
 
 
 class TexturePipeline:
-  def run(self, filepath: Path, output_dir: Path, convert_to: str | None = None) -> None:
+  def run(
+    self, filepath: Path, output_dir: Path, convert_to: str | None = None
+  ) -> None:
     tex_format = SealTextureFormat()
     potential_tex_types = [
       ".tex",
@@ -19,7 +21,7 @@ class TexturePipeline:
         texture_blob = tex_format.decode(path)
 
         try:
-          if convert_to and texture_blob.value and texture_blob.filename:
+          if convert_to and texture_blob.value and texture_blob.name:
             texture_bytes = BytesIO(texture_blob.value)
             im = Image.open(texture_bytes)
 

@@ -6,19 +6,34 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, List, Optional, cast
 
 import numpy as np
+from imgui_bundle import imgui
 
+from ...scenes import AnimatedEntity, ViewerMesh
+from ...scenes.scene import _STRIDE_PLAIN, _STRIDE_SKINNED
 from ..base import AnimationPolicy, BaseMode, RenderExtension
 from .camera import MapCamera
 from .extensions import SkyExtension, TerrainExtension
-from .panels import MapControlPanel, ObjectDetailPanel, ShaderDetailPanel
 from .pipeline import MapViewerPipeline
 from .scene import MapScene
 
 if TYPE_CHECKING:
+  from ...app.world import AppWorld
   from ...camera import Camera
-  from ...hud_types import HudPanel
   from ...scenes import ViewerScene
   from ..context import ModeContext
+
+
+_MAP_CONTROLS = [
+  "LMB drag      : Pan",
+  "MMB drag      : Pan (grab)",
+  "RMB drag L/R  : Yaw",
+  "RMB drag U/D  : Pitch (15-75)",
+  "WASD / Arrows : Pan",
+  "Scroll        : Zoom",
+  "O             : Open file",
+  "I             : Inject .ms1",
+  "Esc           : Quit",
+]
 
 
 class MapMode(BaseMode):
@@ -46,35 +61,114 @@ class MapMode(BaseMode):
       cam.set_heightmap(scene.terrain_heights, 512, 512)
     return cam
 
-  def build_hud_panels(self, mctx: "ModeContext") -> "List[HudPanel]":
-    ctx = mctx.scene_context
+  def draw_hud(self, world: "AppWorld") -> None:
+    ctx = world.scene.context
     if ctx is None:
-      return []
+      return
     scene = cast(MapScene, ctx.scene)
-    anim = mctx.anim
-    selected_idx = mctx.selected_mesh_idx
-    panels: "List[HudPanel]" = [MapControlPanel(scene, ctx.path, mctx.q3_enabled)]
+    self._draw_control_window(world, scene, ctx.path)
+    selected_idx = world.scene.selected_mesh_idx
     if selected_idx is not None and 0 <= selected_idx < len(scene.meshes):
       mesh = scene.meshes[selected_idx]
-      ent_idx = anim.mesh_to_entity.get(selected_idx)
+      ent_idx = world.scene.anim.mesh_to_entity.get(selected_idx)
       entity = (
         scene.entities[ent_idx]
         if ent_idx is not None and ent_idx < len(scene.entities)
         else None
       )
-      panels.append(ObjectDetailPanel(mesh, entity))
-    # Shader-detail viewer stacks under the object panel on the right edge.
-    # 20 px gap between the two; ObjectDetailPanel's exact height isn't known
-    # here so we use a fixed offset that's a sane stacking distance.
-    if mctx.selected_shader is not None:
-      panels.append(
-        ShaderDetailPanel(
-          shader=mctx.selected_shader,
-          scroll_offset=mctx.shader_scroll,
-          anchor_y=420,
-        )
-      )
-    return panels
+      self._draw_object_window(world, mesh, entity)
+    if world.scene.selected_shader is not None:
+      self._draw_shader_window(world)
+
+  def _draw_control_window(
+    self, world: "AppWorld", scene: MapScene, path: Path
+  ) -> None:
+    tex_count = len([t for t in scene.terrain_textures if t is not None])
+
+    imgui.set_next_window_pos((10, 10), imgui.Cond_.first_use_ever.value)
+    imgui.begin("Map")
+    imgui.text(f"File     : {path.name}")
+    imgui.text(f"Objects  : {len(scene.meshes)}")
+    imgui.text(f"Textures : {tex_count}/12")
+    imgui.separator()
+    if imgui.button("Open File"):
+      world.open_dialog()
+    imgui.same_line()
+    shader_label = "Shader: ON" if world.render.q3_enabled else "Shader: OFF"
+    if imgui.button(shader_label):
+      world.toggle_q3()
+    imgui.separator()
+    for line in _MAP_CONTROLS:
+      imgui.text_disabled(line)
+    imgui.end()
+
+  def _draw_object_window(
+    self,
+    world: "AppWorld",
+    mesh: ViewerMesh,
+    entity: Optional[AnimatedEntity],
+  ) -> None:
+    stride = (_STRIDE_SKINNED if mesh.is_skinned else _STRIDE_PLAIN) // 4
+    vertex_count = len(mesh.vertex_data) // stride
+    tri_count = sum(len(p.indices) // 3 for p in mesh.primitives)
+    instance_count = (
+      len(mesh.instance_matrices) if mesh.instance_matrices is not None else 1
+    )
+    file_label = (
+      entity.source_file if entity is not None and entity.source_file else mesh.name
+    )
+
+    win_w = world.window.width
+    imgui.set_next_window_pos((win_w - 320, 10), imgui.Cond_.first_use_ever.value)
+    imgui.begin("Selected Object")
+    imgui.text(f"File      : {file_label}")
+    imgui.text(f"Mesh      : {mesh.name}")
+    imgui.text(f"Vertices  : {vertex_count:,}")
+    imgui.text(f"Triangles : {tri_count:,}")
+    imgui.text(f"Instances : {instance_count}")
+    if entity is not None and entity.animation_groups:
+      anim_type = "Skinned" if mesh.is_skinned else "Node-anim"
+      imgui.text(f"Animated  : {anim_type}")
+      for ag in entity.animation_groups:
+        imgui.text_disabled(f"  - {ag.name}  ({ag.duration:.2f}s)")
+    else:
+      imgui.text("Animated  : No")
+
+    # Shader list as buttons. Each opens / closes the shader detail window.
+    shaders = []
+    seen: set = set()
+    for p in mesh.primitives:
+      s = getattr(p, "shader", None)
+      if s is None or id(s) in seen:
+        continue
+      seen.add(id(s))
+      shaders.append(s)
+    if shaders:
+      imgui.separator()
+      imgui.text("Shaders (click for detail):")
+      for s in shaders:
+        active = (world.scene.selected_shader is s)
+        if imgui.selectable(f"{s.name}##sh{id(s)}", active)[0]:
+          world.select_shader(s)
+    imgui.end()
+
+  def _draw_shader_window(self, world: "AppWorld") -> None:
+    shader = world.scene.selected_shader
+    if shader is None:
+      return
+    win_w = world.window.width
+    imgui.set_next_window_pos((win_w - 320, 420), imgui.Cond_.first_use_ever.value)
+    imgui.set_next_window_size((310, 280), imgui.Cond_.first_use_ever.value)
+    opened, keep_open = imgui.begin(f"Shader: {shader.name}", True)
+    if not keep_open:
+      world.close_shader()
+    if opened:
+      imgui.begin_child("##shader_text", (0, -28))
+      imgui.text_unformatted(shader.raw or "(empty)")
+      imgui.end_child()
+      if imgui.button("Close"):
+        world.close_shader()
+    imgui.end()
 
   def on_key(self, key: int, mctx: "ModeContext") -> None:
     from pygame.locals import K_i
@@ -117,7 +211,6 @@ class MapMode(BaseMode):
     The injected model becomes one more AnimatedEntity in the map scene —
     same animation/render path as any baked-in object.
     """
-    from ...scenes import AnimatedEntity
     from ..model.mode import ModelMode
 
     ctx = mctx.scene_context

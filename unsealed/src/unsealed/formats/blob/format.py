@@ -24,13 +24,13 @@ class BlobFormat(BaseFormat[Blob]):
   def encoder(self, asset: Blob, path: Path) -> None:
     if asset.value is not None:
       if path.is_dir():
-        filename = f"{asset.filename}.{asset.extension}"
+        filename = f"{asset.name}.{asset.extension}"
         with open(path / filename, "wb") as f:
           f.write(asset.value)
       else:
         filename = path.name
         if not filename:
-          filename = f"{asset.filename}.{asset.extension}"
+          filename = f"{asset.name}.{asset.extension}"
         if not path.suffix:
           filename = f"{filename}.{asset.extension}"
         with open(path.with_name(filename), "wb") as f:

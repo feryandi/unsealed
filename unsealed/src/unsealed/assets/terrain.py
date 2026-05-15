@@ -6,20 +6,28 @@ import zlib
 
 from array import array
 from ..core.asset import Asset
+from unsealed.core import asset
 
 
 class Terrain(Asset):
-  def __init__(self, name: str, width: int, height: int) -> None:
+  def __init__(self, name: str, version: int) -> None:
     self.name: str = name
+    self.version: int = version
     self.heightmap: List[float] = []
-    self.width: int = width
-    self.height: int = height
     self.objects: List[Dict[str, Any]] = []
     self.object_files: List[str] = []
     self.textures: List[str] = []
     self.lightmap: Optional[str] = None
     self.terrain_layer_a: List[int] = []
     self.terrain_layer_b: List[int] = []
+
+    self.height = 512
+    self.width = 512
+    self.terrain_grid = 8
+    if self.version == 17:  # Encila Map
+      self.height = 256
+      self.width = 256
+      self.terrain_grid = 4
 
   def add_heightmap(self, heightmap: List[float]) -> None:
     self.heightmap = heightmap
@@ -92,8 +100,7 @@ class Terrain(Asset):
             hm_encoding = None
 
     data = {
-      "width": self.width,
-      "height": self.height,
+      "version": self.version,
       # if hm_b64 is present, clients should decode it as Float32s
       "heightmap_b64": hm_b64,
       # encoding tag: one of f16+zlib, f32+zlib, f32, or null
@@ -110,4 +117,4 @@ class Terrain(Asset):
     return data
 
   def __repr__(self) -> str:
-    return f"<Terrain width:{self.width} height:{self.height} >"
+    return f"<Terrain version:{self.version} >"

@@ -54,12 +54,10 @@ from OpenGL.GL import (
     glVertexAttribPointer,
 )
 
-from ..hud_types import HudPanel
 from ..scenes import ViewerScene
 from ..scenes.scene import _STRIDE_PLAIN, _STRIDE_SKINNED
 from .components import BoundsComp, GpuBufferComp, MaterialComp, TransformComp
 from .extension import RenderExtension, RenderPhase
-from .hud import HudRenderer
 from .math_utils import ray_aabb_in_world, unproject_ray
 from .passes import (
     ForwardPass,
@@ -121,7 +119,6 @@ class Renderer:
         self._overlay: Optional[OverlayPass] = None
         self._forward: Optional[ForwardPass] = None
         self._q3: Optional[Q3StagePass] = None
-        self._hud = HudRenderer()
 
         # Mode-supplied render extensions. _all_extensions is the union across
         # all modes (init+dispose lifecycle); _active_extensions is the subset
@@ -151,8 +148,6 @@ class Renderer:
         self._q3_prog = _compile_prog(_Q3STAGE_VERT, _Q3STAGE_FRAG)
         self._q3 = Q3StagePass(self._q3_prog)
 
-        self._hud.init()
-
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
         glEnable(GL_MULTISAMPLE)
@@ -177,7 +172,6 @@ class Renderer:
             ext.dispose()
         self._all_extensions = []
         self._active_extensions = []
-        self._hud.cleanup()
         self._gbuffer.cleanup()
         self._lighting.cleanup()
         for prog in (
@@ -215,7 +209,7 @@ class Renderer:
         for ext in self._active_extensions:
             ext.upload(scene)
 
-        for eid, mesh in enumerate(scene.meshes):  # type: ignore[union-attr,attr-defined]
+        for eid, mesh in enumerate(getattr(scene, "meshes", ())):  # type: ignore[union-attr,attr-defined]
             vao = glGenVertexArrays(1)
             vbo = glGenBuffers(1)
 
@@ -350,12 +344,12 @@ class Renderer:
         _mirror_x = np.diag(np.array([-1.0, 1.0, 1.0, 1.0], dtype=np.float32))
         proj = _mirror_x @ proj
 
-        light_dir = np.array([0.45, -0.85, 0.35], dtype=np.float32)
-        light_dir /= np.linalg.norm(light_dir)
-
         has_meshes = bool(self._registry.buffers)
 
         if has_meshes:
+            light_dir = np.array([0.45, -0.85, 0.35], dtype=np.float32)
+            light_dir /= np.linalg.norm(light_dir)
+
             opaque, transparent, q3_commands = self._build_commands(ctx)
 
             # 1. G-Buffer pass — opaque geometry
@@ -369,6 +363,7 @@ class Renderer:
             # 3. Blit G-Buffer depth → default FBO
             self._gbuffer.blit_depth(ctx.width, ctx.height)
         else:
+            light_dir = None
             transparent = []
             q3_commands = []
 
@@ -414,17 +409,6 @@ class Renderer:
         for ext in self._active_extensions:
             if ext.phase == phase:
                 ext.render(ctx, view, proj)
-
-    def render_hud(
-        self,
-        panels: List[HudPanel],
-        font: object,
-        width: int,
-        height: int,
-        mouse_pos: tuple = (-1, -1),
-    ) -> list:
-        """Render HUD panels; return all HudButton objects with screen rects filled."""
-        return self._hud.render(panels, font, width, height, mouse_pos)
 
     def pick(
         self,

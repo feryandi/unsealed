@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Optional
 
 import pygame
 
-from ...modes import ImageScene
+from ...modes import ImageScene, MenScene, SprScene
 from ..context import ViewerContext
 
 if TYPE_CHECKING:
@@ -35,8 +35,7 @@ class LoadSystem:
             )
             world.scene.selected_mesh_idx = None
             world.scene.selected_shader = None
-            world.scene.shader_scroll = 0
-            if not isinstance(ctx.scene, ImageScene):
+            if not isinstance(ctx.scene, (ImageScene, SprScene, MenScene)):
                 world._anim_sys.load(world.scene.anim, ctx.scene)
             pygame.display.set_caption(f"{_TITLE} — {path.name}")
 
@@ -49,11 +48,13 @@ class LoadSystem:
         path = self._ask_file(
             "Open Game File",
             [
-                ("Game files", "*.ms1 *.act *.map *.tex *.te1"),
+                ("Game files", "*.ms1 *.act *.map *.tex *.te1 *.spr *.men"),
                 ("Seal Mesh", "*.ms1"),
                 ("Actor File", "*.act"),
                 ("Map File", "*.map"),
                 ("Texture File", "*.tex *.te1"),
+                ("Sprite Atlas", "*.spr"),
+                ("Menu File", "*.men"),
                 ("All files", "*.*"),
             ],
         )

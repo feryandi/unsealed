@@ -15,6 +15,7 @@ _ELEMENT_TYPE_NAMES: Dict[int, str] = {
   7: "checkbox",
   8: "dragdrop",
   9: "tab",
+  # 12: like tab, layering / toggle?
 }
 
 
@@ -46,6 +47,7 @@ class SealMenDecoder:
       self.file.reset()
 
     interface = {}
+    interface["version"] = version
 
     spr_file = self.file.read_string(100)
     interface["spr"] = spr_file
@@ -78,17 +80,16 @@ class SealMenDecoder:
     element["ui_hover_spr_idx"] = self.file.read_int()
     element["ui_focus_spr_idx"] = self.file.read_int()
 
-    for _ in range(5):
-      print(self.file.read_int())
+    element["unknowns"] = [self.file.read_int() for _ in range(5)]
 
     if version >= 3:
-      _ = self.file.read(4)
+      element["v3_unknown"] = self.file.read_int()
     if version >= 4:
-      _ = self.file.read(4)
+      element["v4_unknown"] = self.file.read_int()
     if version >= 5:
-      _ = self.file.read(4)
+      element["v5_unknown"] = self.file.read_int()
     if version >= 7:
-      _ = self.file.read(4)
+      element["v7_unknown"] = self.file.read_int()
 
     rectangle = [
       self.file.read_int(),
@@ -102,12 +103,12 @@ class SealMenDecoder:
     element["alpha"] = alpha
 
     if version >= 3:
-      _x = self.file.read(24)
+      element["v3_block"] = [self.file.read_int() for _ in range(6)]
 
     sublabel = self.file.read_string(100)
     element["sublabel"] = sublabel
 
-    _ = self.file.read_int()
+    element["sub_element_size"] = self.file.read_int()
 
     return element
 
@@ -120,6 +121,12 @@ class SealMenDecoder:
     if version >= 6:
       spr = self.file.read_string(100)
       element["spr_file"] = spr
+
+    # Children come AFTER spr_file in the byte stream. Reading them here
+    # (not in _read_element) keeps spr_file aligned to the right offset.
+    element["sub_elements"] = []
+    for _ in range(element["sub_element_size"]):
+      element["sub_elements"].append(self._read_element_wrapper(version))
 
     return element
 

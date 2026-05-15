@@ -1,18 +1,24 @@
-"""AppWorld — component registry and host for Mode plugins."""
+"""AppWorld — component registry and host for Mode plugins.
+
+State-mutating helpers (animation, picking, mode-specific toggles) are
+public so that Mode.draw_hud can call them directly when the user clicks
+an imgui widget. There's no action-dispatch layer — immediate-mode UI
+mutates state inline.
+"""
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
+from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 
-from ..hud_types import HudAction
-from ..modes import MODES, MapScene, ModeContext, ModelScene
+from ..modes import MODES, MapScene, MenScene, ModeContext, ModelScene, SprScene
 from ..modes.map.camera import MapCamera
+from ..rendering.imgui_renderer import ImGuiRenderer
 from .components import InputComponent, RenderComponent, SceneComponent, WindowComponent
-from .systems import AnimationSystem, HudSystem, InputSystem, LoadSystem, UpdateSystem
+from .systems import AnimationSystem, InputSystem, LoadSystem, UpdateSystem
 
 if TYPE_CHECKING:
-    from ..hud_types import HudPanel
+    pass
 
 
 class AppWorld:
@@ -28,9 +34,13 @@ class AppWorld:
 
         self._anim_sys = AnimationSystem()
         self._input_sys = InputSystem()
-        self._hud_sys = HudSystem()
         self._load_sys = LoadSystem()
         self._update_sys = UpdateSystem()
+
+        # ImGui owner. `viewer_app.run()` calls `imgui.init(w, h)` after
+        # pygame.display.set_mode; from then on InputSystem feeds events
+        # into it and Mode.draw_hud emits widgets between new_frame/render.
+        self.imgui = ImGuiRenderer()
 
     # ── ModeContext factory ────────────────────────────────────────────────────
 
@@ -50,7 +60,6 @@ class AppWorld:
             q3_enabled=self.render.q3_enabled,
             wireframe=self.render.wireframe,
             selected_shader=self.scene.selected_shader,
-            shader_scroll=self.scene.shader_scroll,
             _app=self,
         )
 
@@ -77,42 +86,76 @@ class AppWorld:
         (e.g. model injection into a map)."""
         self._anim_sys.load(self.scene.anim, scene)
 
-    def dispatch_action(self, action: str, data: object = None) -> None:
-        """Dispatch a HUD button action by name."""
-        match action:
-            case HudAction.OPEN:
-                self.open_dialog()
-            case HudAction.PLAY:
-                self.anim_toggle_play()
-            case HudAction.STOP:
-                self.anim_stop()
-            case HudAction.SELECT_ANIM:
-                if isinstance(data, int):
-                    self.anim_select(data)
-            case HudAction.TOGGLE_Q3:
-                self.render.q3_enabled = not self.render.q3_enabled
-            case HudAction.SELECT_SHADER:
-                self._select_shader(data)
-            case HudAction.SCROLL_SHADER:
-                if isinstance(data, int) and self.scene.selected_shader is not None:
-                    self.scene.shader_scroll = max(0, self.scene.shader_scroll + data)
-            case HudAction.CLOSE_SHADER:
-                self.scene.selected_shader = None
-                self.scene.shader_scroll = 0
-            case _:
-                pass
+    # ── mode-specific state helpers (called inline from draw_hud) ─────────────
 
-    def _select_shader(self, shader: object) -> None:
-        """Toggle the shader-detail panel for `shader`. Same shader clicked twice closes it."""
+    def toggle_q3(self) -> None:
+        self.render.q3_enabled = not self.render.q3_enabled
+
+    def select_shader(self, shader: object) -> None:
+        """Toggle the shader-detail view for `shader`. Selecting the same
+        shader twice closes it."""
         if shader is None:
             return
-        current = self.scene.selected_shader
-        if current is not None and current is shader:
+        if self.scene.selected_shader is shader:
             self.scene.selected_shader = None
-            self.scene.shader_scroll = 0
         else:
             self.scene.selected_shader = shader
-            self.scene.shader_scroll = 0
+
+    def close_shader(self) -> None:
+        self.scene.selected_shader = None
+
+    def select_spr_entry(self, atlas_idx: int, sprite_idx: int) -> None:
+        """Update SPR selection. `sprite_idx == FULL_ATLAS_IDX (-1)` selects
+        the whole atlas; otherwise it must be one of the cropped-sprite
+        indices the .spr declared for that atlas."""
+        ctx = self.scene.context
+        if ctx is None or not isinstance(ctx.scene, SprScene):
+            return
+        scene = ctx.scene
+        if not (0 <= atlas_idx < len(scene.atlases)):
+            return
+        scene.selected_atlas = atlas_idx
+        atlas_name = scene.atlases[atlas_idx].name
+        if (atlas_name, sprite_idx) in scene.sprite_refs:
+            scene.selected_sprite = sprite_idx
+
+    def close_men_detail(self) -> None:
+        ctx = self.scene.context
+        if ctx is None or not isinstance(ctx.scene, MenScene):
+            return
+        ctx.scene.selected_element_idx = None
+
+    def select_men_element(self, idx: Optional[int]) -> None:
+        """Set or clear the selected men element."""
+        ctx = self.scene.context
+        if ctx is None or not isinstance(ctx.scene, MenScene):
+            return
+        scene = ctx.scene
+        if idx is None or not (0 <= idx < len(scene.elements)):
+            scene.selected_element_idx = None
+        else:
+            scene.selected_element_idx = idx
+
+    def set_men_state(self, elem_idx: int, state: str) -> None:
+        ctx = self.scene.context
+        if ctx is None or not isinstance(ctx.scene, MenScene):
+            return
+        elements = ctx.scene.elements
+        if not (0 <= elem_idx < len(elements)):
+            return
+        el = elements[elem_idx]
+        if state in el.state_refs:
+            el.active_state = state
+
+    def toggle_men_hide(self, elem_idx: int) -> None:
+        ctx = self.scene.context
+        if ctx is None or not isinstance(ctx.scene, MenScene):
+            return
+        scene = ctx.scene
+        if not (0 <= elem_idx < len(scene.elements)):
+            return
+        scene.elements[elem_idx].hidden = not scene.elements[elem_idx].hidden
+        scene.recompute_hidden_set()
 
     # ── input / picking helpers ───────────────────────────────────────────────
 
@@ -174,6 +217,3 @@ class AppWorld:
             print(f"[viewer] active mode {ctx.mode.name!r} does not support inject_model")
             return
         inject(path, self.mode_context())
-
-    def build_hud_panels(self) -> "List[HudPanel]":
-        return self._hud_sys.build(self)

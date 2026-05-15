@@ -39,10 +39,14 @@ class HeightmapFormat(BaseFormat[Terrain]):
     img = Image.fromarray(altitudes, mode="I;16")
     img.save(path / f"{asset.name}.png")
 
-    terrain_layer_a = np.array(asset.terrain_layer_a, dtype=np.uint8).reshape(8, 8)
+    terrain_layer_a = np.array(asset.terrain_layer_a, dtype=np.uint8).reshape(
+      asset.terrain_grid, asset.terrain_grid
+    )
     img_a = Image.fromarray(terrain_layer_a, mode="L")
     img_a.save(path / f"{asset.name}_layer_a.png")
 
-    terrain_layer_b = np.array(asset.terrain_layer_b, dtype=np.uint8).reshape(8, 8)
+    terrain_layer_b = np.array(asset.terrain_layer_b, dtype=np.uint8).reshape(
+      asset.terrain_grid, asset.terrain_grid
+    )
     img_b = Image.fromarray(terrain_layer_b, mode="L")
     img_b.save(path / f"{asset.name}_layer_b.png")
