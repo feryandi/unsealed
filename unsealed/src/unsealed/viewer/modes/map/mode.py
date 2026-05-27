@@ -62,6 +62,8 @@ class MapMode(BaseMode):
     return cam
 
   def draw_hud(self, world: "AppWorld") -> None:
+    from ...app.panels import draw_unknowns_window
+
     ctx = world.scene.context
     if ctx is None:
       return
@@ -79,6 +81,7 @@ class MapMode(BaseMode):
       self._draw_object_window(world, mesh, entity)
     if world.scene.selected_shader is not None:
       self._draw_shader_window(world)
+    draw_unknowns_window(scene)
 
   def _draw_control_window(
     self, world: "AppWorld", scene: MapScene, path: Path

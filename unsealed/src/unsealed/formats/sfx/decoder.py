@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from ...utils.file import File
 
@@ -8,6 +8,7 @@ class SealSfxDecoder:
   def __init__(self, path: Path) -> None:
     self.path: Path = path
     self.file: Optional[File] = None
+    self.unknown: Dict[str, Any] = {}
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
@@ -21,36 +22,27 @@ class SealSfxDecoder:
     if self.file is None:
       raise Exception("File was not initialized properly")
 
-    _unknown = self.file.read(68)
+    self.unknown["header_68"] = self.file.read(68)
 
+    entries = []
     while not self.file.is_end():
-      _filename = self.file.read_string(256)
-      _name = self.file.read_string(256)
+      entry: Dict[str, Any] = {}
+      entry["filename"] = self.file.read_string(256)
+      entry["name"] = self.file.read_string(256)
 
-      _ = self.file.read_float()
-      _ = self.file.read_float()
-      _ = self.file.read_float()
-      _ = self.file.read_float()
-      _ = self.file.read_float()
-      _ = self.file.read_float()
-      _ = self.file.read_float()
+      entry["floats_7"] = [self.file.read_float() for _ in range(7)]
+      entry["shorts_4"] = [self.file.read_short() for _ in range(4)]
 
-      _ = self.file.read_short()
-      _ = self.file.read_short()
-      _ = self.file.read_short()
-      _ = self.file.read_short()
+      entry["byte_a"] = self.file.read(1)
+      entry["floats_2_a"] = [self.file.read_float(), self.file.read_float()]
+      entry["byte_b"] = self.file.read(1)
 
-      _ = self.file.read(1)
-      _ = self.file.read_float()
-      _ = self.file.read_float()
-      _ = self.file.read(1)
+      entry["floats_6"] = [self.file.read_float() for _ in range(6)]
 
-      _ = self.file.read_float()
-      _ = self.file.read_float()
-      _ = self.file.read_float()
-      _ = self.file.read_float()
-      _ = self.file.read_float()
-      _ = self.file.read_float()
+      # Empty, usually
+      entry["pad_104"] = self.file.read(104)
+      # Empty, usually
+      entry["tail_string"] = self.file.read_string(256)
 
-      _ = self.file.read(104)  # Empty, usually
-      _ = self.file.read_string(256)  # Empty, usually
+      entries.append(entry)
+    self.unknown["entries"] = entries

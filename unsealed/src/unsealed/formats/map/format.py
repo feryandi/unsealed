@@ -9,6 +9,9 @@ from ..map.decoder import SealMapDecoder
 
 
 class SealMapFormat(BaseFormat[Terrain]):
+  def __init__(self) -> None:
+    self.map_decoder: object = None
+
   @property
   def extensions(self) -> Pattern[str]:
     return re.compile(r"\.map$", re.IGNORECASE)
@@ -18,8 +21,8 @@ class SealMapFormat(BaseFormat[Terrain]):
     return Terrain
 
   def decoder(self, path: Path) -> Terrain:
-    map_decoder = SealMapDecoder(path)
-    terrain = map_decoder.decode()
+    self.map_decoder = SealMapDecoder(path)
+    terrain = self.map_decoder.decode()
     return terrain
 
   def encoder(self, asset: Terrain, path: Path) -> None:

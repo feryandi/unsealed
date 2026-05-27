@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from ...utils.file import File
 from ...assets.mesh import Mesh
@@ -11,6 +11,7 @@ class SealMeshMeshDecoder:
     self.file: File = file
     self.tm: Optional[List[List[float]]] = None
     self.name: Optional[str] = None
+    self.unknown: Dict[str, Any] = {}
 
   def decode(self) -> Mesh:
     name = self.file.read_string(16 * 16 + 1)
@@ -20,15 +21,12 @@ class SealMeshMeshDecoder:
 
     num_vertices = self.file.read_int()
     num_faces = self.file.read_int()
-    material_index = self.file.read_int()  # TODO
+    material_index = self.file.read_int()
     mesh.material_index = material_index
 
-    # TODO
-    ukwn = self.file.read(4)
-    has_physique_data = False
-    if ukwn == b"\xfe\xff\xff\xff":
-      has_physique_data = True
-    ukwn = self.file.read(4)
+    self.unknown["physique_marker"] = self.file.read(4)
+    has_physique_data = self.unknown["physique_marker"] == b"\xfe\xff\xff\xff"
+    self.unknown["post_physique_marker"] = self.file.read(4)
 
     # Transformation Matrix for vertex
     tm = [
@@ -63,37 +61,39 @@ class SealMeshMeshDecoder:
       tm = None
 
     mesh.add_transform_matrix(tm)
-    # This could be transformation matrix or 0XCDCDCDCD,
+    # This could be transformation matrix or 0xCDCDCDCD,
     # that means uninitialized
-    _x = self.file.read(4 * 16)
-    _x = self.file.read(24)
-    _x = self.file.read(12)
-    _x = [
-      self.file.read_float(),
-      self.file.read_float(),
-      self.file.read_float(),
+    self.unknown["post_tm_block"] = self.file.read(4 * 16)
+    self.unknown["unknown_24"] = self.file.read(24)
+    self.unknown["unknown_12"] = self.file.read(12)
+    self.unknown["bbox_vecs"] = [
+      [
+        self.file.read_float(),
+        self.file.read_float(),
+        self.file.read_float(),
+      ],
+      [
+        self.file.read_float(),
+        self.file.read_float(),
+        self.file.read_float(),
+      ],
+      [
+        self.file.read_float(),
+        self.file.read_float(),
+        self.file.read_float(),
+      ],
+      [
+        self.file.read_float(),
+        self.file.read_float(),
+        self.file.read_float(),
+      ],
+      [
+        self.file.read_float(),
+        self.file.read_float(),
+        self.file.read_float(),
+      ],
     ]
-    _x = [
-      self.file.read_float(),
-      self.file.read_float(),
-      self.file.read_float(),
-    ]
-    _x = [
-      self.file.read_float(),
-      self.file.read_float(),
-      self.file.read_float(),
-    ]
-    _x = [
-      self.file.read_float(),
-      self.file.read_float(),
-      self.file.read_float(),
-    ]
-    _x = [
-      self.file.read_float(),
-      self.file.read_float(),
-      self.file.read_float(),
-    ]
-    _x = [
+    self.unknown["bbox_tail"] = [
       self.file.read_float(),
       self.file.read_float(),
     ]

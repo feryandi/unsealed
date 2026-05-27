@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from ...assets.animation import Animation, Keyframe
 from ...assets.binarytree import BinaryTree, BinaryTreeNode
@@ -10,6 +10,7 @@ class SealAnimationDecoder:
   def __init__(self, path: Path) -> None:
     self.path: Path = path
     self.nodes: int = 0
+    self.unknown: Dict[str, Any] = {}
     try:
       with open(path, "rb") as dat:
         self.file: File = File(dat.read())
@@ -23,12 +24,16 @@ class SealAnimationDecoder:
     fps = self.file.read_float()
     ticks_per_frame = self.file.read_float()
 
-    _source_filename = self.file.read_string(256)
+    self.unknown["source_filename"] = self.file.read_string(256)
 
-    _ = self.file.read_int()  # Same as number of nodes
-    _ = self.file.read_int()  # Usually same as or more than end_frame
-    _ = self.file.read_int()  # Usually 0
-    _ = self.file.read_int()  # Usually same as end_frame
+    # Same as number of nodes
+    self.unknown["post_source_a"] = self.file.read_int()
+    # Usually same as or more than end_frame
+    self.unknown["post_source_b"] = self.file.read_int()
+    # Usually 0
+    self.unknown["post_source_c"] = self.file.read_int()
+    # Usually same as end_frame
+    self.unknown["post_source_d"] = self.file.read_int()
 
     self.nodes = self.file.read_int()
 
@@ -71,6 +76,7 @@ class SealAnimationDecoder:
   def __decode_rotation(self, node: Animation) -> None:
     size = self.file.read_int()
     hash_table = []
+    axis_angles: List[List[float]] = []
 
     for _ in range(size):
       time = self.file.read_int()
@@ -85,10 +91,14 @@ class SealAnimationDecoder:
       # Redundant axis-angle encoding
       # axis = [qx, qy, qz] / sin(angle/2)
       # angle = 2 * arccos(w)
-      _axis_x = self.file.read_float()
-      _axis_y = self.file.read_float()
-      _axis_z = self.file.read_float()
-      _angle = self.file.read_float()
+      axis_angles.append(
+        [
+          self.file.read_float(),
+          self.file.read_float(),
+          self.file.read_float(),
+          self.file.read_float(),
+        ]
+      )
 
       left_child_frame = self.file.read_int()
       right_child_frame = self.file.read_int()
@@ -98,6 +108,8 @@ class SealAnimationDecoder:
           "right": right_child_frame if right_child_frame != 0xFFFFFFFE else None,
         }
       )
+    if axis_angles:
+      self.unknown.setdefault("rotation_axis_angles", {})[node.name] = axis_angles
     if size != 0:
       root_frame = self.file.read_int()
       node.btree = self.__decode_hash_table(hash_table, root_frame)
@@ -105,6 +117,7 @@ class SealAnimationDecoder:
   def __decode_scale(self, node: Animation) -> None:
     size = self.file.read_int()
     hash_table = []
+    pads: List[List[float]] = []
 
     for _ in range(size):
       time = self.file.read_int()
@@ -115,10 +128,15 @@ class SealAnimationDecoder:
       keyframe = Keyframe(time, scale)
       node.scales.append(keyframe)
 
-      _x = self.file.read_float()  # Usually 0.0
-      _y = self.file.read_float()  # Usually 0.0
-      _z = self.file.read_float()  # Usually 0.0
-      _w = self.file.read_float()  # Usually 0.0
+      # Usually 0.0, 0.0, 0.0, 0.0
+      pads.append(
+        [
+          self.file.read_float(),
+          self.file.read_float(),
+          self.file.read_float(),
+          self.file.read_float(),
+        ]
+      )
 
       left_child_frame = self.file.read_int()
       right_child_frame = self.file.read_int()
@@ -128,6 +146,8 @@ class SealAnimationDecoder:
           "right": right_child_frame if right_child_frame != 0xFFFFFFFE else None,
         }
       )
+    if pads:
+      self.unknown.setdefault("scale_pads", {})[node.name] = pads
     if size != 0:
       root_frame = self.file.read_int()
       node.btree = self.__decode_hash_table(hash_table, root_frame)

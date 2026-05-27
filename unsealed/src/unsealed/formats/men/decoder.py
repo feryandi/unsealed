@@ -23,6 +23,7 @@ class SealMenDecoder:
   def __init__(self, path: Path) -> None:
     self.path: Path = path
     self.file: Optional[File] = None
+    self.unknown: Dict[str, Any] = {}
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
@@ -52,7 +53,7 @@ class SealMenDecoder:
     spr_file = self.file.read_string(100)
     interface["spr"] = spr_file
 
-    _ = self.file.read_int()
+    self.unknown["post_spr_int"] = self.file.read_int()
 
     interface["elements"] = []
 

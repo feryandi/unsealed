@@ -20,8 +20,13 @@ _STRIDE_PLAIN = 32  # [pos(3) | normal(3) | uv(2)] × 4 bytes
 _STRIDE_SKINNED = 64  # [pos(3) | normal(3) | uv(2) | joints(4) | weights(4)] × 4 bytes
 
 
+@dataclass
 class ViewerScene:
   """Base type for all viewer scenes. Use ImageScene, ModelScene, or MapScene."""
+
+  # Decoder-reported unknown fields, keyed by dotted path
+  # (e.g. "SealMeshDecoder", "geometry_decoder.mesh_decoders[0]").
+  unknowns: Dict[str, Dict[str, Any]] = field(default_factory=dict)
 
 
 @dataclass

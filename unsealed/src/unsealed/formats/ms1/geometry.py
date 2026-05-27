@@ -1,3 +1,5 @@
+from typing import Any, Dict, List
+
 from ...utils.file import File
 from ...assets.geometry import Geometry
 
@@ -8,6 +10,8 @@ class SealMeshGeometryDecoder:
   def __init__(self, file: File, maybe_non_first_object_has_pad: bool) -> None:
     self.file: File = file
     self.maybe_non_first_object_has_pad: bool = maybe_non_first_object_has_pad
+    self.unknown: Dict[str, Any] = {}
+    self.mesh_decoders: List[SealMeshMeshDecoder] = []
 
   def decode(self) -> Geometry:
     geometry = Geometry()
@@ -15,9 +19,11 @@ class SealMeshGeometryDecoder:
     for x in range(count):
       if self.maybe_non_first_object_has_pad and x != 0:
         pad = self.file.read(1)
+        self.unknown[f"mesh_{x}_pad_byte"] = pad
         # Sometimes it has a pad
         if pad == b"\x01":
-          self.file.read(12)
+          self.unknown[f"mesh_{x}_pad_extra"] = self.file.read(12)
       decoder = SealMeshMeshDecoder(self.file)
+      self.mesh_decoders.append(decoder)
       geometry.meshes.append(decoder.decode())
     return geometry

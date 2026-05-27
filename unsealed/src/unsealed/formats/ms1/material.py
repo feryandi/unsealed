@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, Dict, List
 
 from ...utils.file import File
 from ...utils.strings import is_valid_ascii_letter
@@ -10,6 +10,10 @@ class SealMeshMaterialDecoder:
     self.file: File = file
     self.count: int = 0
     self.different_mode: bool = different_mode
+    self.unknown: Dict[str, Any] = {}
+
+  def _append(self, key: str, value: Any) -> None:
+    self.unknown.setdefault(key, []).append(value)
 
   def decode(self) -> List[Material]:
     materials: List[Material] = []
@@ -23,14 +27,17 @@ class SealMeshMaterialDecoder:
           self.file.read_float(),
           self.file.read_float(),
         ]
-        _pad = self.file.read_float()
-        _x = [
-          self.file.read_float(),
-          self.file.read_float(),
-          self.file.read_float(),
-        ]
-        _pad = self.file.read_float()
-        _y = self.file.read_float()
+        self._append("material_specular_pad", self.file.read_float())
+        self._append(
+          "material_specular_x",
+          [
+            self.file.read_float(),
+            self.file.read_float(),
+            self.file.read_float(),
+          ],
+        )
+        self._append("material_specular_x_pad", self.file.read_float())
+        self._append("material_y", self.file.read_float())
         alpha_mode = self.file.read(1)
         material.alpha_mode = int.from_bytes(alpha_mode, byteorder="little")
 
@@ -43,7 +50,7 @@ class SealMeshMaterialDecoder:
     return materials
 
   def __decode_normal_material(self) -> Material:
-    _x = self.file.read_short()
+    self._append("normal_material_short", self.file.read_short())
     bitmap = self.file.read_string(256)
     name = self.file.read_string(128)
     material = Material(name, bitmap)
@@ -56,13 +63,13 @@ class SealMeshMaterialDecoder:
       self.file.read_float(),
       self.file.read_float(),
     ]
-    _pad = self.file.read_float()
+    self._append("material_ambient_pad", self.file.read_float())
     material.material_diffuse = [
       self.file.read_float(),
       self.file.read_float(),
       self.file.read_float(),
     ]
-    _pad = self.file.read_float()
+    self._append("material_diffuse_pad", self.file.read_float())
 
     for _ in range(num_sub_material):
       sub_material_specular = [
@@ -70,14 +77,17 @@ class SealMeshMaterialDecoder:
         self.file.read_float(),
         self.file.read_float(),
       ]
-      _pad = self.file.read_float()
-      _x = [
-        self.file.read_float(),
-        self.file.read_float(),
-        self.file.read_float(),
-      ]
-      _pad = self.file.read_float()
-      _y = self.file.read_float()
+      self._append("sub_material_specular_pad", self.file.read_float())
+      self._append(
+        "sub_material_x",
+        [
+          self.file.read_float(),
+          self.file.read_float(),
+          self.file.read_float(),
+        ],
+      )
+      self._append("sub_material_x_pad", self.file.read_float())
+      self._append("sub_material_y", self.file.read_float())
       alpha_mode = self.file.read(1)
 
       submaterial = self.__decode_normal_material()
@@ -89,10 +99,10 @@ class SealMeshMaterialDecoder:
 
   def __decode_special_material(self) -> Material:
     # Unknown what special about this, yet
-    _ = self.file.read_short()
+    self._append("special_short", self.file.read_short())
     bitmap = self.file.read_string(256)
-    _ = self.file.read_string(256)
-    _ = self.file.read(16)
+    self._append("special_second_string", self.file.read_string(256))
+    self._append("special_16bytes", self.file.read(16))
 
     pad = 0
 
@@ -108,8 +118,8 @@ class SealMeshMaterialDecoder:
       self.file.read(pad * 4)
       if self.file.seek(4) == b"\x2d\x01\x00\x00":
         self.file.read(pad * 16)
-        _ = self.file.read(16)
-      _ = self.file.read(8)
+        self._append("special_2d01_extra_16", self.file.read(16))
+      self._append("special_2d01_tail_8", self.file.read(8))
     elif check == b"\x57\x00\x00\x00":
       pad = self.file.read_int()
       self.file.read(22 * 16 - 4)
@@ -117,12 +127,12 @@ class SealMeshMaterialDecoder:
       if self.file.seek(4) == b"\x57\x00\x00\x00":
         i += 1
         self.file.read(86 * 16 + 8)
-        _ = self.file.read(12)
+        self._append("special_5700_branch_a_12", self.file.read(12))
       if self.file.seek(4) == b"\x57\x00\x00\x00":
         i += 1
         self.file.read(86 * 16 + 8)
-        _ = self.file.read(4)
-      _ = self.file.read(8)
+        self._append("special_5700_branch_b_4", self.file.read(4))
+      self._append("special_5700_tail_8", self.file.read(8))
       if i == 1:
         self.file.read(12)
     elif check == b"\x75\x00\x00\x00":
@@ -133,18 +143,18 @@ class SealMeshMaterialDecoder:
     elif check == b"\x00\x00\x00\x00":
       self.file.read(4)
       pad = self.file.read_int()
-      _ = self.file.read(4)
+      self._append("special_0000_mid_4", self.file.read(4))
       self.file.read(pad * 16)
     else:
       pad = self.file.read_int()
       self.file.read(pad * 4)
-      _ = self.file.read(8)
+      self._append("special_else_tail_8", self.file.read(8))
 
     name = self.file.read_string(256)
     material = Material(name, bitmap)
-    _ = self.file.read_int()
-    _ = self.file.read(16 * 4)
-    _ = self.file.read(5)
+    self._append("special_tail_int", self.file.read_int())
+    self._append("special_tail_16x4", self.file.read(16 * 4))
+    self._append("special_tail_5", self.file.read(5))
     return material
 
   # Hacky and might not work :(

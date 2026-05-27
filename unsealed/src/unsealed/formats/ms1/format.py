@@ -12,6 +12,11 @@ from ..sha.decoder import SealShaDecoder
 
 
 class SealMeshFormat(BaseFormat[Model]):
+  def __init__(self) -> None:
+    self.geometry_decoder: object = None
+    self.bone_decoder: object = None
+    self.animation_decoder: object = None
+
   @property
   def extensions(self) -> Pattern[str]:
     return re.compile(r"\.ms1$", re.IGNORECASE)
@@ -24,8 +29,8 @@ class SealMeshFormat(BaseFormat[Model]):
     model = Model()
     model.name = path.stem
 
-    geometry_decoder = SealMeshDecoder(path)
-    geometry = geometry_decoder.decode()
+    self.geometry_decoder = SealMeshDecoder(path)
+    geometry = self.geometry_decoder.decode()
     model.add_geometry(geometry)
 
     sha_path = path.with_suffix(".sha")
@@ -34,14 +39,14 @@ class SealMeshFormat(BaseFormat[Model]):
 
     bone_path = path.with_suffix(".bn1")
     if bone_path.is_file():
-      bone_decoder = SealBoneDecoder(bone_path)
-      skeleton = bone_decoder.decode()
+      self.bone_decoder = SealBoneDecoder(bone_path)
+      skeleton = self.bone_decoder.decode()
       model.add_skeleton(skeleton)
 
     animation_path = path.with_suffix(".an1")
     if animation_path.is_file():
-      animation_decoder = SealAnimationDecoder(animation_path)
-      animations = animation_decoder.decode()
+      self.animation_decoder = SealAnimationDecoder(animation_path)
+      animations = self.animation_decoder.decode()
       for animation in animations:
         model.add_animation("default", animation)
 

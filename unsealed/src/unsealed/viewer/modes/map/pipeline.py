@@ -22,10 +22,14 @@ class MapViewerPipeline:
   _MAX_OBJECT_TYPES: int = 200
 
   def run(self, path: Path, shader_cache: Optional[Dict] = None) -> MapScene:
+    from unsealed.formats.base import collect_unknowns
     from unsealed.formats.map.format import SealMapFormat
 
-    terrain = SealMapFormat().decode(path)
-    return MapViewerPipeline._terrain_to_scene(terrain, path, shader_cache)
+    fmt = SealMapFormat()
+    terrain = fmt.decode(path)
+    scene = MapViewerPipeline._terrain_to_scene(terrain, path, shader_cache)
+    scene.unknowns = collect_unknowns(fmt)
+    return scene
 
   @staticmethod
   def _terrain_to_scene(

@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import numpy as np
 
 from ...utils.file import File
@@ -9,6 +11,7 @@ from ...assets.skeleton import Bone
 class SealBoneBoneDecoder:
   def __init__(self, file: File) -> None:
     self.file: File = file
+    self.unknown: Dict[str, Any] = {}
 
   def decode(self) -> Bone:
     bone = Bone()
@@ -18,9 +21,9 @@ class SealBoneBoneDecoder:
     if t == b"\x01":
       bone.parent = self.file.read_string(256)
     else:
-      _ = self.file.read(256)
+      self.unknown["parent_pad"] = self.file.read(256)
 
-    _cc = [
+    self.unknown["cc"] = [
       self.file.read_float(),
       self.file.read_float(),
       self.file.read_float(),
@@ -83,7 +86,7 @@ class SealBoneBoneDecoder:
         self.file.read_float(),
       ],
     ]
-    _ = [
+    self.unknown["extra_matrix"] = [
       [
         self.file.read_float(),
         self.file.read_float(),
@@ -103,17 +106,17 @@ class SealBoneBoneDecoder:
         self.file.read_float(),
       ],
     ]
-    _broken_loc = [
+    self.unknown["broken_loc"] = [
       self.file.read_float(),
       self.file.read_float(),
       self.file.read_float(),
     ]
-    _broken_sca = [
+    self.unknown["broken_sca"] = [
       self.file.read_float(),
       self.file.read_float(),
       self.file.read_float(),
     ]
-    _broken_rot = [
+    self.unknown["broken_rot"] = [
       self.file.read_float(),
       self.file.read_float(),
       self.file.read_float(),
@@ -131,7 +134,7 @@ class SealBoneBoneDecoder:
     intm = np.linalg.inv(tm).T
     bone.tm_inverse = intm.tolist()
 
-    _ = [
+    self.unknown["tail_4floats"] = [
       self.file.read_float(),
       self.file.read_float(),
       self.file.read_float(),

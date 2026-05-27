@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ...assets.blob import Blob
 from ...assets.directory import Directory
@@ -10,6 +10,7 @@ class SealMdtDecoder:
   def __init__(self, path: Path) -> None:
     self.path: Path = path
     self.file: Optional[File] = None
+    self.unknown: Dict[str, Any] = {}
     try:
       with open(path, "rb") as dat:
         self.file = File(dat.read())
@@ -26,12 +27,16 @@ class SealMdtDecoder:
     num_files = self.file.read_int()
 
     file_metadata: List[Tuple[str, int]] = []
+    pre_size_pads = []
+    offset_pointers = []
     for _ in range(num_files):
       filename = self.file.read_string(16 * 6)
-      _ = self.file.read(4)
+      pre_size_pads.append(self.file.read(4))
       size = self.file.read_int()
-      _ = self.file.read(4)  # Skip the start offset pointer
+      offset_pointers.append(self.file.read(4))
       file_metadata.append((filename, size))
+    self.unknown["pre_size_pads"] = pre_size_pads
+    self.unknown["offset_pointers"] = offset_pointers
 
     decoded_files = []
     for filename, size in file_metadata:

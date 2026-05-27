@@ -40,15 +40,20 @@ class ModelViewerPipeline:
   def run(self, path: Path, shader_cache: Optional[Dict] = None) -> ModelScene:
     shaders = shader_cache
 
+    from unsealed.formats.base import collect_unknowns
+
     if path.suffix.lower() == ".act":
       from unsealed.formats.act.format import SealActorFormat
 
-      model = SealActorFormat().decode(path)
+      fmt = SealActorFormat()
     else:
       from unsealed.formats.ms1.format import SealMeshFormat
 
-      model = SealMeshFormat().decode(path)
-    return ModelViewerPipeline._model_to_scene(model, path, shaders)
+      fmt = SealMeshFormat()
+    model = fmt.decode(path)
+    scene = ModelViewerPipeline._model_to_scene(model, path, shaders)
+    scene.unknowns = collect_unknowns(fmt)
+    return scene
 
   @classmethod
   def _model_to_scene(

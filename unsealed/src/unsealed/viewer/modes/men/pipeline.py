@@ -14,7 +14,7 @@ import json
 import os
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from ....formats.men.decoder import SealMenDecoder
 from ...sprite_atlas import SpriteAtlas, SpriteRef, decode_spr_for_viewer
@@ -39,7 +39,7 @@ class MenViewerPipeline:
     t_total = time.perf_counter()
 
     t0 = time.perf_counter()
-    parsed = self._decode_men(path)
+    parsed, men_unknowns = self._decode_men(path)
     t_men = (time.perf_counter() - t0) * 1000
 
     version = int(parsed.get("version") or 0)
@@ -76,6 +76,7 @@ class MenViewerPipeline:
       )
 
     return MenScene(
+      unknowns=men_unknowns,
       spr_file_name=spr_file_name,
       atlases=atlases,
       elements=elements,
@@ -122,17 +123,22 @@ class MenViewerPipeline:
   # ── private ─────────────────────────────────────────────────────────────
 
   @staticmethod
-  def _decode_men(path: Path) -> dict:
+  def _decode_men(path: Path) -> Tuple[dict, Dict[str, Dict[str, Any]]]:
     """Decode through SealMenDecoder, swallowing its stdout debug prints
     (older decoder paths may still log a few raw ints during parsing)."""
+    from ....formats.base import collect_unknowns
+
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-      raw = SealMenDecoder(path).decode()
+      decoder = SealMenDecoder(path)
+      raw = decoder.decode()
+    unknowns = collect_unknowns(decoder)
     try:
-      return json.loads(raw) if isinstance(raw, str) else (raw or {})
+      parsed = json.loads(raw) if isinstance(raw, str) else (raw or {})
     except Exception as e:
       print(f"[men] decode failed: {e}")
-      return {}
+      parsed = {}
+    return parsed, unknowns
 
   @staticmethod
   def _decode_referenced_spr(

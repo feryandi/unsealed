@@ -43,6 +43,8 @@ class MenMode(BaseMode):
     return cam
 
   def draw_hud(self, world: "AppWorld") -> None:
+    from ...app.panels import draw_unknowns_window
+
     ctx = world.scene.context
     if ctx is None:
       return
@@ -54,6 +56,7 @@ class MenMode(BaseMode):
     active = scene.active_element()
     if active is not None and scene.selected_element_idx is not None:
       self._draw_element_detail(world, active, scene.selected_element_idx)
+    draw_unknowns_window(scene)
 
   def _draw_control_window(
     self, world: "AppWorld", scene: MenScene, cam: MenCamera, filename: str

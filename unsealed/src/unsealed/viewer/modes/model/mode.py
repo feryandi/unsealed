@@ -62,6 +62,8 @@ class ModelMode(BaseMode):
     return cam
 
   def draw_hud(self, world: "AppWorld") -> None:
+    from ...app.panels import draw_unknowns_window
+
     ctx = world.scene.context
     if ctx is None:
       return
@@ -80,6 +82,7 @@ class ModelMode(BaseMode):
         duration=group.duration,
         playing=primary.playing,
       )
+    draw_unknowns_window(scene)
 
   def _draw_control_window(
     self, world: "AppWorld", scene: ModelScene, path: Path
