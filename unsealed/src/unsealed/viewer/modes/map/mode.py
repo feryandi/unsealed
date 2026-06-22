@@ -12,7 +12,7 @@ from ...scenes import AnimatedEntity, ViewerMesh
 from ...scenes.scene import _STRIDE_PLAIN, _STRIDE_SKINNED
 from ..base import AnimationPolicy, BaseMode, RenderExtension
 from .camera import MapCamera
-from .extensions import SkyExtension, TerrainExtension
+from .extensions import GridExtension, SkyExtension, TerrainExtension, WalkabilityExtension
 from .pipeline import MapViewerPipeline
 from .scene import MapScene
 
@@ -24,12 +24,14 @@ if TYPE_CHECKING:
 
 
 _MAP_CONTROLS = [
+  "LMB click     : Pick cell / object",
   "LMB drag      : Pan",
   "MMB drag      : Pan (grab)",
   "RMB drag L/R  : Yaw",
   "RMB drag U/D  : Pitch (15-75)",
   "WASD / Arrows : Pan",
   "Scroll        : Zoom",
+  "G             : Toggle grid",
   "O             : Open file",
   "I             : Inject .ms1",
   "Esc           : Quit",
@@ -46,6 +48,8 @@ class MapMode(BaseMode):
     self._render_extensions: List[RenderExtension] = [
       SkyExtension(),
       TerrainExtension(),
+      WalkabilityExtension(),
+      GridExtension(),
     ]
 
   def render_extensions(self) -> "Iterable[RenderExtension]":
@@ -69,6 +73,7 @@ class MapMode(BaseMode):
       return
     scene = cast(MapScene, ctx.scene)
     self._draw_control_window(world, scene, ctx.path)
+    self._draw_rendering_settings_window(world, scene)
     selected_idx = world.scene.selected_mesh_idx
     if selected_idx is not None and 0 <= selected_idx < len(scene.meshes):
       mesh = scene.meshes[selected_idx]
@@ -96,13 +101,49 @@ class MapMode(BaseMode):
     imgui.separator()
     if imgui.button("Open File"):
       world.open_dialog()
-    imgui.same_line()
+    imgui.separator()
+
+    cell = scene.selected_grid_cell
+    if cell is not None and scene.terrain_heights is not None:
+      cx, cz = cell
+      h = float(scene.terrain_heights[cz, cx])
+      imgui.text(f"Cell     : ({cx}, {cz})")
+      imgui.text(f"Height   : {h:.2f}")
+      if scene.walkable_data is not None:
+        w = int(scene.walkable_data[cz, cx])
+        imgui.text(f"Walkable : {'no' if w else 'yes'}")
+      imgui.separator()
+    else:
+      imgui.text_disabled("Click a cell to inspect")
+      imgui.separator()
+
+    for line in _MAP_CONTROLS:
+      imgui.text_disabled(line)
+    imgui.end()
+
+  def _draw_rendering_settings_window(
+    self, world: "AppWorld", scene: MapScene
+  ) -> None:
+    """Toggle buttons for shader / grid / walkability overlays."""
+    imgui.set_next_window_pos((10, 220), imgui.Cond_.first_use_ever.value)
+    imgui.begin("Rendering Settings")
     shader_label = "Shader: ON" if world.render.q3_enabled else "Shader: OFF"
     if imgui.button(shader_label):
       world.toggle_q3()
-    imgui.separator()
-    for line in _MAP_CONTROLS:
-      imgui.text_disabled(line)
+    grid_label = "Grid: ON" if scene.grid_enabled else "Grid: OFF"
+    if imgui.button(grid_label):
+      scene.grid_enabled = not scene.grid_enabled
+    walk_available = scene.walkable_data is not None
+    walk_label = (
+      f"Walkability: {'ON' if scene.walkability_enabled else 'OFF'}"
+      if walk_available
+      else "Walkability: (no data)"
+    )
+    if walk_available:
+      if imgui.button(walk_label):
+        scene.walkability_enabled = not scene.walkability_enabled
+    else:
+      imgui.text_disabled(walk_label)
     imgui.end()
 
   def _draw_object_window(
@@ -174,10 +215,14 @@ class MapMode(BaseMode):
     imgui.end()
 
   def on_key(self, key: int, mctx: "ModeContext") -> None:
-    from pygame.locals import K_i
+    from pygame.locals import K_g, K_i
 
     if key == K_i:
       mctx.open_inject_dialog()
+    elif key == K_g:
+      ctx = mctx.scene_context
+      if ctx is not None and isinstance(ctx.scene, MapScene):
+        ctx.scene.grid_enabled = not ctx.scene.grid_enabled
 
   def on_mouse_down(
     self, button: int, pos: tuple[int, int], mctx: "ModeContext"
@@ -191,7 +236,24 @@ class MapMode(BaseMode):
       cx, cy = pos
       if (cx - ox) ** 2 + (cy - oy) ** 2 <= 25:  # ≤ 5 px radius
         mctx.pick(cx, cy)
+        self._pick_grid_cell(cx, cy, mctx)
       mctx.set_lmb_down(None)
+
+  def _pick_grid_cell(self, mx: int, my: int, mctx: "ModeContext") -> None:
+    """Ray-cast against the terrain and store the clicked tile in the scene."""
+    ctx = mctx.scene_context
+    if ctx is None or not isinstance(ctx.scene, MapScene):
+      return
+    cam = cast(MapCamera, mctx.camera)
+    hit = cam.raycast_terrain_screen(mx, my, mctx.width, mctx.height)
+    if hit is None:
+      ctx.scene.selected_grid_cell = None
+      return
+    # Cell (i, j) is centered on integer (i, j); rounding maps a hit at
+    # world x into the cell whose center is nearest.
+    cell_x = int(np.clip(np.round(hit[0]), 0, 511))
+    cell_z = int(np.clip(np.round(hit[2]), 0, 511))
+    ctx.scene.selected_grid_cell = (cell_x, cell_z)
 
   def on_mouse_motion(self, dx: int, dy: int, mctx: "ModeContext") -> None:
     cam = cast(MapCamera, mctx.camera)

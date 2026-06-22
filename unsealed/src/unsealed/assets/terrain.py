@@ -20,6 +20,9 @@ class Terrain(Asset):
     self.lightmap: Optional[str] = None
     self.terrain_layer_a: List[int] = []
     self.terrain_layer_b: List[int] = []
+    # Per-tile walkability flags, row-major (H * W ints).
+    # 0 = walkable, non-zero = blocked.
+    self.walkable: List[int] = []
 
     self.height = 512
     self.width = 512

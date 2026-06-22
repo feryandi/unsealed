@@ -117,11 +117,11 @@ class SealMapDecoder:
         n.append(x)
       self.unknown["ecila_heightmap"] = n
 
-    # Walkable area
+    # Walkable area — per-tile flag (0 = walkable, non-zero = blocked).
     walkable = []
     for _ in range((512 * 512) // div):
       walkable.append(self.file.read_int())
-    self.unknown["walkable"] = walkable
+    terrain.walkable = walkable
 
     # Object placement
     if self.version == 17:

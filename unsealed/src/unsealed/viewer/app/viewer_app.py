@@ -95,6 +95,8 @@ class ViewerApp:
         scene.context.mode.draw_hud(world)
       else:
         _draw_welcome(world)
+      if world.spak.active:
+        _draw_spak_browser(world)
       world.imgui.render()
 
       pygame.display.flip()
@@ -115,4 +117,35 @@ def _draw_welcome(world: AppWorld) -> None:
   imgui.separator()
   if imgui.button("Open File"):
     world.open_dialog()
+  imgui.end()
+
+
+def _draw_spak_browser(world: AppWorld) -> None:
+  """Browser listing the viewable files inside an opened .spak."""
+  from imgui_bundle import imgui
+
+  spak = world.spak
+  imgui.set_next_window_pos((10, 320), imgui.Cond_.first_use_ever.value)
+  imgui.set_next_window_size((300, 380), imgui.Cond_.first_use_ever.value)
+  expanded, keep_open = imgui.begin(f"Archive: {spak.archive_name}", True)
+  if not keep_open:
+    world.close_spak()
+  if expanded:
+    if spak.error is not None:
+      imgui.text_wrapped(f"Failed to open archive:\n{spak.error}")
+    elif not spak.entries:
+      imgui.text_wrapped("No viewable files in this archive.")
+    else:
+      imgui.text(f"{len(spak.entries)} viewable file(s)")
+      _, spak.filter_text = imgui.input_text("Filter", spak.filter_text)
+      imgui.separator()
+      needle = spak.filter_text.lower()
+      imgui.begin_child("spak_entries")
+      for rel in spak.entries:
+        label = rel.as_posix()
+        if needle and needle not in label.lower():
+          continue
+        if imgui.selectable(label, False)[0]:
+          world.open_spak_entry(rel)
+      imgui.end_child()
   imgui.end()

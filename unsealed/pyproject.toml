@@ -25,6 +25,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "black", "isort", "mypy"]
+viewer = ["pygame", "PyOpenGL", "PyOpenGL_accelerate", "imgui-bundle", "texture2ddecoder"]
 
 [project.scripts]
 unsealed = "unsealed.__main__:run"

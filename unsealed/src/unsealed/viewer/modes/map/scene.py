@@ -30,3 +30,13 @@ class MapScene(ThreeDimensionalScene):
   terrain_heights: Optional[NDArray] = None
   # Sky dome meshes loaded from sky.ms1 (empty if not found)
   sky_meshes: List[ViewerMesh] = field(default_factory=list)
+  # Most recently picked grid cell from a click on the terrain surface.
+  # Tuple is (cell_x, cell_z) in [0, 511]; None when no click has hit yet.
+  selected_grid_cell: Optional[Tuple[int, int]] = None
+  # Whether the grid overlay is drawn. Toggled from the HUD.
+  grid_enabled: bool = True
+  # Per-tile walkability mask, shape (H, W) uint8. 0 = walkable,
+  # non-zero = blocked. None if the map didn't carry walkability info.
+  walkable_data: Optional[NDArray] = None
+  # Whether the walkability overlay is drawn.
+  walkability_enabled: bool = False

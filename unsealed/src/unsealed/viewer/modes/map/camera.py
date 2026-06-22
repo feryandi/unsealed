@@ -75,6 +75,60 @@ class MapCamera(Camera):
         return np.array([p[0], th, p[2]], dtype=np.float32)
     return None
 
+  def raycast_terrain_screen(
+    self,
+    mx: int,
+    my: int,
+    win_w: int,
+    win_h: int,
+  ) -> Optional[NDArray]:
+    """Ray-march from a screen pixel against the heightmap surface.
+
+    Reconstructs a world-space ray for the pixel via the camera's current
+    view/projection (the renderer's _mirror_x is NOT applied — we work in
+    plain world space here), then steps along it until the ray's Y dips
+    below the local terrain height. Returns the world-space hit point or
+    None if the ray never lands on terrain.
+    """
+    if self._heights is None or win_w <= 0 or win_h <= 0:
+      return None
+
+    aspect = win_w / max(win_h, 1)
+    view = self.view_matrix()
+    proj = self.projection_matrix(aspect, win_w, win_h)
+    # Renderer mirrors X before drawing; match that here so the unprojected
+    # ray lines up with what the user actually sees on screen.
+    mirror_x = np.diag(np.array([-1.0, 1.0, 1.0, 1.0], dtype=np.float32))
+    proj = mirror_x @ proj
+
+    # Reuse the renderer's unproject helper so the math stays in one place.
+    from ...rendering.math_utils import unproject_ray
+
+    origin, direction = unproject_ray(mx, my, win_w, win_h, view, proj)
+    d = float(np.linalg.norm(direction))
+    if d < 1e-6:
+      return None
+    direction = (direction / d).astype(np.float32)
+    origin = origin.astype(np.float32)
+
+    # Step size keyed off camera height so we don't undersample at low zoom.
+    step = max(0.5, float(self.height) / 200.0)
+    p = origin.copy()
+    prev_above = p[1] > self._terrain_h_at(p[0], p[2])
+    for _ in range(1500):
+      p = p + direction * step
+      if p[0] < -1.0 or p[2] < -1.0 or p[0] > self._map_w or p[2] > self._map_h:
+        if not prev_above:
+          break
+        continue
+      th = self._terrain_h_at(p[0], p[2])
+      above = p[1] > th
+      if prev_above and not above:
+        # Refine by linear interp between previous and current sample.
+        return np.array([p[0], th, p[2]], dtype=np.float32)
+      prev_above = above
+    return None
+
   # ── called every frame ────────────────────────────────────────────────────
 
   def update(self, dt: float) -> None:

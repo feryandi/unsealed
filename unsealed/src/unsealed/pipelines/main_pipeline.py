@@ -5,6 +5,7 @@ from .actor_pipeline import ActorPipeline
 from .map_pipeline import MapPipeline
 from .menu_pipeline import MenuPipeline
 from .object_pipeline import ObjectPipeline
+from .spak_pipeline import SpakPipeline
 from .texture_pipeline import TexturePipeline
 
 SUPPORTED_FILE_TYPES = {
@@ -13,6 +14,7 @@ SUPPORTED_FILE_TYPES = {
   ".map": {"name": "Map File", "pipeline": MapPipeline()},
   ".men": {"name": "Menu File", "pipeline": MenuPipeline()},
   ".tex": {"name": "Texture File", "pipeline": TexturePipeline()},
+  ".spak": {"name": "Packed Archive", "pipeline": SpakPipeline()},
 }
 
 

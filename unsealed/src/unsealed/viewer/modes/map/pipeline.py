@@ -66,6 +66,11 @@ class MapViewerPipeline:
     scene.terrain_vertex_data = np.ascontiguousarray(verts.flatten())
     scene.terrain_heights = heights
 
+    if terrain.walkable and len(terrain.walkable) >= H * W:
+      walk = np.array(terrain.walkable[: H * W], dtype=np.int32).reshape(H, W)
+      # Normalize to 0/255 uint8 — non-zero ⇒ blocked.
+      scene.walkable_data = np.where(walk != 0, np.uint8(255), np.uint8(0))
+
     # ── Terrain index buffer ────────────────────────────────────────────────
     xi = np.arange(W - 1, dtype=np.uint32)
     zi = np.arange(H - 1, dtype=np.uint32)

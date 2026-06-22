@@ -14,7 +14,13 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, cast
 from ..modes import MODES, MapScene, MenScene, ModeContext, ModelScene, SprScene
 from ..modes.map.camera import MapCamera
 from ..rendering.imgui_renderer import ImGuiRenderer
-from .components import InputComponent, RenderComponent, SceneComponent, WindowComponent
+from .components import (
+    InputComponent,
+    RenderComponent,
+    SceneComponent,
+    SpakComponent,
+    WindowComponent,
+)
 from .systems import AnimationSystem, InputSystem, LoadSystem, UpdateSystem
 
 if TYPE_CHECKING:
@@ -27,6 +33,7 @@ class AppWorld:
         self.inp = InputComponent()
         self.render = RenderComponent()
         self.scene = SceneComponent()
+        self.spak = SpakComponent()
 
         # Shader cache: filled once per unique directory, reused across loads
         self.shader_cache: Dict[str, Any] = {}
@@ -203,6 +210,15 @@ class AppWorld:
 
     def open_dialog(self) -> None:
         self._load_sys.open_dialog(self)
+
+    def open_spak_entry(self, rel: Path) -> None:
+        """Load a file from the currently-browsed .spak extraction."""
+        if self.spak.root is None:
+            return
+        self.load(self.spak.root / rel)
+
+    def close_spak(self) -> None:
+        self.spak.active = False
 
     def open_inject_dialog(self) -> None:
         """Pick a model file and ask the active Mode to inject it."""
