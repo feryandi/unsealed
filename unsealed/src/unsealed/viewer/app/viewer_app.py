@@ -63,6 +63,7 @@ class ViewerApp:
       dt = clock.tick(60) / 1000.0
       _time += dt
       world.process_events()
+      world.poll_load()  # finalize a finished background load (GL on main thread)
       world.update(dt)
 
       win = world.window
@@ -97,6 +98,7 @@ class ViewerApp:
         _draw_welcome(world)
       if world.spak.active:
         _draw_spak_browser(world)
+      _draw_status_bar(world)
       world.imgui.render()
 
       pygame.display.flip()
@@ -105,6 +107,37 @@ class ViewerApp:
     world.imgui.shutdown()
     world.render.renderer.cleanup()
     pygame.quit()
+
+
+_SPINNER = "|/-\\"
+_STATUS_BAR_H = 26
+
+
+def _draw_status_bar(world: AppWorld) -> None:
+  """Sticky one-row bar pinned to the bottom (loading spinner / status)."""
+  from imgui_bundle import imgui
+
+  w, h = world.window.width, world.window.height
+  imgui.set_next_window_pos((0, h - _STATUS_BAR_H))
+  imgui.set_next_window_size((w, _STATUS_BAR_H))
+  flags = (
+    imgui.WindowFlags_.no_title_bar.value
+    | imgui.WindowFlags_.no_resize.value
+    | imgui.WindowFlags_.no_move.value
+    | imgui.WindowFlags_.no_scrollbar.value
+    | imgui.WindowFlags_.no_saved_settings.value
+    | imgui.WindowFlags_.no_collapse.value
+    | imgui.WindowFlags_.no_nav.value
+    | imgui.WindowFlags_.no_bring_to_front_on_focus.value
+  )
+  imgui.begin("##status_bar", None, flags)
+  st = world.status
+  if st.loading:
+    frame = _SPINNER[(pygame.time.get_ticks() // 120) % len(_SPINNER)]
+    imgui.text(f"{frame}  {st.message}")
+  else:
+    imgui.text(st.message or "Ready")
+  imgui.end()
 
 
 def _draw_welcome(world: AppWorld) -> None:

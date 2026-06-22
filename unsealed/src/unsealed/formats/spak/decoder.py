@@ -3,7 +3,7 @@ import struct
 import zipfile
 import zlib
 from pathlib import Path, PurePosixPath
-from typing import Optional
+from typing import List, Optional
 
 from ...assets.blob import Blob
 from ...assets.directory import Directory
@@ -48,12 +48,103 @@ def spak_password(version: int) -> bytes:
   return (SPAK_TEMPLATES[version % 4] % crc).encode()
 
 
-class SpakDecoder:
-  """Decodes a Seal Online .spak archive (a ZipCrypto-encrypted zip).
+def resolve_password(
+  infos: List[zipfile.ZipInfo], comment: bytes, archive_name: str = "archive"
+) -> Optional[bytes]:
+  """Derive the password from the version in the zip comment.
 
-  The password is derived deterministically from the format version read
-  from the zip's global comment ("Seal Online Zip v<V>"). Pass
-  ``password`` to override it for archives with a non-standard comment.
+  Returns ``None`` for plain (unencrypted) archives. Raises when an
+  entry is encrypted but the version can't be read from the comment.
+  """
+  if not any(i.flag_bits & 0x1 for i in infos):
+    return None
+
+  m = _COMMENT_VERSION.search(comment or b"")
+  if m is None:
+    raise Exception(
+      f"{archive_name!r} is encrypted but has no 'Seal Online Zip "
+      f"v<N>' comment to derive the key from; pass password= explicitly."
+    )
+  return spak_password(int(m.group(1)))
+
+
+def _normalize(name: str) -> str:
+  return name.replace("\\", "/")
+
+
+class SpakArchive:
+  """A mounted .spak archive: list once, decrypt entries on demand.
+
+  Mirrors how the game client treats an archive -- the central directory
+  (file list) is read up front without decrypting anything, and a single
+  entry is decrypted + inflated only when its bytes are actually read.
+  Use as a context manager, or call :meth:`close` when done.
+  """
+
+  def __init__(self, path: Path, password: Optional[bytes] = None) -> None:
+    self.path = path
+    self._zf = zipfile.ZipFile(path, "r")
+    self._fp = open(path, "rb")
+    self.infos: List[zipfile.ZipInfo] = [
+      i for i in self._zf.infolist() if not i.is_dir()
+    ]
+    self.password = password or resolve_password(
+      self.infos, self._zf.comment, path.name
+    )
+    self._by_name = {_normalize(i.filename): i for i in self.infos}
+
+  def __enter__(self) -> "SpakArchive":
+    return self
+
+  def __exit__(self, *exc) -> None:
+    self.close()
+
+  def names(self) -> List[str]:
+    """All file entry names (normalized to forward slashes)."""
+    return list(self._by_name.keys())
+
+  def info(self, name: str) -> Optional[zipfile.ZipInfo]:
+    return self._by_name.get(_normalize(name))
+
+  def read(self, entry) -> bytes:
+    """Decrypt + inflate a single entry (a name or ZipInfo)."""
+    info = entry if isinstance(entry, zipfile.ZipInfo) else self.info(entry)
+    if info is None:
+      raise KeyError(f"{entry!r} not found in {self.path.name!r}")
+
+    self._fp.seek(info.header_offset)
+    header = _LOCAL_HEADER.unpack(self._fp.read(_LOCAL_HEADER.size))
+    # The local header's name/extra lengths give the true data offset
+    # (they may differ from the central directory's extra length).
+    self._fp.seek(
+      info.header_offset + _LOCAL_HEADER.size + header[9] + header[10]
+    )
+    raw = self._fp.read(info.compress_size)
+
+    if info.flag_bits & 0x1:  # encrypted -> 12-byte header precedes the data
+      if self.password is None:
+        raise Exception(f"{info.filename!r} is encrypted but no key was found")
+      raw = zipfile._ZipDecrypter(self.password)(raw)[12:]
+
+    if info.compress_type == zipfile.ZIP_DEFLATED:
+      return zlib.decompress(raw, -15)
+    if info.compress_type == zipfile.ZIP_STORED:
+      return raw
+    raise Exception(
+      f"Unsupported compression {info.compress_type} for {info.filename!r}"
+    )
+
+  def close(self) -> None:
+    self._fp.close()
+    self._zf.close()
+
+
+class SpakDecoder:
+  """Decodes a Seal Online .spak archive into a Directory of Blobs.
+
+  Reads every entry. The password is derived deterministically from the
+  format version in the zip's global comment ("Seal Online Zip v<V>").
+  Pass ``password`` to override it for non-standard archives.
   """
 
   def __init__(self, path: Path, password: Optional[bytes] = None) -> None:
@@ -61,57 +152,15 @@ class SpakDecoder:
     self.password: Optional[bytes] = password
 
   def decode(self) -> Directory:
-    with zipfile.ZipFile(self.path, "r") as zf, open(self.path, "rb") as fp:
-      infos = [i for i in zf.infolist() if not i.is_dir()]
-      password = self.password or self._resolve_password(infos, zf.comment)
-
+    with SpakArchive(self.path, self.password) as archive:
       directory = Directory(name=self.path.stem)
-      for info in infos:
-        directory.list.append(self._extract(fp, info, password))
+      for info in archive.infos:
+        directory.list.append(self._to_blob(info.filename, archive.read(info)))
     return directory
 
-  def _resolve_password(
-    self, infos: list[zipfile.ZipInfo], comment: bytes
-  ) -> Optional[bytes]:
-    """Derive the password from the version in the zip comment.
-
-    Returns ``None`` for plain (unencrypted) archives. Raises when an
-    entry is encrypted but the version can't be read from the comment.
-    """
-    if not any(i.flag_bits & 0x1 for i in infos):
-      return None
-
-    m = _COMMENT_VERSION.search(comment or b"")
-    if m is None:
-      raise Exception(
-        f"{self.path.name!r} is encrypted but has no 'Seal Online Zip "
-        f"v<N>' comment to derive the key from; pass password= explicitly."
-      )
-    return spak_password(int(m.group(1)))
-
-  def _extract(self, fp, info: zipfile.ZipInfo, password: Optional[bytes]) -> Blob:
-    fp.seek(info.header_offset)
-    header = _LOCAL_HEADER.unpack(fp.read(_LOCAL_HEADER.size))
-    # The local header's name/extra lengths give the true data offset
-    # (they may differ from the central directory's extra length).
-    fp.seek(info.header_offset + _LOCAL_HEADER.size + header[9] + header[10])
-    raw = fp.read(info.compress_size)
-
-    if info.flag_bits & 0x1:  # encrypted -> 12-byte header precedes the data
-      if password is None:
-        raise Exception(f"{info.filename!r} is encrypted but no key was found")
-      raw = zipfile._ZipDecrypter(password)(raw)[12:]
-
-    if info.compress_type == zipfile.ZIP_DEFLATED:
-      content = zlib.decompress(raw, -15)
-    elif info.compress_type == zipfile.ZIP_STORED:
-      content = raw
-    else:
-      raise Exception(
-        f"Unsupported compression {info.compress_type} for {info.filename!r}"
-      )
-
-    name = info.filename.replace("\\", "/")
+  @staticmethod
+  def _to_blob(filename: str, content: bytes) -> Blob:
+    name = _normalize(filename)
     pure = PurePosixPath(name)
     blob = Blob()
     blob.value = content

@@ -120,10 +120,17 @@ class ModelMode(BaseMode):
     imgui.set_next_window_pos((win_w - 280, 10), imgui.Cond_.first_use_ever.value)
     imgui.set_next_window_size((270, 400), imgui.Cond_.first_use_ever.value)
     imgui.begin("Animations")
+    # Animation names are Korean (EUC-KR); push the Hangul font just here so
+    # they render, while the rest of the UI keeps the default monospace font.
+    kr = world.imgui.korean_font
+    if kr is not None:
+      imgui.push_font(kr, 0.0)  # 0.0 = keep current size
     for i, group in enumerate(entity.animation_groups):
       selected = (i == current_idx)
       if imgui.selectable(f"{group.name}##anim{i}", selected)[0]:
         world.anim_select(i)
+    if kr is not None:
+      imgui.pop_font()
     imgui.end()
 
   def _draw_playback_window(

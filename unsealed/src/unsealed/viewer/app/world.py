@@ -8,8 +8,10 @@ mutates state inline.
 
 from __future__ import annotations
 
+import threading
+import traceback
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, Optional, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple, cast
 
 from ..modes import MODES, MapScene, MenScene, ModeContext, ModelScene, SprScene
 from ..modes.map.camera import MapCamera
@@ -19,12 +21,13 @@ from .components import (
     RenderComponent,
     SceneComponent,
     SpakComponent,
+    StatusComponent,
     WindowComponent,
 )
 from .systems import AnimationSystem, InputSystem, LoadSystem, UpdateSystem
 
 if TYPE_CHECKING:
-    pass
+    from .context import ViewerContext
 
 
 class AppWorld:
@@ -34,6 +37,15 @@ class AppWorld:
         self.render = RenderComponent()
         self.scene = SceneComponent()
         self.spak = SpakComponent()
+        self.status = StatusComponent()
+
+        # Background-load plumbing. The heavy CPU work (decode + .spak
+        # materialization) runs on a worker thread so the UI keeps drawing
+        # the loading spinner; the GL upload is finalized on the main thread
+        # in `poll_load`. One load in flight at a time.
+        self._bg_thread: Optional[threading.Thread] = None
+        self._bg_result: Optional[Tuple["ViewerContext", Path]] = None
+        self._bg_error: Optional[Exception] = None
 
         # Shader cache: filled once per unique directory, reused across loads
         self.shader_cache: Dict[str, Any] = {}
@@ -206,19 +218,86 @@ class AppWorld:
         self._update_sys.update(self, dt)
 
     def load(self, path: Path) -> None:
+        """Synchronous load (startup / scripting)."""
         self._load_sys.load(path, self)
 
     def open_dialog(self) -> None:
         self._load_sys.open_dialog(self)
 
     def open_spak_entry(self, rel: Path) -> None:
-        """Load a file from the currently-browsed .spak extraction."""
-        if self.spak.root is None:
-            return
-        self.load(self.spak.root / rel)
+        """Load a file from the currently-browsed .spak (materialized on demand)."""
+        rel_path = Path(str(rel))
+
+        def work() -> Tuple["ViewerContext", Path]:
+            real = self._load_sys.prepare_spak_entry(rel_path)
+            return self._load_sys.decode_ctx(real, self), real
+
+        self._start_load(work, f"Loading {rel_path.name}…")
 
     def close_spak(self) -> None:
         self.spak.active = False
+
+    # ── background loading ──────────────────────────────────────────────────────
+
+    def request_load(self, path: Path) -> None:
+        """Load a file asynchronously (off-thread decode, on-thread GL upload).
+
+        A .spak is mounted inline instead (instant — nothing is decrypted
+        until the user opens an entry from its browser)."""
+        if path.suffix.lower() == ".spak":
+            self._load_sys.open_spak(path, self)
+            return
+        self._start_load(
+            lambda: (self._load_sys.decode_ctx(path, self), path),
+            f"Loading {path.name}…",
+        )
+
+    def _start_load(
+        self, work: Callable[[], Tuple["ViewerContext", Path]], message: str
+    ) -> None:
+        if self.status.loading:
+            return  # one load at a time
+        self.status.loading = True
+        self.status.message = message
+        self._bg_result = None
+        self._bg_error = None
+        self._bg_thread = threading.Thread(
+            target=self._run_load, args=(work,), daemon=True
+        )
+        self._bg_thread.start()
+
+    def _run_load(
+        self, work: Callable[[], Tuple["ViewerContext", Path]]
+    ) -> None:
+        try:
+            self._bg_result = work()
+        except Exception as e:  # surfaced on the main thread in poll_load
+            self._bg_error = e
+            traceback.print_exc()
+
+    def poll_load(self) -> None:
+        """Finalize a finished background load on the main thread (GL upload)."""
+        if not self.status.loading:
+            return
+        if self._bg_thread is not None and self._bg_thread.is_alive():
+            return
+        self._bg_thread = None
+        result, error = self._bg_result, self._bg_error
+        self._bg_result = self._bg_error = None
+        self.status.loading = False
+
+        if error is not None:
+            self.status.message = f"Error: {error}"
+            return
+        if result is not None:
+            ctx, path = result
+            try:
+                self._load_sys.finalize(ctx, path, self)
+                self.status.message = path.name
+            except Exception as e:
+                print(f"[viewer] finalize error: {e}")
+                traceback.print_exc()
+                self.status.message = f"Error: {e}"
 
     def open_inject_dialog(self) -> None:
         """Pick a model file and ask the active Mode to inject it."""

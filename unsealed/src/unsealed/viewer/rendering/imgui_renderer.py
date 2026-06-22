@@ -18,11 +18,28 @@ Lifecycle (driven from `viewer_app.py`):
 
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 import pygame
 from imgui_bundle import imgui
 from imgui_bundle.python_backends.pygame_backend import PygameRenderer
+
+# Korean-capable TTFs, in preference order. Seal Online strings are EUC-KR
+# (decoded fine), but imgui's built-in font is ASCII-only, so Korean text
+# (e.g. animation names) renders as "?" without a font that has Hangul.
+# The default UI font stays the built-in monospace; this font is kept as a
+# secondary one that callers push only where Korean appears (animation
+# list). imgui 1.92's dynamic atlas rasterizes glyphs on demand — no glyph
+# ranges needed.
+_FONT_CANDIDATES = (
+    r"C:\Windows\Fonts\malgun.ttf",  # Malgun Gothic (Windows Korean UI font)
+    r"C:\Windows\Fonts\gulim.ttc",
+    r"C:\Windows\Fonts\batang.ttc",
+    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+    "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+)
+_FONT_SIZE = 16.0
 
 
 class ImGuiRenderer:
@@ -36,11 +53,34 @@ class ImGuiRenderer:
 
   def __init__(self) -> None:
     self._impl: Optional[PygameRenderer] = None
+    self._korean_font = None  # ImFont | None — pushed only where Korean shows
 
   def init(self, width: int, height: int) -> None:
     imgui.create_context()
+    # Keep the built-in monospace font as the default for all UI; load the
+    # Korean font as a secondary one that callers push where needed.
+    imgui.get_io().fonts.add_font_default()
+    self._korean_font = self._load_korean_font()
     self._impl = PygameRenderer()
     imgui.get_io().display_size = (width, height)
+
+  @property
+  def korean_font(self):
+    """Hangul-capable ImFont (or None). Push it around Korean text only."""
+    return self._korean_font
+
+  @staticmethod
+  def _load_korean_font():
+    """Load a Hangul-capable font; returns the ImFont (or None)."""
+    path = next((p for p in _FONT_CANDIDATES if os.path.exists(p)), None)
+    if path is None:
+      print("[viewer] no Korean-capable font found; Korean text may show as '?'")
+      return None
+    try:
+      return imgui.get_io().fonts.add_font_from_file_ttf(path, _FONT_SIZE)
+    except Exception as e:
+      print(f"[viewer] failed to load font {path!r}: {e}")
+      return None
 
   def process_event(self, event: pygame.event.Event) -> bool:
     """Feed one pygame event to imgui. Returns True if imgui consumed it."""

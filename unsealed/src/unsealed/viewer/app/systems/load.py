@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import atexit
-import shutil
-import tempfile
 import tkinter as tk
 import traceback
 from pathlib import Path
@@ -15,6 +12,7 @@ import pygame
 
 from ...modes import MODES, ImageScene, MenScene, SprScene
 from ..context import ViewerContext
+from ..spak_workspace import SpakWorkspace
 
 if TYPE_CHECKING:
     from ..world import AppWorld
@@ -27,35 +25,47 @@ _VIEWABLE_EXTS = frozenset(ext for m in MODES for ext in m.extensions)
 
 class LoadSystem:
     def __init__(self) -> None:
-        # Resolved .spak path -> temp dir it was extracted into. Lets us
-        # skip re-extracting an archive the user reopens this session.
-        self._spak_roots: Dict[Path, Path] = {}
+        # Resolved .spak path -> its mounted workspace. Reusing the mount
+        # keeps already-materialized files when an archive is reopened.
+        self._workspaces: Dict[Path, SpakWorkspace] = {}
+        self._active: Optional[SpakWorkspace] = None
 
     def load(self, path: Path, world: "AppWorld") -> None:
+        """Synchronous load (startup / injection). UI loads go async via
+        world.request_load → decode_ctx (off-thread) + finalize (main)."""
         if path.suffix.lower() == ".spak":
             self.open_spak(path, world)
             return
         try:
-            if path.parent != world._shader_dir:
-                from ...shader import load_shaders
-                world.shader_cache = load_shaders(path.parent)
-                world._shader_dir = path.parent
-            ctx = ViewerContext.load(path, world.window.width, world.window.height,
-                                     world.shader_cache)
-            world.scene.context = ctx
-            world.scene.current_path = path
-            world.render.renderer.load_scene(
-                ctx.scene, ctx.mode.render_extensions()
-            )
-            world.scene.selected_mesh_idx = None
-            world.scene.selected_shader = None
-            if not isinstance(ctx.scene, (ImageScene, SprScene, MenScene)):
-                world._anim_sys.load(world.scene.anim, ctx.scene)
-            pygame.display.set_caption(f"{_TITLE} — {path.name}")
-
+            ctx = self.decode_ctx(path, world)
+            self.finalize(ctx, path, world)
         except Exception as e:
             print(f"[viewer] error: {e}")
             traceback.print_exc()
+
+    def decode_ctx(self, path: Path, world: "AppWorld") -> ViewerContext:
+        """CPU-only: load shaders + decode the file into a ViewerContext.
+
+        No GL calls here, so it is safe to run on a background thread.
+        """
+        if path.parent != world._shader_dir:
+            from ...shader import load_shaders
+            world.shader_cache = load_shaders(path.parent)
+            world._shader_dir = path.parent
+        return ViewerContext.load(
+            path, world.window.width, world.window.height, world.shader_cache
+        )
+
+    def finalize(self, ctx: ViewerContext, path: Path, world: "AppWorld") -> None:
+        """Main-thread: upload the decoded scene to the GPU + wire state."""
+        world.scene.context = ctx
+        world.scene.current_path = path
+        world.render.renderer.load_scene(ctx.scene, ctx.mode.render_extensions())
+        world.scene.selected_mesh_idx = None
+        world.scene.selected_shader = None
+        if not isinstance(ctx.scene, (ImageScene, SprScene, MenScene)):
+            world._anim_sys.load(world.scene.anim, ctx.scene)
+        pygame.display.set_caption(f"{_TITLE} — {path.name}")
 
     def open_dialog(self, world: "AppWorld") -> None:
         self._release_input(world)
@@ -74,17 +84,18 @@ class LoadSystem:
             ],
         )
         if path is not None:
-            self.load(path, world)
+            world.request_load(path)
 
     def open_spak(self, path: Path, world: "AppWorld") -> None:
-        """Extract a .spak (once per session); open the file browser."""
+        """Mount a .spak and show its browser — instant, nothing decrypted yet."""
         spak = world.spak
         spak.error = None
         try:
-            root = self._extract_spak(path)
+            ws = self._mount_spak(path)
         except Exception as e:
             print(f"[viewer] spak error: {e}")
             traceback.print_exc()
+            self._active = None
             spak.active = True
             spak.archive_name = path.name
             spak.root = None
@@ -92,38 +103,26 @@ class LoadSystem:
             spak.error = str(e)
             return
 
-        entries = sorted(
-            p.relative_to(root)
-            for p in root.rglob("*")
-            if p.is_file() and p.suffix.lower() in _VIEWABLE_EXTS
-        )
+        self._active = ws
         spak.active = True
         spak.archive_name = path.name
-        spak.root = root
-        spak.entries = entries
+        spak.root = ws.mount
+        spak.entries = ws.viewable_entries(_VIEWABLE_EXTS)
         spak.filter_text = ""
 
-    def _extract_spak(self, path: Path) -> Path:
-        """Extract every entry to a temp dir, preserving sub-paths."""
+    def prepare_spak_entry(self, rel: Path) -> Path:
+        """Materialize a browsed entry (+ its dependency closure) on demand."""
+        if self._active is None:
+            raise Exception("no active spak archive")
+        return self._active.prepare(rel)
+
+    def _mount_spak(self, path: Path) -> SpakWorkspace:
         key = path.resolve()
-        cached = self._spak_roots.get(key)
-        if cached is not None and cached.exists():
-            return cached
-
-        from ....formats.spak.decoder import SpakDecoder
-
-        directory = SpakDecoder(path).decode()
-        root = Path(tempfile.mkdtemp(prefix="unsealed_spak_"))
-        atexit.register(shutil.rmtree, root, ignore_errors=True)
-        for blob in directory.list:
-            name = blob.name or ""
-            if blob.extension:
-                name = f"{name}.{blob.extension}"
-            dest = root / name
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_bytes(blob.value or b"")
-        self._spak_roots[key] = root
-        return root
+        ws = self._workspaces.get(key)
+        if ws is None:
+            ws = SpakWorkspace(path)
+            self._workspaces[key] = ws
+        return ws
 
     def ask_model_file(self, world: "AppWorld") -> Optional[Path]:
         """Modal file picker filtered to model files (.ms1 / .act)."""
