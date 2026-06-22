@@ -16,6 +16,7 @@ Seal Online adalah game online yang sangat populer di Indonesia. Tetapi jika dib
   - Tekstur (`.tex`, `.te1`) → PNG
   - Map (`.map`) → heightmap PNG + object yang diekstrak
   - Menu (`.men`) dan sprite atlas (`.spr`)
+  - Data terenkripsi (`.edt`) → file plaintext yang sudah didekode (decode & encode)
 - **Membuka arsip `.spak`** — arsip terenkripsi ZipCrypto milik Seal Online. Password diturunkan otomatis sesuai versi client; tidak perlu memasukkan key secara manual.
 - **Viewer 3D interaktif** — orbit/pan model, memainkan animasi, menjelajahi map, melihat tekstur, sprite, dan menu, serta **membuka file langsung dari dalam `.spak` tanpa perlu mengekstrak terlebih dahulu**.
 
@@ -135,6 +136,7 @@ model) otomatis ditemukan walaupun berada di dalam arsip yang sama.
 | `.spr` | Sprite atlas | viewer |
 | `.tex` | Texture file | `.png` |
 | `.te1` | Texture file | `.png` |
+| `.edt` | Data file terenkripsi (stream cipher LCG) | `decoded_<nama>.edt` (plaintext); mendukung encode kembali |
 | `.sha` | Material shader gaya Q3 | di-parse (dipakai format lain) |
 | `.spak` | Arsip terkemas (terenkripsi) | dibongkar + anggotanya dikonversi |
 
@@ -192,6 +194,7 @@ Project ini dibuat pada saat waktu senggang, sehingga dibutuhkan waktu yang cuku
 
 - [x] men - Menu File
 - [x] spak - Packed Archive (terenkripsi)
+- [x] edt - Encoded Data File (decode & encode)
 - [ ] mat - Material File
 
 ### Phase 6

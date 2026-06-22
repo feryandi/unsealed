@@ -4,6 +4,7 @@ from .animation import Animation as Animation
 from .blob import Blob as Blob
 from .skeleton import Bone as Bone
 from .directory import Directory as Directory
+from .edt import Edt as Edt
 from .geometry import Geometry as Geometry
 from .animation import Keyframe as Keyframe
 from .material import Material as Material

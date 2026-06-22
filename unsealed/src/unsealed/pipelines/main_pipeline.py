@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 from .actor_pipeline import ActorPipeline
+from .edt_pipeline import EdtPipeline
 from .map_pipeline import MapPipeline
 from .menu_pipeline import MenuPipeline
 from .object_pipeline import ObjectPipeline
@@ -15,6 +16,7 @@ SUPPORTED_FILE_TYPES = {
   ".men": {"name": "Menu File", "pipeline": MenuPipeline()},
   ".tex": {"name": "Texture File", "pipeline": TexturePipeline()},
   ".spak": {"name": "Packed Archive", "pipeline": SpakPipeline()},
+  ".edt": {"name": "Encoded Data File", "pipeline": EdtPipeline()},
 }
 
 

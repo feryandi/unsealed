@@ -1,4 +1,5 @@
 from .actor_pipeline import ActorPipeline as ActorPipeline
+from .edt_pipeline import EdtPipeline as EdtPipeline
 from .main_pipeline import MainPipeline as MainPipeline
 from .map_pipeline import MapPipeline as MapPipeline
 from .menu_pipeline import MenuPipeline as MenuPipeline
