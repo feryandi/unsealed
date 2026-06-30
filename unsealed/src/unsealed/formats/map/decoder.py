@@ -1,19 +1,17 @@
-from pathlib import Path
 from typing import Any, Dict
 
-from ...utils.file import File
+from ...utils.file import File, FileLike
 from ...assets.terrain import Terrain
 
 
 class SealMapDecoder:
-  def __init__(self, path: Path) -> None:
+  def __init__(self, path: FileLike) -> None:
     self.version: int = 1
-    self.path: Path = path
+    self.path: FileLike = path
     self.filename: str = path.stem.split(".")[0]
     self.unknown: Dict[str, Any] = {}
     try:
-      with open(path, "rb") as dat:
-        self.file: File = File(dat.read())
+      self.file: File = File(path)
     except Exception:
       raise Exception("Unable to open map file")
 

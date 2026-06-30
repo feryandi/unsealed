@@ -1,8 +1,7 @@
 import json
-from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
-from ...utils.file import File
+from ...utils.file import File, FileLike
 
 _ELEMENT_TYPE_NAMES: Dict[int, str] = {
   0: "image",
@@ -20,13 +19,12 @@ _ELEMENT_TYPE_NAMES: Dict[int, str] = {
 
 
 class SealMenDecoder:
-  def __init__(self, path: Path) -> None:
-    self.path: Path = path
+  def __init__(self, path: FileLike) -> None:
+    self.path: FileLike = path
     self.file: Optional[File] = None
     self.unknown: Dict[str, Any] = {}
     try:
-      with open(path, "rb") as dat:
-        self.file = File(dat.read())
+      self.file = File(path)
     except Exception:
       raise Exception("Unable to open men file")
 

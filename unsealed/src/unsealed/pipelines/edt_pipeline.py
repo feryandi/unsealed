@@ -6,7 +6,9 @@ from ..formats.blob.format import BlobFormat
 
 
 class EdtPipeline:
-  """Decode a `.edt` and write plaintext as `decoded_<name>.edt`."""
+  """Decode a `.edt` and write the plaintext with a content-detected
+  extension (`.scr` for ASCII scripts, `.dat` for Seal data files, else
+  `.bin`) so the right downstream decoder can claim it."""
 
   def run(self, filepath: Path, output_dir: Path) -> None:
     if not filepath.is_file():
@@ -17,7 +19,7 @@ class EdtPipeline:
 
     blob = Blob()
     blob.value = edt.value
-    blob.name = f"decoded_{edt.name}"
-    blob.extension = "edt"
+    blob.name = edt.name
+    blob.extension = edt.extension
 
     BlobFormat().encode(blob, output_dir)

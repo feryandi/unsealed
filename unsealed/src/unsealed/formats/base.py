@@ -1,18 +1,19 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Dict, Type, Pattern, TypeVar, Generic
+from typing import Any, Dict, Type, Pattern, TypeVar, Generic, Union
 
 from ..core.asset import Asset
+from ..vfs import Resource
 
 T = TypeVar("T", bound=Asset)
 
 
 def collect_unknowns(obj: Any, prefix: str = "") -> Dict[str, Dict[str, Any]]:
-  """Recursively walk a decoder or format wrapper and collect every nested `unknown` dict.
+  """Walk a decoder/format, collecting every nested `unknown` dict.
 
-  Looks at the object's own `.unknown` plus any instance attribute that itself
-  has `.unknown` (or is a list of such objects). Keys are dotted paths so the
-  result is a single flat dict suitable for display in a tree-style UI.
+  Looks at the object's own `.unknown` plus any instance attribute that
+  itself has `.unknown` (or is a list of such objects). Keys are dotted
+  paths so the result is a single flat dict for a tree-style UI.
   """
   out: Dict[str, Dict[str, Any]] = {}
   if not hasattr(obj, "__dict__"):
@@ -49,24 +50,25 @@ class BaseFormat(ABC, Generic[T]):
     """The Asset type this format produces/consumes"""
     pass
 
-  def decode(self, path: Path) -> T:
-    """Decode file to intermediate representation"""
-    if not self.__can_decode(path):
-      raise Exception(
-        f"Cannot decode file with extension {path.suffix} with format for {self.extensions}"
-      )
-    if not path.is_file():
-      raise FileNotFoundError(f"File not found: {path}")
-    return self.decoder(path)
+  def decode(self, target: Union[Path, Resource]) -> T:
+    """Decode a file (disk Path or vfs Resource) to its asset.
 
-  def __can_decode(self, path: Path) -> bool:
-    if not path.is_file():
-      return False
-    return bool(self.extensions.search(path.name))
+    A Path is wrapped in a DiskSource-backed Resource so disk callers
+    (the CLI) keep working while archive callers pass a Resource.
+    """
+    res = target if isinstance(target, Resource) else Resource.for_disk_file(target)
+    if not self.extensions.search(res.name):
+      raise Exception(
+        f"Cannot decode file with extension {res.suffix} "
+        f"with format for {self.extensions}"
+      )
+    if not res.exists():
+      raise FileNotFoundError(f"File not found: {res.logical_name}")
+    return self.decoder(res)
 
   @abstractmethod
-  def decoder(self, path: Path) -> T:
-    """Decode file to intermediate representation"""
+  def decoder(self, res: Resource) -> T:
+    """Decode a Resource to its intermediate representation"""
     pass
 
   def encode(self, asset: T, path: Path) -> None:

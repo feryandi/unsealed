@@ -1,19 +1,17 @@
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from ...assets.animation import Animation, Keyframe
 from ...assets.binarytree import BinaryTree, BinaryTreeNode
-from ...utils.file import File
+from ...utils.file import File, FileLike
 
 
 class SealAnimationDecoder:
-  def __init__(self, path: Path) -> None:
-    self.path: Path = path
+  def __init__(self, path: FileLike) -> None:
+    self.path: FileLike = path
     self.nodes: int = 0
     self.unknown: Dict[str, Any] = {}
     try:
-      with open(path, "rb") as dat:
-        self.file: File = File(dat.read())
+      self.file: File = File(path)
     except Exception:
       raise Exception("Unable to open mesh file")
 

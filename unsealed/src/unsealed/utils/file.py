@@ -2,15 +2,29 @@
 import struct
 from io import BytesIO
 from pathlib import Path
-from typing import Union
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+  from ..vfs.resource import Resource
+
+# What decoders may be handed as their source: raw bytes, a real path, or a
+# vfs Resource (a duck-typed object exposing ``read() -> bytes``). Kept here
+# so the formats layer never imports ``vfs`` at runtime (avoids a cycle).
+FileLike = Union[bytes, Path, "Resource"]
+
+
+def _read_bytes(data: "FileLike") -> bytes:
+  if isinstance(data, (bytes, bytearray)):
+    return bytes(data)
+  if isinstance(data, Path):
+    with open(data, "rb") as f:
+      return f.read()
+  return data.read()  # Resource / any object exposing read() -> bytes
 
 
 class File:
-  def __init__(self, data: Union[bytes, Path]):
-    if isinstance(data, Path):
-      with open(data, "rb") as f:
-        data = f.read()
-    self._stream = BytesIO(data)
+  def __init__(self, data: "FileLike"):
+    self._stream = BytesIO(_read_bytes(data))
 
   # Compatibility methods (same names as your File class)
   def read(self, num_bytes: int) -> bytes:
@@ -20,7 +34,7 @@ class File:
     return struct.unpack("<H", self._stream.read(2))[0]
 
   def read_int(self) -> int:
-    return struct.unpack("<I", self._stream.read(4))[0]
+    return struct.unpack("<i", self._stream.read(4))[0]
 
   def read_float(self) -> float:
     return struct.unpack("<f", self._stream.read(4))[0]

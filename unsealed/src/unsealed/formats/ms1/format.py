@@ -5,6 +5,7 @@ from typing import Pattern, Type
 
 from ..base import BaseFormat
 from ...assets.model import Model
+from ...vfs import Resource
 from ..ms1.decoder import SealMeshDecoder
 from ..bn1.decoder import SealBoneDecoder
 from ..an1.decoder import SealAnimationDecoder
@@ -25,30 +26,30 @@ class SealMeshFormat(BaseFormat[Model]):
   def asset_type(self) -> Type[Model]:
     return Model
 
-  def decoder(self, path: Path) -> Model:
+  def decoder(self, res: Resource) -> Model:
     model = Model()
-    model.name = path.stem
+    model.name = res.stem
 
-    self.geometry_decoder = SealMeshDecoder(path)
+    self.geometry_decoder = SealMeshDecoder(res)
     geometry = self.geometry_decoder.decode()
     model.add_geometry(geometry)
 
-    sha_path = path.with_suffix(".sha")
-    if sha_path.is_file():
-      model.add_shaders(SealShaDecoder(sha_path).decode())
+    sha = res.with_suffix(".sha")
+    if sha.exists():
+      model.add_shaders(SealShaDecoder(sha).decode())
 
-    bone_path = path.with_suffix(".bn1")
-    if bone_path.is_file():
-      self.bone_decoder = SealBoneDecoder(bone_path)
+    bone = res.with_suffix(".bn1")
+    if bone.exists():
+      self.bone_decoder = SealBoneDecoder(bone)
       skeleton = self.bone_decoder.decode()
       model.add_skeleton(skeleton)
 
-    animation_path = path.with_suffix(".an1")
-    if animation_path.is_file():
-      self.animation_decoder = SealAnimationDecoder(animation_path)
+    animation = res.with_suffix(".an1")
+    if animation.exists():
+      self.animation_decoder = SealAnimationDecoder(animation)
       animations = self.animation_decoder.decode()
-      for animation in animations:
-        model.add_animation("default", animation)
+      for anim in animations:
+        model.add_animation("default", anim)
 
     return model
 

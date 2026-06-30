@@ -14,7 +14,10 @@ class Edt(Asset):
     super().__init__()
     self.value: Optional[bytes] = None  # decoded (plaintext) bytes
     self.name: Optional[str] = None
+    # Output extension detected from the decoded content (e.g. the file
+    # may still be a proprietary Seal format): "scr" / "dat" / "bin".
+    self.extension: str = "bin"
 
   def __repr__(self) -> str:
     size = len(self.value) if self.value is not None else 0
-    return f"<Edt name:{self.name} {size} bytes>"
+    return f"<Edt name:{self.name} ext:{self.extension} {size} bytes>"

@@ -116,9 +116,7 @@ class SpakArchive:
     header = _LOCAL_HEADER.unpack(self._fp.read(_LOCAL_HEADER.size))
     # The local header's name/extra lengths give the true data offset
     # (they may differ from the central directory's extra length).
-    self._fp.seek(
-      info.header_offset + _LOCAL_HEADER.size + header[9] + header[10]
-    )
+    self._fp.seek(info.header_offset + _LOCAL_HEADER.size + header[9] + header[10])
     raw = self._fp.read(info.compress_size)
 
     if info.flag_bits & 0x1:  # encrypted -> 12-byte header precedes the data

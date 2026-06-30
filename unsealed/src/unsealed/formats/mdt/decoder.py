@@ -1,26 +1,22 @@
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from ...assets.blob import Blob
 from ...assets.directory import Directory
-from ...utils.file import File
+from ...utils.file import File, FileLike
 
 
 class SealMdtDecoder:
-  def __init__(self, path: Path) -> None:
-    self.path: Path = path
+  def __init__(self, path: FileLike) -> None:
+    self.path: FileLike = path
     self.file: Optional[File] = None
     self.unknown: Dict[str, Any] = {}
     try:
-      with open(path, "rb") as dat:
-        self.file = File(dat.read())
+      self.file = File(path)
     except Exception:
       raise Exception("Unable to open mdt file")
 
   def decode(self) -> Directory:
-    """
-    Decodes the MDT file and returns a list of blob: (filename, data_bytes)
-    """
+    """Decode the MDT into a Directory of (filename, data) blobs."""
     if self.file is None:
       raise Exception("File was not initialized properly")
 

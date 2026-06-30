@@ -1,21 +1,19 @@
-from pathlib import Path
 from typing import Any, Dict, Optional
 
-from ...utils.file import File
+from ...utils.file import File, FileLike
 from ...assets.skeleton import Skeleton
 
 from ..bn1.bone import SealBoneBoneDecoder
 
 
 class SealBoneDecoder:
-  def __init__(self, path: Path) -> None:
+  def __init__(self, path: FileLike) -> None:
     self.file: Optional[File] = None
     self.count: int = 0
     self.unknown: Dict[str, Any] = {}
     self.bone_decoders: list = []
     try:
-      with open(path, "rb") as dat:
-        self.file = File(dat.read())
+      self.file = File(path)
     except Exception:
       raise Exception("Unable to open mesh file")
 

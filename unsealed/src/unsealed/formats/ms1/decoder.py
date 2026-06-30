@@ -1,7 +1,6 @@
-from pathlib import Path
 from typing import Any, Dict, Optional
 
-from ...utils.file import File
+from ...utils.file import File, FileLike
 from ...assets.geometry import Geometry
 
 from ..ms1.material import SealMeshMaterialDecoder
@@ -9,14 +8,13 @@ from ..ms1.geometry import SealMeshGeometryDecoder
 
 
 class SealMeshDecoder:
-  def __init__(self, path: Path) -> None:
+  def __init__(self, path: FileLike) -> None:
     self.file: Optional[File] = None
     self.unknown: Dict[str, Any] = {}
     self.material_decoder: Optional[SealMeshMaterialDecoder] = None
     self.geometry_decoder: Optional[SealMeshGeometryDecoder] = None
     try:
-      with open(path, "rb") as dat:
-        self.file = File(dat.read())
+      self.file = File(path)
     except Exception:
       raise Exception("Unable to open mesh file")
 
@@ -31,7 +29,7 @@ class SealMeshDecoder:
     if ukwn == 1:
       maybe_non_first_object_has_pad = True
     elif ukwn == 10:
-      # T_Gube1_idle, T_Gube2_idle, T_Gube3_idle, and several other skills
+      # T_Gube1_idle, T_Gube2_idle, T_Gube3_idle + several other skills
       maybe_different_mode = True
 
     self.material_decoder = SealMeshMaterialDecoder(self.file, maybe_different_mode)
