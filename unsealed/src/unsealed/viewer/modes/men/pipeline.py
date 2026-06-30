@@ -13,10 +13,10 @@ import io
 import json
 import os
 import time
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from ....formats.men.decoder import SealMenDecoder
+from ....vfs import Resource
 from ...sprite_atlas import SpriteAtlas, SpriteRef, decode_spr_for_viewer
 from .scene import STATE_NAMES, MenElement, MenScene
 
@@ -35,18 +35,18 @@ _STATE_KEYS: Dict[str, str] = {
 class MenViewerPipeline:
   """Decode a .men into a MenScene whose pixels live in shared atlases."""
 
-  def run(self, path: Path) -> MenScene:
+  def run(self, res: Resource) -> MenScene:
     t_total = time.perf_counter()
 
     t0 = time.perf_counter()
-    parsed, men_unknowns = self._decode_men(path)
+    parsed, men_unknowns = self._decode_men(res)
     t_men = (time.perf_counter() - t0) * 1000
 
     version = int(parsed.get("version") or 0)
     spr_file_name = parsed.get("spr") or ""
 
     t0 = time.perf_counter()
-    atlases, sprite_refs = self._decode_referenced_spr(path, spr_file_name)
+    atlases, sprite_refs = self._decode_referenced_spr(res, spr_file_name)
     t_spr = (time.perf_counter() - t0) * 1000
 
     raw_roots = parsed.get("elements") or []
@@ -66,7 +66,7 @@ class MenViewerPipeline:
       total = (time.perf_counter() - t_total) * 1000
       n_state_refs = sum(len(e.state_refs) for e in elements)
       print(
-        f"[men profile] {path.name}: "
+        f"[men profile] {res.name}: "
         f"decode_men={t_men:6.1f}ms  "
         f"decode_spr={t_spr:6.1f}ms  "
         f"flatten={t_flatten:6.1f}ms  "
@@ -123,14 +123,14 @@ class MenViewerPipeline:
   # ── private ─────────────────────────────────────────────────────────────
 
   @staticmethod
-  def _decode_men(path: Path) -> Tuple[dict, Dict[str, Dict[str, Any]]]:
+  def _decode_men(res: Resource) -> Tuple[dict, Dict[str, Dict[str, Any]]]:
     """Decode through SealMenDecoder, swallowing its stdout debug prints
     (older decoder paths may still log a few raw ints during parsing)."""
     from ....formats.base import collect_unknowns
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-      decoder = SealMenDecoder(path)
+      decoder = SealMenDecoder(res)
       raw = decoder.decode()
     unknowns = collect_unknowns(decoder)
     try:
@@ -142,20 +142,20 @@ class MenViewerPipeline:
 
   @staticmethod
   def _decode_referenced_spr(
-    men_path: Path, spr_name: str
+    men_res: Resource, spr_name: str
   ) -> Tuple[List[SpriteAtlas], Dict[Tuple[str, int], SpriteRef]]:
     """Decode the .spr referenced by the .men's `spr` header field. The
-    reference is resolved relative to the .men's directory. Returns empty
-    atlas/ref data if missing — the .men can still render with empty rects."""
+    reference is resolved beside the .men. Returns empty atlas/ref data
+    if missing — the .men can still render with empty rects."""
     if not spr_name:
-      print(f"[men] no .spr referenced by {men_path.name}")
+      print(f"[men] no .spr referenced by {men_res.name}")
       return [], {}
-    spr_path = men_path.parent / spr_name
-    if not spr_path.is_file():
-      print(f"[men] referenced .spr not found: {spr_path}")
+    spr_res = men_res.sibling(spr_name)
+    if not spr_res.exists():
+      print(f"[men] referenced .spr not found: {spr_name}")
       return [], {}
     try:
-      return decode_spr_for_viewer(spr_path)
+      return decode_spr_for_viewer(spr_res)
     except Exception as e:
       print(f"[men] spr decode failed: {e}")
       return [], {}

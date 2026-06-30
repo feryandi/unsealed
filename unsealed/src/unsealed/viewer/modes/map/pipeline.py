@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Tuple
 import numpy as np
 from unsealed.assets.blob import Blob
 
+from ....vfs import Resource
 from ...scenes import AnimatedEntity, ViewerMesh
 from ..image.pipeline import TexViewerPipeline
 from ..model.pipeline import ModelViewerPipeline
@@ -21,19 +22,19 @@ class MapViewerPipeline:
 
   _MAX_OBJECT_TYPES: int = 200
 
-  def run(self, path: Path, shader_cache: Optional[Dict] = None) -> MapScene:
+  def run(self, res: Resource, shader_cache: Optional[Dict] = None) -> MapScene:
     from unsealed.formats.base import collect_unknowns
     from unsealed.formats.map.format import SealMapFormat
 
     fmt = SealMapFormat()
-    terrain = fmt.decode(path)
-    scene = MapViewerPipeline._terrain_to_scene(terrain, path, shader_cache)
+    terrain = fmt.decode(res)
+    scene = MapViewerPipeline._terrain_to_scene(terrain, res, shader_cache)
     scene.unknowns = collect_unknowns(fmt)
     return scene
 
   @staticmethod
   def _terrain_to_scene(
-    terrain, path: Path, shader_cache: Optional[Dict] = None
+    terrain, res: Resource, shader_cache: Optional[Dict] = None
   ) -> MapScene:
     """Convert a decoded Terrain asset into a MapScene with terrain + objects."""
     scene = MapScene()
@@ -93,9 +94,9 @@ class MapViewerPipeline:
     scene.terrain_layer_b = list(terrain.terrain_layer_b)
 
     # ── Terrain textures (up to 12) ──────────────────────────────────────
-    embedded = MapViewerPipeline._load_mdt_blobs(path)
+    embedded = MapViewerPipeline._load_mdt_blobs(res)
     for tex_name in terrain.textures[:12]:
-      rgba, w, h = MapViewerPipeline._resolve_map_texture(path, tex_name, embedded)
+      rgba, w, h = MapViewerPipeline._resolve_map_texture(res, tex_name, embedded)
       scene.terrain_textures.append(rgba)
       scene.terrain_texture_sizes.append((w, h))
     while len(scene.terrain_textures) < 12:
@@ -105,7 +106,7 @@ class MapViewerPipeline:
     # ── Lightmap ────────────────────────────────────────────────────────
     if terrain.lightmap:
       rgba, w, h = MapViewerPipeline._resolve_map_texture(
-        path, terrain.lightmap, embedded
+        res, terrain.lightmap, embedded
       )
       scene.lightmap = rgba
       scene.lightmap_w = w
@@ -125,12 +126,12 @@ class MapViewerPipeline:
         break
 
       filename = terrain.object_files[idx]
-      obj_path = MapViewerPipeline._find_object_file(path, filename)
-      if obj_path is None:
+      obj_res = MapViewerPipeline._find_object_file(res, filename)
+      if obj_res is None:
         continue
 
       try:
-        obj_scene = ModelViewerPipeline().run(obj_path, shader_cache)
+        obj_scene = ModelViewerPipeline().run(obj_res, shader_cache)
       except Exception as e:
         print(f"[viewer] map object '{filename}': {e}")
         continue
@@ -183,10 +184,10 @@ class MapViewerPipeline:
       total_types += 1
 
     # ── Sky dome (sky.ms1 alongside the .map file) ───────────────────────────
-    sky_path = MapViewerPipeline._find_object_file(path, "sky.ms1")
-    if sky_path is not None:
+    sky_res = MapViewerPipeline._find_object_file(res, "sky.ms1")
+    if sky_res is not None:
       try:
-        sky_scene = ModelViewerPipeline().run(sky_path, shader_cache)
+        sky_scene = ModelViewerPipeline().run(sky_res, shader_cache)
         scene.sky_meshes = sky_scene.meshes
       except Exception as e:
         print(f"[viewer] sky.ms1: {e}")
@@ -194,15 +195,15 @@ class MapViewerPipeline:
     return scene
 
   @staticmethod
-  def _load_mdt_blobs(map_path: Path) -> Dict[str, bytes]:
-    """Try to read embedded texture blobs from the .mdt file alongside the .map."""
-    mdt_path = map_path.with_suffix(".mdt")
-    if not mdt_path.exists():
+  def _load_mdt_blobs(map_res: Resource) -> Dict[str, bytes]:
+    """Read embedded texture blobs from the .mdt beside the .map, if any."""
+    mdt_res = map_res.with_suffix(".mdt")
+    if not mdt_res.exists():
       return {}
     try:
       from unsealed.formats.mdt.decoder import SealMdtDecoder
 
-      directory = SealMdtDecoder(mdt_path).decode()
+      directory = SealMdtDecoder(mdt_res).decode()
       return {
         blob.name.lower(): blob.value
         for blob in directory.list
@@ -213,11 +214,11 @@ class MapViewerPipeline:
 
   @staticmethod
   def _resolve_map_texture(
-    map_path: Path,
+    map_res: Resource,
     tex_name: str,
     embedded: Dict[str, bytes],
   ) -> Tuple[Optional[bytes], int, int]:
-    """Resolve a terrain texture by name: try embedded blobs first, then disk files."""
+    """Resolve a terrain texture: embedded blobs first, then sibling files."""
     if not tex_name:
       return None, 0, 0
 
@@ -229,7 +230,7 @@ class MapViewerPipeline:
         return result
 
     for ext in (".tex", ".te1", ".dds", ".png", ".jpg", ".bmp"):
-      candidate = map_path.with_name(stem + ext)
+      candidate = map_res.sibling(stem + ext)
       if not candidate.exists():
         continue
       result = TexViewerPipeline.decode(candidate)
@@ -239,13 +240,13 @@ class MapViewerPipeline:
     return None, 0, 0
 
   @staticmethod
-  def _find_object_file(map_path: Path, filename: str) -> Optional[Path]:
-    """Locate an .ms1 object file relative to the .map file's directory."""
+  def _find_object_file(map_res: Resource, filename: str) -> Optional[Resource]:
+    """Locate an .ms1 object file beside the .map (returns a Resource)."""
     stem = Path(filename).stem
     for name in (filename, stem + ".ms1"):
-      p = map_path.with_name(name)
-      if p.exists():
-        return p
+      candidate = map_res.sibling(name)
+      if candidate.exists():
+        return candidate
     return None
 
   @staticmethod

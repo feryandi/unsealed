@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Iterable, List, Optional, Protocol, runtime_ch
 from ..rendering.extension import RenderExtension, RenderPhase
 
 if TYPE_CHECKING:
+  from ...vfs import Resource
   from ..app.world import AppWorld
   from ..camera import Camera
   from ..scenes import ViewerScene
@@ -70,7 +71,7 @@ class Mode(Protocol):
   animation_policy: AnimationPolicy
 
   # ── file → scene ──────────────────────────────────────────────────────────
-  def decode(self, path: Path, shader_cache: Optional[dict] = None) -> "ViewerScene":
+  def decode(self, res: "Resource", shader_cache: Optional[dict] = None) -> "ViewerScene":
     ...
 
   # ── app wiring (was SceneConfig) ──────────────────────────────────────────
@@ -105,7 +106,7 @@ class BaseMode(ABC):
   animation_policy: AnimationPolicy = AnimationPolicy()
 
   @abstractmethod
-  def decode(self, path: Path, shader_cache: Optional[dict] = None) -> "ViewerScene":
+  def decode(self, res: "Resource", shader_cache: Optional[dict] = None) -> "ViewerScene":
     ...
 
   @abstractmethod

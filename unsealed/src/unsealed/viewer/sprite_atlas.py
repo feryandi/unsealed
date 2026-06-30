@@ -21,7 +21,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from io import BytesIO
-from pathlib import Path
+from pathlib import PurePosixPath
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -29,6 +29,7 @@ import numpy as np
 from ..assets.blob import Blob
 from ..formats.spr.decoder import SealSprDecoder
 from ..formats.tex.format import SealTextureFormat
+from ..vfs import Resource
 
 
 _PROFILE = bool(os.environ.get("UNSEALED_PROFILE"))
@@ -80,7 +81,7 @@ class SpriteRef:
 
 
 def decode_spr_for_viewer(
-  path: Path,
+  spr_res: Resource,
 ) -> Tuple[List[SpriteAtlas], Dict[Tuple[str, int], SpriteRef]]:
   """Decode a .spr into atlases + a sprite-ref lookup.
 
@@ -98,10 +99,9 @@ def decode_spr_for_viewer(
   t_total = time.perf_counter()
 
   t0 = time.perf_counter()
-  entries = SealSprDecoder(path).decode()
+  entries = SealSprDecoder(spr_res).decode()
   t_header = (time.perf_counter() - t0) * 1000
 
-  parent = path.parent
   tex_format = SealTextureFormat()
 
   # Order-preserving dedupe by filename.
@@ -120,7 +120,7 @@ def decode_spr_for_viewer(
     n_workers = min(_MAX_DECODE_WORKERS, len(unique_refs))
     with ThreadPoolExecutor(max_workers=n_workers) as pool:
       results = pool.map(
-        lambda ref: _decode_atlas_to_rgba(parent, ref, tex_format),
+        lambda ref: _decode_atlas_to_rgba(spr_res, ref, tex_format),
         unique_refs,
       )
       for ref, (arr, stats) in zip(unique_refs, results):
@@ -173,7 +173,7 @@ def decode_spr_for_viewer(
   if _PROFILE:
     total = (time.perf_counter() - t_total) * 1000
     print(
-      f"[atlas profile] {path.name}: "
+      f"[atlas profile] {spr_res.name}: "
       f"header={t_header:6.1f}ms  "
       f"decode_par={t_decode:6.1f}ms  "
       f"total={total:6.1f}ms  "
@@ -200,11 +200,11 @@ def decode_spr_for_viewer(
 
 
 def _decode_atlas_to_rgba(
-  parent: Path,
+  spr_res: Resource,
   ref_filename: str,
   tex_format: SealTextureFormat,
 ) -> Tuple[Optional[np.ndarray], dict]:
-  """Resolve `ref_filename` against `parent`, decode the .tex/.te1 to an
+  """Resolve `ref_filename` beside `spr_res`, decode the .tex/.te1 to an
   RGBA `np.ndarray` (HxWx4 uint8). Returns `(array, stats)`; on failure
   the array is None and `stats["status"]` describes why.
   """
@@ -221,14 +221,14 @@ def _decode_atlas_to_rgba(
   }
 
   t0 = time.perf_counter()
-  tex_path = _resolve_tex_path(parent, ref_filename)
-  if tex_path is None:
+  tex_res = _resolve_tex_ref(spr_res, ref_filename)
+  if tex_res is None:
     stats["status"] = "missing"
     stats["t_thread_end"] = time.perf_counter()
     return None, stats
 
   try:
-    blob: Blob = tex_format.decoder(tex_path)
+    blob: Blob = tex_format.decoder(tex_res)
   except Exception:
     stats["status"] = "open_failed"
     stats["t_open"] = (time.perf_counter() - t0) * 1000
@@ -261,39 +261,27 @@ def _decode_atlas_to_rgba(
   return arr, stats
 
 
-def _resolve_tex_path(parent: Path, ref_filename: str) -> Optional[Path]:
-  """Find the on-disk file for a .spr `ref_filename`.
+def _resolve_tex_ref(spr_res: Resource, ref_filename: str) -> Optional[Resource]:
+  """Resolve a .spr `ref_filename` to a sibling texture Resource.
 
-  `SealTextureFormat` is built to XOR-deobfuscate `.tex`/`.te1` and pull
-  out the embedded image, so prefer those siblings over a literal-name
-  match — e.g. if the .spr says `share.tga` and both `share.tga` (raw)
-  and `share.tex` (obfuscated) sit next to each other, the `.tex` is
-  the one that decodes. Falls back to the literal name, then a
-  case-insensitive directory scan.
+  `SealTextureFormat` XOR-deobfuscates `.tex`/`.te1` and pulls out the
+  embedded image, so prefer those siblings over a literal-name match —
+  e.g. if the .spr says `share.tga` and both `share.tga` (raw) and
+  `share.tex` (obfuscated) sit beside each other, the `.tex` decodes.
+  Falls back to the literal name. Case-insensitivity is handled by the
+  source's resolve(), so no manual directory scan is needed.
   """
   if not ref_filename:
     return None
 
-  stem = Path(ref_filename).stem
+  stem = PurePosixPath(ref_filename.replace("\\", "/")).stem
   for suffix in _TEX_SUFFIXES:
-    candidate = parent / f"{stem}{suffix}"
-    if candidate.is_file():
+    candidate = spr_res.sibling(f"{stem}{suffix}")
+    if candidate.exists():
       return candidate
 
-  literal = parent / ref_filename
-  if literal.is_file():
+  literal = spr_res.sibling(ref_filename)
+  if literal.exists():
     return literal
 
-  ref_lower = ref_filename.lower()
-  stem_lower = stem.lower()
-  try:
-    for entry in parent.iterdir():
-      if not entry.is_file():
-        continue
-      if entry.suffix.lower() in _TEX_SUFFIXES and entry.stem.lower() == stem_lower:
-        return entry
-      if entry.name.lower() == ref_lower:
-        return entry
-  except OSError:
-    return None
   return None

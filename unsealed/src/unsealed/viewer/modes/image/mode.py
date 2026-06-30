@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, List, Optional, cast
 
 from imgui_bundle import imgui
 
+from ....vfs import Resource
 from ..base import BaseMode, RenderExtension
 from .camera import ImageCamera
 from .extensions import ImageExtension
@@ -32,9 +32,9 @@ class ImageMode(BaseMode):
     return self._render_extensions
 
   def decode(
-    self, path: Path, shader_cache: Optional[dict] = None
+    self, res: Resource, shader_cache: Optional[dict] = None
   ) -> "ViewerScene":
-    return TexViewerPipeline().run(path)
+    return TexViewerPipeline().run(res)
 
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
     cam = ImageCamera()

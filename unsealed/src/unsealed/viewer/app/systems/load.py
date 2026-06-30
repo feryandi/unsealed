@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import tkinter as tk
 import traceback
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from tkinter import filedialog
 from typing import TYPE_CHECKING, Dict, Optional
 
 import pygame
 
 from ...modes import MODES, ImageScene, MenScene, SprScene
+from ....vfs import DiskSource, Resource
+from ....vfs.spak_source import SpakSource
 from ..context import ViewerContext
-from ..spak_workspace import SpakWorkspace
 
 if TYPE_CHECKING:
     from ..world import AppWorld
@@ -25,10 +26,10 @@ _VIEWABLE_EXTS = frozenset(ext for m in MODES for ext in m.extensions)
 
 class LoadSystem:
     def __init__(self) -> None:
-        # Resolved .spak path -> its mounted workspace. Reusing the mount
-        # keeps already-materialized files when an archive is reopened.
-        self._workspaces: Dict[Path, SpakWorkspace] = {}
-        self._active: Optional[SpakWorkspace] = None
+        # Resolved .spak path -> its mounted source. Reusing the mount keeps
+        # the decrypted-bytes cache warm when an archive is reopened.
+        self._sources: Dict[Path, SpakSource] = {}
+        self._active: Optional[SpakSource] = None
 
     def load(self, path: Path, world: "AppWorld") -> None:
         """Synchronous load (startup / injection). UI loads go async via
@@ -37,35 +38,39 @@ class LoadSystem:
             self.open_spak(path, world)
             return
         try:
-            ctx = self.decode_ctx(path, world)
-            self.finalize(ctx, path, world)
+            res = Resource.for_disk_file(path)
+            self.finalize(self.decode_ctx(res, world), res, world)
         except Exception as e:
             print(f"[viewer] error: {e}")
             traceback.print_exc()
 
-    def decode_ctx(self, path: Path, world: "AppWorld") -> ViewerContext:
-        """CPU-only: load shaders + decode the file into a ViewerContext.
+    def decode_ctx(self, res: Resource, world: "AppWorld") -> ViewerContext:
+        """CPU-only: load shaders + decode the resource into a ViewerContext.
 
-        No GL calls here, so it is safe to run on a background thread.
+        No GL calls here, so it is safe to run on a background thread. The
+        shader cache is keyed by the source (a disk dir or a mounted .spak)
+        so it is reused across files from the same source.
         """
-        if path.parent != world._shader_dir:
-            from ...shader import load_shaders
-            world.shader_cache = load_shaders(path.parent)
-            world._shader_dir = path.parent
+        from ...shader import load_shaders
+
+        key = res.source.root if isinstance(res.source, DiskSource) else res.source
+        if key != world._shader_dir:
+            world.shader_cache = load_shaders(res.source)
+            world._shader_dir = key
         return ViewerContext.load(
-            path, world.window.width, world.window.height, world.shader_cache
+            res, world.window.width, world.window.height, world.shader_cache
         )
 
-    def finalize(self, ctx: ViewerContext, path: Path, world: "AppWorld") -> None:
+    def finalize(self, ctx: ViewerContext, res: Resource, world: "AppWorld") -> None:
         """Main-thread: upload the decoded scene to the GPU + wire state."""
         world.scene.context = ctx
-        world.scene.current_path = path
+        world.scene.current_path = res
         world.render.renderer.load_scene(ctx.scene, ctx.mode.render_extensions())
         world.scene.selected_mesh_idx = None
         world.scene.selected_shader = None
         if not isinstance(ctx.scene, (ImageScene, SprScene, MenScene)):
             world._anim_sys.load(world.scene.anim, ctx.scene)
-        pygame.display.set_caption(f"{_TITLE} — {path.name}")
+        pygame.display.set_caption(f"{_TITLE} — {res.name}")
 
     def open_dialog(self, world: "AppWorld") -> None:
         self._release_input(world)
@@ -91,38 +96,38 @@ class LoadSystem:
         spak = world.spak
         spak.error = None
         try:
-            ws = self._mount_spak(path)
+            source = self._mount_spak(path)
         except Exception as e:
             print(f"[viewer] spak error: {e}")
             traceback.print_exc()
             self._active = None
             spak.active = True
             spak.archive_name = path.name
-            spak.root = None
             spak.entries = []
             spak.error = str(e)
             return
 
-        self._active = ws
+        self._active = source
         spak.active = True
         spak.archive_name = path.name
-        spak.root = ws.mount
-        spak.entries = ws.viewable_entries(_VIEWABLE_EXTS)
+        spak.entries = sorted(
+            PurePosixPath(n)
+            for n in source.primary_names()
+            if PurePosixPath(n).suffix.lower() in _VIEWABLE_EXTS
+        )
         spak.filter_text = ""
 
-    def prepare_spak_entry(self, rel: Path) -> Path:
-        """Materialize a browsed entry (+ its dependency closure) on demand."""
-        if self._active is None:
-            raise Exception("no active spak archive")
-        return self._active.prepare(rel)
+    def active_spak_source(self) -> Optional[SpakSource]:
+        """The mounted source for the currently-browsed .spak (or None)."""
+        return self._active
 
-    def _mount_spak(self, path: Path) -> SpakWorkspace:
+    def _mount_spak(self, path: Path) -> SpakSource:
         key = path.resolve()
-        ws = self._workspaces.get(key)
-        if ws is None:
-            ws = SpakWorkspace(path)
-            self._workspaces[key] = ws
-        return ws
+        source = self._sources.get(key)
+        if source is None:
+            source = SpakSource(path)
+            self._sources[key] = source
+        return source
 
     def ask_model_file(self, world: "AppWorld") -> Optional[Path]:
         """Modal file picker filtered to model files (.ms1 / .act)."""

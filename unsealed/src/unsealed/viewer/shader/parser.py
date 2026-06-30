@@ -391,16 +391,27 @@ def parse_shader_text(text: str) -> Dict[str, Q3Shader]:
   return shaders
 
 
-def load_shaders(directory: Path) -> Dict[str, Q3Shader]:
+def load_shaders(source) -> Dict[str, Q3Shader]:
+  """List + parse every *.shader entry in *source*, merged into a single
+  {lowercase_stem_name: Q3Shader} dict.
+
+  *source* is a vfs FileSource (cross-archive for .spak) or a directory
+  Path (wrapped in a DiskSource). For an archive source this naturally
+  spans all mounted archives, so a map's effect shaders in sfx/skill are
+  found alongside its own.
   """
-  Glob all *.shader files in *directory* (non-recursive), parse them, and
-  merge into a single {lowercase_stem_name: Q3Shader} dict.
-  """
+  from pathlib import Path as _Path
+
+  from ...vfs import DiskSource
+
+  if isinstance(source, _Path):
+    source = DiskSource(source)
+
   result: Dict[str, Q3Shader] = {}
-  for shader_file in directory.glob("*.shader"):
+  for name in source.list(".shader"):
     try:
-      text = shader_file.read_text(encoding="utf-8", errors="replace")
+      text = source.read(name).decode("utf-8", errors="replace")
       result.update(parse_shader_text(text))
-    except OSError:
+    except Exception:
       pass
   return result

@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Iterable, List, Optional, Tuple, cast
 
 from imgui_bundle import imgui
 
+from ....vfs import Resource
 from ...sprite_atlas import FULL_ATLAS_IDX
 from ..base import BaseMode, RenderExtension
 from .camera import SprCamera
@@ -39,9 +40,9 @@ class SprMode(BaseMode):
     return self._render_extensions
 
   def decode(
-    self, path: Path, shader_cache: Optional[dict] = None
+    self, res: Resource, shader_cache: Optional[dict] = None
   ) -> "ViewerScene":
-    return SprViewerPipeline().run(path)
+    return SprViewerPipeline().run(res)
 
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
     cam = SprCamera()

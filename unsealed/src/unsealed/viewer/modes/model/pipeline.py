@@ -9,6 +9,7 @@ import numpy as np
 
 from unsealed.assets import Material
 
+from ....vfs import Resource
 from ...camera import compute_bounds
 from ...scenes import (
   AnimatedEntity,
@@ -37,12 +38,12 @@ class ModelViewerPipeline:
     (0.72, 0.52, 0.72),
   ]
 
-  def run(self, path: Path, shader_cache: Optional[Dict] = None) -> ModelScene:
+  def run(self, res: Resource, shader_cache: Optional[Dict] = None) -> ModelScene:
     shaders = shader_cache
 
     from unsealed.formats.base import collect_unknowns
 
-    if path.suffix.lower() == ".act":
+    if res.suffix.lower() == ".act":
       from unsealed.formats.act.format import SealActorFormat
 
       fmt = SealActorFormat()
@@ -50,14 +51,14 @@ class ModelViewerPipeline:
       from unsealed.formats.ms1.format import SealMeshFormat
 
       fmt = SealMeshFormat()
-    model = fmt.decode(path)
-    scene = ModelViewerPipeline._model_to_scene(model, path, shaders)
+    model = fmt.decode(res)
+    scene = ModelViewerPipeline._model_to_scene(model, res, shaders)
     scene.unknowns = collect_unknowns(fmt)
     return scene
 
   @classmethod
   def _model_to_scene(
-    cls, model, path: Path, shaders: Optional[Dict] = None
+    cls, model, res: Resource, shaders: Optional[Dict] = None
   ) -> ModelScene:
     """Convert a decoded Model asset into a ModelScene."""
     scene = ModelScene()
@@ -195,7 +196,7 @@ class ModelViewerPipeline:
 
         if shaders and q3_key and q3_key in shaders:
           q3_shader = shaders[q3_key]
-          q3_stages = cls._resolve_q3_stages(path, q3_shader)
+          q3_stages = cls._resolve_q3_stages(res, q3_shader)
           viewer_mesh.primitives.append(
             ViewerPrimitive(
               indices=np.array(raw_indices, dtype=np.uint16),
@@ -207,7 +208,7 @@ class ModelViewerPipeline:
             )
           )
         else:
-          image, w, h = cls._decode_texture(path, bitmap)
+          image, w, h = cls._decode_texture(res, bitmap)
           viewer_mesh.primitives.append(
             ViewerPrimitive(
               indices=np.array(raw_indices, dtype=np.uint16),
@@ -234,7 +235,7 @@ class ModelViewerPipeline:
     )
     scene.entities.append(
       AnimatedEntity(
-        name=path.stem,
+        name=res.stem,
         meshes=list(scene.meshes),
         skeleton=skeleton,
         animation_groups=anim_groups,
@@ -245,39 +246,39 @@ class ModelViewerPipeline:
 
   @staticmethod
   def _decode_texture(
-    model_path: Path, bitmap: Optional[str]
+    model_res: Resource, bitmap: Optional[str]
   ) -> Tuple[Optional[bytes], int, int]:
     """Resolve and decode a texture referenced by a material bitmap field."""
     if not bitmap:
       return None, 0, 0
 
     stem = Path(bitmap).stem
-    candidates = [model_path.with_name(bitmap)]
+    candidates = [model_res.sibling(bitmap)]
     for ext in (".tex", ".te1", ".png", ".jpg", ".bmp", ".dds"):
-      candidates.append(model_path.with_name(stem + ext))
+      candidates.append(model_res.sibling(stem + ext))
 
-    for tex_path in candidates:
-      if not tex_path.exists():
+    for tex_res in candidates:
+      if not tex_res.exists():
         continue
-      result = TexViewerPipeline.decode(tex_path)
+      result = TexViewerPipeline.decode(tex_res)
       if result[0] is not None:
         return result
 
     return None, 0, 0
 
   @staticmethod
-  def _resolve_q3_stages(model_path: Path, shader) -> List[ViewerQ3Stage]:
+  def _resolve_q3_stages(model_res: Resource, shader) -> List[ViewerQ3Stage]:
     """Resolve each stage of a Q3Shader into a ViewerQ3Stage with pixel data."""
     result: List[ViewerQ3Stage] = []
     for stage in shader.stages:
       image: Optional[bytes] = None
       w = h = 0
       if stage.map_texture is not None:
-        image, w, h = ModelViewerPipeline._decode_texture(model_path, stage.map_texture)
+        image, w, h = ModelViewerPipeline._decode_texture(model_res, stage.map_texture)
 
       anim_frames: list = []
       for tex_name in stage.anim_textures:
-        frame_img, fw, fh = ModelViewerPipeline._decode_texture(model_path, tex_name)
+        frame_img, fw, fh = ModelViewerPipeline._decode_texture(model_res, tex_name)
         if frame_img is not None:
           anim_frames.append((frame_img, fw, fh))
 

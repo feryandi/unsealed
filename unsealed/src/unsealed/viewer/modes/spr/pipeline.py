@@ -7,9 +7,9 @@ cropped-sprite indices the HUD needs.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import List
 
+from ....vfs import Resource
 from ...sprite_atlas import FULL_ATLAS_IDX, decode_spr_for_viewer
 from .scene import SprScene
 
@@ -17,12 +17,12 @@ from .scene import SprScene
 class SprViewerPipeline:
   """Decode a .spr into a SprScene of (atlases, sprite_refs)."""
 
-  def run(self, path: Path) -> SprScene:
+  def run(self, res: Resource) -> SprScene:
     try:
-      atlases, sprite_refs = decode_spr_for_viewer(path)
+      atlases, sprite_refs = decode_spr_for_viewer(res)
     except Exception as e:
       print(f"[spr] decode failed: {e}")
-      return SprScene(file_name=path.name)
+      return SprScene(file_name=res.name)
 
     atlas_sprite_indices: List[List[int]] = []
     for atlas in atlases:
@@ -34,7 +34,7 @@ class SprViewerPipeline:
       atlas_sprite_indices.append(indices)
 
     return SprScene(
-      file_name=path.name,
+      file_name=res.name,
       atlases=atlases,
       sprite_refs=sprite_refs,
       atlas_sprite_indices=atlas_sprite_indices,

@@ -225,14 +225,18 @@ class AppWorld:
         self._load_sys.open_dialog(self)
 
     def open_spak_entry(self, rel: Path) -> None:
-        """Load a file from the currently-browsed .spak (materialized on demand)."""
-        rel_path = Path(str(rel))
+        """Load a browsed .spak entry — decrypted on demand from the source."""
+        source = self._load_sys.active_spak_source()
+        if source is None:
+            return
+        from ...vfs import Resource
 
-        def work() -> Tuple["ViewerContext", Path]:
-            real = self._load_sys.prepare_spak_entry(rel_path)
-            return self._load_sys.decode_ctx(real, self), real
+        res = Resource(source, str(rel).replace("\\", "/"))
 
-        self._start_load(work, f"Loading {rel_path.name}…")
+        def work() -> Tuple["ViewerContext", "Resource"]:
+            return self._load_sys.decode_ctx(res, self), res
+
+        self._start_load(work, f"Loading {res.name}…")
 
     def close_spak(self) -> None:
         self.spak.active = False
@@ -247,8 +251,11 @@ class AppWorld:
         if path.suffix.lower() == ".spak":
             self._load_sys.open_spak(path, self)
             return
+        from ...vfs import Resource
+
+        res = Resource.for_disk_file(path)
         self._start_load(
-            lambda: (self._load_sys.decode_ctx(path, self), path),
+            lambda: (self._load_sys.decode_ctx(res, self), res),
             f"Loading {path.name}…",
         )
 

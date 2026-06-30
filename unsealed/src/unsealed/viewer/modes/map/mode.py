@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Iterable, List, Optional, cast
 import numpy as np
 from imgui_bundle import imgui
 
+from ....vfs import Resource
 from ...scenes import AnimatedEntity, ViewerMesh
 from ...scenes.scene import _STRIDE_PLAIN, _STRIDE_SKINNED
 from ..base import AnimationPolicy, BaseMode, RenderExtension
@@ -55,8 +56,8 @@ class MapMode(BaseMode):
   def render_extensions(self) -> "Iterable[RenderExtension]":
     return self._render_extensions
 
-  def decode(self, path: Path, shader_cache: Optional[dict] = None) -> "ViewerScene":
-    return MapViewerPipeline().run(path, shader_cache)
+  def decode(self, res: Resource, shader_cache: Optional[dict] = None) -> "ViewerScene":
+    return MapViewerPipeline().run(res, shader_cache)
 
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
     cam = MapCamera()
@@ -287,7 +288,9 @@ class MapMode(BaseMode):
     cam = cast(MapCamera, ctx.camera)
 
     try:
-      model_scene = ModelMode().decode(path, mctx._app.shader_cache)
+      model_scene = ModelMode().decode(
+        Resource.for_disk_file(path), mctx._app.shader_cache
+      )
     except Exception as e:
       print(f"[viewer] inject_model decode failed: {e}")
       return

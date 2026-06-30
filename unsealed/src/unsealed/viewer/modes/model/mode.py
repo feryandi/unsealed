@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Optional, cast
 
 from imgui_bundle import imgui
 
+from ....vfs import Resource
 from ..base import AnimationPolicy, BaseMode
 from .extensions import InfiniteGridExtension
 from .camera import OrbitCamera
@@ -52,8 +53,8 @@ class ModelMode(BaseMode):
   def render_extensions(self) -> "Iterable[RenderExtension]":
     return self._render_extensions
 
-  def decode(self, path: Path, shader_cache: Optional[dict] = None) -> "ViewerScene":
-    return ModelViewerPipeline().run(path, shader_cache)
+  def decode(self, res: Resource, shader_cache: Optional[dict] = None) -> "ViewerScene":
+    return ModelViewerPipeline().run(res, shader_cache)
 
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
     cam = OrbitCamera()
