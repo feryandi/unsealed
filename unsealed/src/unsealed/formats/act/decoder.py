@@ -2,17 +2,13 @@ from typing import Any, Dict, Optional
 
 from ...assets.actor import Actor, Action
 from ...assets.resource import Resource, ResourceType
-from ...utils.file import File, FileLike
+from ...utils.file import File
 
 
 class SealActorDecoder:
-  def __init__(self, path: FileLike) -> None:
-    self.path: FileLike = path
+  def __init__(self, file: File) -> None:
+    self.file: File = file
     self.unknown: Dict[str, Any] = {}
-    try:
-      self.file: File = File(path)
-    except Exception:
-      raise Exception("Unable to open actor file")
     self.actor: Optional[Actor] = None
 
   def decode(self) -> Actor:

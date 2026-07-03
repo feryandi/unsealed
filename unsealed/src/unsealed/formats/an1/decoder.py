@@ -2,18 +2,21 @@ from typing import Any, Dict, List, Optional
 
 from ...assets.animation import Animation, Keyframe
 from ...assets.binarytree import BinaryTree, BinaryTreeNode
-from ...utils.file import File, FileLike
+from ...utils.file import File
+
+# "No child" marker for a keyframe binary-tree node. The child references
+# and the sentinel are unsigned array indices, so they must be read with
+# `read_uint`: read as a *signed* int32 the sentinel would come back as -2
+# and, used as a Python list index (`hash_table[-2]`), wrap around and make
+# the tree traversal recurse forever.
+_NO_CHILD = 0xFFFFFFFE
 
 
 class SealAnimationDecoder:
-  def __init__(self, path: FileLike) -> None:
-    self.path: FileLike = path
+  def __init__(self, file: File) -> None:
+    self.file: File = file
     self.nodes: int = 0
     self.unknown: Dict[str, Any] = {}
-    try:
-      self.file: File = File(path)
-    except Exception:
-      raise Exception("Unable to open mesh file")
 
   def decode(self) -> List[Animation]:
     animations = []
@@ -37,7 +40,9 @@ class SealAnimationDecoder:
 
     for _ in range(self.nodes):
       name = self.file.read_string(256)
-      node = Animation(self.path, start_frame, end_frame, fps, ticks_per_frame, name)
+      node = Animation(
+        self.file.name, start_frame, end_frame, fps, ticks_per_frame, name
+      )
 
       self.__decode_position(node)
       self.__decode_rotation(node)
@@ -59,16 +64,16 @@ class SealAnimationDecoder:
       keyframe = Keyframe(time, position)
       node.transforms.append(keyframe)
 
-      left_child_frame = self.file.read_int()
-      right_child_frame = self.file.read_int()
+      left_child_frame = self.file.read_uint()
+      right_child_frame = self.file.read_uint()
       hash_table.append(
         {
-          "left": left_child_frame if left_child_frame != 0xFFFFFFFE else None,
-          "right": right_child_frame if right_child_frame != 0xFFFFFFFE else None,
+          "left": left_child_frame if left_child_frame != _NO_CHILD else None,
+          "right": right_child_frame if right_child_frame != _NO_CHILD else None,
         }
       )
     if size != 0:
-      root_frame = self.file.read_int()
+      root_frame = self.file.read_uint()
       node.btree = self.__decode_hash_table(hash_table, root_frame)
 
   def __decode_rotation(self, node: Animation) -> None:
@@ -98,18 +103,18 @@ class SealAnimationDecoder:
         ]
       )
 
-      left_child_frame = self.file.read_int()
-      right_child_frame = self.file.read_int()
+      left_child_frame = self.file.read_uint()
+      right_child_frame = self.file.read_uint()
       hash_table.append(
         {
-          "left": left_child_frame if left_child_frame != 0xFFFFFFFE else None,
-          "right": right_child_frame if right_child_frame != 0xFFFFFFFE else None,
+          "left": left_child_frame if left_child_frame != _NO_CHILD else None,
+          "right": right_child_frame if right_child_frame != _NO_CHILD else None,
         }
       )
     if axis_angles:
       self.unknown.setdefault("rotation_axis_angles", {})[node.name] = axis_angles
     if size != 0:
-      root_frame = self.file.read_int()
+      root_frame = self.file.read_uint()
       node.btree = self.__decode_hash_table(hash_table, root_frame)
 
   def __decode_scale(self, node: Animation) -> None:
@@ -136,18 +141,18 @@ class SealAnimationDecoder:
         ]
       )
 
-      left_child_frame = self.file.read_int()
-      right_child_frame = self.file.read_int()
+      left_child_frame = self.file.read_uint()
+      right_child_frame = self.file.read_uint()
       hash_table.append(
         {
-          "left": left_child_frame if left_child_frame != 0xFFFFFFFE else None,
-          "right": right_child_frame if right_child_frame != 0xFFFFFFFE else None,
+          "left": left_child_frame if left_child_frame != _NO_CHILD else None,
+          "right": right_child_frame if right_child_frame != _NO_CHILD else None,
         }
       )
     if pads:
       self.unknown.setdefault("scale_pads", {})[node.name] = pads
     if size != 0:
-      root_frame = self.file.read_int()
+      root_frame = self.file.read_uint()
       node.btree = self.__decode_hash_table(hash_table, root_frame)
 
   def __decode_hash_table(
@@ -157,7 +162,9 @@ class SealAnimationDecoder:
     bt.root = BinaryTreeNode(root_frame)
 
     def dfs(node: BinaryTreeNode):
-      if node.value is None:
+      # Guard against a malformed index pointing outside the table (a bad
+      # file) so a stray reference can't crash the decode or loop forever.
+      if node.value is None or not (0 <= node.value < len(hash_table)):
         return
       h: Dict[str, Optional[int]] = hash_table[node.value]
 

@@ -8,7 +8,6 @@ extra header fields (e.g. MonsterDataFile has one extra int32 there).
 
 To add support for a new file type, in a new module under this package:
 
-    import struct
     from .registry import DatBody, register
 
     class MonsterDataBody(DatBody):
@@ -17,9 +16,8 @@ To add support for a new file type, in a new module under this package:
 
       def decode(self, file, dat):
         dat.unknown["extra"] = file.read_int()  # type-specific header
-        rec = struct.Struct("<64i")
         dat.elements = [
-          rec.unpack(file.read(256)) for _ in range(dat.count)
+          file.read_ints(64) for _ in range(dat.count)  # 64 int32 / record
         ]
 
     register(MonsterDataBody())
@@ -32,6 +30,8 @@ from __future__ import annotations
 import re
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, List, Optional, Tuple
+
+from ..records import REGISTRY
 
 if TYPE_CHECKING:
   from ...assets.dat import DatFile
@@ -65,16 +65,59 @@ class DatBody(ABC):
     ...
 
 
+class SchemaBody(DatBody):
+  """A `DatBody` that decodes a self-describing `.dat` type from a
+  declarative `DataSchema` instead of bespoke code. Reads `header_extra`
+  int32s after the count (stored in `dat.unknown`), then walks the
+  records via `schema.read_record`.
+
+  The schema is not held by a registered body -- it lives in the shared
+  `REGISTRY` (registered by `schemas/dat/`), and `for_type` builds a
+  `SchemaBody` around it on demand. Normally exactly `count` records are
+  read; a schema with `until_eof=True` (its header `count` is a GLOBAL
+  total while the file holds only a leading band, e.g. ItemFile v10) is
+  walked to EOF and the header count kept in `unknown["declared_count"]`.
+  """
+
+  _MIN_RECORD = 8  # smallest sane trailing record (id + one length/int)
+
+  def __init__(self, schema) -> None:
+    self.schema = schema
+
+  def decode(self, file: "File", dat: "DatFile") -> None:
+    if self.schema.header_extra:
+      dat.unknown["header_extra"] = [
+        file.read_int() for _ in range(self.schema.header_extra)
+      ]
+    dat.unknown["schema"] = self.schema.name
+    if self.schema.until_eof:
+      records = []
+      while not file.is_end() and file.size - file.pointer >= self._MIN_RECORD:
+        records.append(self.schema.read_record(file, len(records)))
+      dat.unknown["declared_count"] = dat.count
+      dat.elements = records
+    else:
+      dat.elements = [self.schema.read_record(file, i) for i in range(dat.count)]
+
+
 _BODIES: List[DatBody] = []
 
 
 def register(body: DatBody) -> None:
+  """Register a bespoke `DatBody` (e.g. `DataTableBody`, `QuestFlagBody`).
+  Schema-driven types are NOT registered here -- they live in `REGISTRY`
+  and are resolved by `for_type`."""
   _BODIES.append(body)
 
 
 def for_type(type_name: str, version: int) -> Optional[DatBody]:
-  """The registered body for this type+version, or None if unhandled."""
+  """The body for this type+version, or None if unhandled. Bespoke bodies
+  win; otherwise a schema registered under type dispatch (tag "dat") is
+  wrapped in a `SchemaBody`."""
   for body in _BODIES:
     if body.handles(type_name, version):
       return body
+  schema = REGISTRY.for_type("dat", type_name, version)
+  if schema is not None:
+    return SchemaBody(schema)
   return None

@@ -27,7 +27,7 @@ class SealActorFormat(BaseFormat[Model]):
     return Model
 
   def decoder(self, res: Resource) -> Model:
-    self.actor_decoder = SealActorDecoder(res)
+    self.actor_decoder = SealActorDecoder(res.open())
     actor = self.actor_decoder.decode()
 
     mesh_res = res.with_name(actor.filename).with_suffix(".ms1")
@@ -37,7 +37,7 @@ class SealActorFormat(BaseFormat[Model]):
     for action in actor.actions:
       animation_res = res.with_name(f"{action.filename}.an1")
       if animation_res.exists():
-        animation_decoder = SealAnimationDecoder(animation_res)
+        animation_decoder = SealAnimationDecoder(animation_res.open())
         self.action_decoders.append(animation_decoder)
         animations = animation_decoder.decode()
         for animation in animations:

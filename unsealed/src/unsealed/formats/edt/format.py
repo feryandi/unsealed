@@ -5,6 +5,7 @@ from typing import Pattern, Type
 
 from ..base import BaseFormat
 from ...assets.edt import Edt
+from ...vfs import Resource
 from .decoder import EdtDecoder
 from .codec import encode
 
@@ -20,8 +21,8 @@ class SealEdtFormat(BaseFormat[Edt]):
   def asset_type(self) -> Type[Edt]:
     return Edt
 
-  def decoder(self, path: Path) -> Edt:
-    return EdtDecoder(path).decode()
+  def decoder(self, res: Resource) -> Edt:
+    return EdtDecoder(res.open()).decode()
 
   def encoder(self, asset: Edt, path: Path) -> None:
     if asset.value is None:

@@ -1,7 +1,7 @@
 import json
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Union
 
-from ...utils.file import File, FileLike
+from ...utils.file import File
 
 _ELEMENT_TYPE_NAMES: Dict[int, str] = {
   0: "image",
@@ -19,21 +19,14 @@ _ELEMENT_TYPE_NAMES: Dict[int, str] = {
 
 
 class SealMenDecoder:
-  def __init__(self, path: FileLike) -> None:
-    self.path: FileLike = path
-    self.file: Optional[File] = None
+  def __init__(self, file: File) -> None:
+    self.file: File = file
     self.unknown: Dict[str, Any] = {}
-    try:
-      self.file = File(path)
-    except Exception:
-      raise Exception("Unable to open men file")
 
   def decode(self) -> str:
     """
     Decodes the MEN file
     """
-    if self.file is None:
-      raise Exception("File was not initialized properly")
 
     header_template = "Seal Online UI File v"
     version = 0

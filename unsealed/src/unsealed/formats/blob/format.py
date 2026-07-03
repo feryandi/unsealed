@@ -5,6 +5,7 @@ from typing import Pattern, Type
 
 from ..base import BaseFormat
 from ...assets.blob import Blob
+from ...vfs import Resource
 from ..blob.decoder import BlobDecoder
 
 
@@ -17,8 +18,8 @@ class BlobFormat(BaseFormat[Blob]):
   def asset_type(self) -> Type[Blob]:
     return Blob
 
-  def decoder(self, path: Path) -> Blob:
-    decoder = BlobDecoder(path)
+  def decoder(self, res: Resource) -> Blob:
+    decoder = BlobDecoder(res.open())
     return decoder.decode()
 
   def encoder(self, asset: Blob, path: Path) -> None:

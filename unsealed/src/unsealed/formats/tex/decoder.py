@@ -2,18 +2,13 @@ import io
 from typing import Optional
 
 from ...assets.blob import Blob
-from ...utils.file import File, FileLike
+from ...utils.file import File
 
 
 class SealTextureDecoder:
-  def __init__(self, path: FileLike) -> None:
-    self.path: FileLike = path
-    self.filename: str = path.stem
-    self.file: Optional[File] = None
-    try:
-      self.file = File(path)
-    except Exception:
-      raise Exception("Unable to open texture file")
+  def __init__(self, file: File) -> None:
+    self.file: File = file
+    self.filename: str = file.stem
 
     self.grigon_header: Optional[bytes] = None
     self.original_file_size: Optional[int] = None
@@ -23,9 +18,6 @@ class SealTextureDecoder:
     self.decoded: Optional[bytes] = None
 
   def decode(self) -> Blob:
-    if self.file is None:
-      raise Exception("File was not initialized properly")
-
     self.grigon_header = self.file.read(16 * 4)
     self.original_file_size = self.file.read_int()
     self.scrambled_header = self.file.read(18)

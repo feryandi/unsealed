@@ -203,7 +203,7 @@ class MapViewerPipeline:
     try:
       from unsealed.formats.mdt.decoder import SealMdtDecoder
 
-      directory = SealMdtDecoder(mdt_res).decode()
+      directory = SealMdtDecoder(mdt_res.open()).decode()
       return {
         blob.name.lower(): blob.value
         for blob in directory.list

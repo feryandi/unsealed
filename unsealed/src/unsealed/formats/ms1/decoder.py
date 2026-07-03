@@ -1,6 +1,6 @@
 from typing import Any, Dict, Optional
 
-from ...utils.file import File, FileLike
+from ...utils.file import File
 from ...assets.geometry import Geometry
 
 from ..ms1.material import SealMeshMaterialDecoder
@@ -8,19 +8,13 @@ from ..ms1.geometry import SealMeshGeometryDecoder
 
 
 class SealMeshDecoder:
-  def __init__(self, path: FileLike) -> None:
-    self.file: Optional[File] = None
+  def __init__(self, file: File) -> None:
+    self.file: File = file
     self.unknown: Dict[str, Any] = {}
     self.material_decoder: Optional[SealMeshMaterialDecoder] = None
     self.geometry_decoder: Optional[SealMeshGeometryDecoder] = None
-    try:
-      self.file = File(path)
-    except Exception:
-      raise Exception("Unable to open mesh file")
 
   def decode(self) -> Geometry:
-    if self.file is None:
-      raise Exception("File was not initialized properly")
     maybe_non_first_object_has_pad = False
     maybe_different_mode = False
 

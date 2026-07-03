@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, List, Optional
 if TYPE_CHECKING:
   from pathlib import Path
 
+  from ..utils.file import File
   from .source import FileSource
 
 
@@ -79,6 +80,15 @@ class Resource:
 
   def read(self) -> bytes:
     return self.source.read(self._name)
+
+  def open(self) -> "File":
+    """Read this resource into a `File` (bytes + leaf name).
+
+    The single adapter from the VFS (disk or mounted `.spak`) to what a
+    decoder consumes -- so decoders never see a `Resource` or a path."""
+    from ..utils.file import File
+
+    return File(self.read(), self.name)
 
   def exists(self) -> bool:
     return self.source.resolve(self._name) is not None

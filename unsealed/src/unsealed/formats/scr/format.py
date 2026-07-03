@@ -20,7 +20,7 @@ class SealScrFormat(BaseFormat[Scr]):
     return Scr
 
   def decoder(self, res: Resource) -> Scr:
-    scr = SealScrDecoder(res).decode()
+    scr = SealScrDecoder(res.open()).decode()
     scr.name = res.stem
     return scr
 

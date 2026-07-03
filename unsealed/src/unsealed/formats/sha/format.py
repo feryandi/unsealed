@@ -6,6 +6,7 @@ from typing import Pattern, Type
 
 from ..base import BaseFormat
 from ...assets.shader import Shaders
+from ...vfs import Resource
 from ..sha.decoder import SealShaDecoder
 
 
@@ -18,8 +19,8 @@ class SealShaFormat(BaseFormat[Shaders]):
   def asset_type(self) -> Type[Shaders]:
     return Shaders
 
-  def decoder(self, path: Path) -> Shaders:
-    decoder = SealShaDecoder(path)
+  def decoder(self, res: Resource) -> Shaders:
+    decoder = SealShaDecoder(res.open())
     shaders = decoder.decode()
     return shaders
 

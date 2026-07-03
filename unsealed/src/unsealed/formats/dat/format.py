@@ -20,7 +20,7 @@ class SealDatFormat(BaseFormat[DatFile]):
     return DatFile
 
   def decoder(self, res: Resource) -> DatFile:
-    return SealDatDecoder(res).decode()
+    return SealDatDecoder(res.open()).decode()
 
   def encoder(self, asset: DatFile, path: Path) -> None:
     raise NotImplementedError("Encoder is not implemented")

@@ -1,26 +1,19 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from ...utils.file import File, FileLike
+from ...utils.file import File
 from ...assets.skeleton import Skeleton
 
 from ..bn1.bone import SealBoneBoneDecoder
 
 
 class SealBoneDecoder:
-  def __init__(self, path: FileLike) -> None:
-    self.file: Optional[File] = None
+  def __init__(self, file: File) -> None:
+    self.file: File = file
     self.count: int = 0
     self.unknown: Dict[str, Any] = {}
     self.bone_decoders: list = []
-    try:
-      self.file = File(path)
-    except Exception:
-      raise Exception("Unable to open mesh file")
 
   def decode(self) -> Skeleton:
-    if self.file is None:
-      raise Exception("File was not initialized properly")
-
     skeleton = Skeleton()
     self.unknown["header_a"] = self.file.read(4)
     self.unknown["header_b"] = self.file.read(4)

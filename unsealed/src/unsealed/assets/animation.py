@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import List, Optional
 
 from .binarytree import BinaryTree
@@ -8,7 +7,7 @@ from ..core.asset import Asset
 class Animation(Asset):
   def __init__(
     self,
-    name: Path,
+    name: str,
     start_frame: int,
     end_frame: int,
     fps: float,

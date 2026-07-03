@@ -18,6 +18,7 @@ class DatFile(Asset):
   def __init__(self) -> None:
     super().__init__()
     self.type_name: str = ""  # title, e.g. "SealOnline MonsterDataFile"
+    self.source_name: str = ""  # source filename stem (for filename-keyed bodies)
     self.version: int = 0
     self.count: int = 0  # declared number of elements
     self.elements: List[Any] = []  # decoded records (type/version specific)

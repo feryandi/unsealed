@@ -130,7 +130,7 @@ class MenViewerPipeline:
 
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-      decoder = SealMenDecoder(res)
+      decoder = SealMenDecoder(res.open())
       raw = decoder.decode()
     unknowns = collect_unknowns(decoder)
     try:

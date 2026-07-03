@@ -99,7 +99,7 @@ def decode_spr_for_viewer(
   t_total = time.perf_counter()
 
   t0 = time.perf_counter()
-  entries = SealSprDecoder(spr_res).decode()
+  entries = SealSprDecoder(spr_res.open()).decode()
   t_header = (time.perf_counter() - t0) * 1000
 
   tex_format = SealTextureFormat()

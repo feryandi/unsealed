@@ -1,7 +1,7 @@
 import re
 
 from ...assets.dat import DatFile
-from ...utils.file import File, FileLike, _read_bytes
+from ...utils.file import File
 from .registry import for_type
 
 _HEADER_LEN = 64
@@ -28,15 +28,13 @@ class SealDatDecoder:
   """Decode a Seal Online `.dat`: shared header + count, then dispatch
   the records to the body decoder registered for this type+version."""
 
-  def __init__(self, path: FileLike) -> None:
-    self.path: FileLike = path
-    try:
-      self.raw: bytes = _read_bytes(path)
-    except Exception:
-      raise Exception(f"Unable to open dat file: {path}")
+  def __init__(self, file: File) -> None:
+    self.file: File = file
+    self.raw: bytes = file.data
 
   def decode(self) -> DatFile:
     dat = DatFile()
+    dat.source_name = self.file.stem
     if len(self.raw) < _HEADER_LEN + 4:
       raise Exception("Not a valid .dat file (shorter than header + count)")
 

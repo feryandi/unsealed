@@ -38,7 +38,7 @@ class TexViewerPipeline:
     try:
       from unsealed.formats.tex.decoder import SealTextureDecoder
 
-      blob = SealTextureDecoder(res).decode()
+      blob = SealTextureDecoder(res.open()).decode()
       if blob.value:
         return TexViewerPipeline._pil_bytes_from_raw(blob.value)
     except Exception:

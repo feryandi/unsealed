@@ -1,24 +1,17 @@
 from typing import Any, Dict
 
-from ...utils.file import File, FileLike
+from ...utils.file import File
 from ...assets.terrain import Terrain
 
 
 class SealMapDecoder:
-  def __init__(self, path: FileLike) -> None:
+  def __init__(self, file: File) -> None:
     self.version: int = 1
-    self.path: FileLike = path
-    self.filename: str = path.stem.split(".")[0]
+    self.file: File = file
+    self.filename: str = file.stem.split(".")[0]
     self.unknown: Dict[str, Any] = {}
-    try:
-      self.file: File = File(path)
-    except Exception:
-      raise Exception("Unable to open map file")
 
   def decode(self) -> Terrain:
-    if self.file is None:
-      raise Exception("File was not initialized properly")
-
     self.version = self.__decode_version()
     terrain = Terrain(self.filename, self.version)
 

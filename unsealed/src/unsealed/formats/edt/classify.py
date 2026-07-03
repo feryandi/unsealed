@@ -5,6 +5,8 @@ extension from the content (rather than a "decoded_" prefix) and let the
 right (future) decoder claim it:
 
   - a known Seal binary data-file header  -> "dat"
+  - an XML declaration (<?xml ...)         -> "xml"
+  - pure-ASCII text with tab-delimited rows -> "tsv"
   - otherwise pure-ASCII text             -> "scr" (Seal script)
   - anything else                         -> "bin"
 """
@@ -17,7 +19,7 @@ _HEADER_LEN = 64
 # e.g. "SealOnline MonsterDataFile v3", "Seal Online Item File v2",
 # "Seal Online QuestFlagFile v1". The trailing version is printf %x
 # (hex). "Seal Online" appears with or without the inner space.
-_DAT_SIGNATURE = re.compile(rb"^Seal ?Online .*File v[0-9A-Fa-f]+", re.IGNORECASE)
+_DAT_SIGNATURE = re.compile(rb"^Seal ?Online .*v[0-9A-Fa-f]+", re.IGNORECASE)
 
 # Printable ASCII plus the usual text whitespace.
 _TEXT_BYTES = frozenset(b"\t\n\r\f\v") | frozenset(range(0x20, 0x7F))
@@ -32,8 +34,15 @@ def detect_extension(data: bytes) -> str:
   if _DAT_SIGNATURE.match(first_str):
     return "dat"
 
+  if data.lstrip()[:5].lower() == b"<?xml":
+    return "xml"
+
   body = data.rstrip(b"\x00")
   if body and all(b in _TEXT_BYTES for b in body):
+    # Pipe-delimited tables + string lists are `.scr`; a tab-delimited
+    # table (no `|`) is a generic `.tsv` (guarder/polymorph/...).
+    if b"|" not in body and b"\t" in body:
+      return "tsv"
     return "scr"
 
   return "bin"

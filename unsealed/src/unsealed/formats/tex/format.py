@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Type, Pattern
 
 from ...assets.blob import Blob
+from ...vfs import Resource
 from ..base import BaseFormat
 from ..tex.decoder import SealTextureDecoder
 
@@ -17,10 +18,10 @@ class SealTextureFormat(BaseFormat[Blob]):
   def asset_type(self) -> Type[Blob]:
     return Blob
 
-  def decoder(self, path: Path) -> Blob:
-    decoder = SealTextureDecoder(path)
+  def decoder(self, res: Resource) -> Blob:
+    decoder = SealTextureDecoder(res.open())
     texture = decoder.decode()
-    texture.name = path.stem
+    texture.name = res.stem
     return texture
 
   def encoder(self, asset: Blob, path: Path) -> None:

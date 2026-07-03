@@ -17,7 +17,7 @@ import threading
 from pathlib import Path, PurePosixPath
 from typing import Dict, List, Optional, Tuple
 
-from ..formats.spak.decoder import SpakArchive
+from ..assets.spak import SpakArchive
 
 
 def _norm(name: str) -> str:

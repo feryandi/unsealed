@@ -5,6 +5,7 @@ from typing import Pattern, Type
 
 from ..base import BaseFormat
 from ...assets.terrain import Terrain
+from ...vfs import Resource
 from ..map.decoder import SealMapDecoder
 
 
@@ -20,8 +21,8 @@ class SealMapFormat(BaseFormat[Terrain]):
   def asset_type(self) -> Type[Terrain]:
     return Terrain
 
-  def decoder(self, path: Path) -> Terrain:
-    self.map_decoder = SealMapDecoder(path)
+  def decoder(self, res: Resource) -> Terrain:
+    self.map_decoder = SealMapDecoder(res.open())
     terrain = self.map_decoder.decode()
     return terrain
 

@@ -30,23 +30,23 @@ class SealMeshFormat(BaseFormat[Model]):
     model = Model()
     model.name = res.stem
 
-    self.geometry_decoder = SealMeshDecoder(res)
+    self.geometry_decoder = SealMeshDecoder(res.open())
     geometry = self.geometry_decoder.decode()
     model.add_geometry(geometry)
 
     sha = res.with_suffix(".sha")
     if sha.exists():
-      model.add_shaders(SealShaDecoder(sha).decode())
+      model.add_shaders(SealShaDecoder(sha.open()).decode())
 
     bone = res.with_suffix(".bn1")
     if bone.exists():
-      self.bone_decoder = SealBoneDecoder(bone)
+      self.bone_decoder = SealBoneDecoder(bone.open())
       skeleton = self.bone_decoder.decode()
       model.add_skeleton(skeleton)
 
     animation = res.with_suffix(".an1")
     if animation.exists():
-      self.animation_decoder = SealAnimationDecoder(animation)
+      self.animation_decoder = SealAnimationDecoder(animation.open())
       animations = self.animation_decoder.decode()
       for anim in animations:
         model.add_animation("default", anim)

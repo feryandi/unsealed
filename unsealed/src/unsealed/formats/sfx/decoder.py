@@ -1,25 +1,17 @@
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
-from ...utils.file import File, FileLike
+from ...utils.file import File
 
 
 class SealSfxDecoder:
-  def __init__(self, path: FileLike) -> None:
-    self.path: FileLike = path
-    self.file: Optional[File] = None
+  def __init__(self, file: File) -> None:
+    self.file: File = file
     self.unknown: Dict[str, Any] = {}
-    try:
-      self.file = File(path)
-    except Exception:
-      raise Exception("Unable to open sfx file")
 
   def decode(self) -> None:
     """
     Decodes the SFX file
     """
-    if self.file is None:
-      raise Exception("File was not initialized properly")
-
     self.unknown["header_68"] = self.file.read(68)
 
     entries = []

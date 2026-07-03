@@ -5,6 +5,7 @@ from typing import Pattern, Type
 
 from ..base import BaseFormat
 from ...assets.directory import Directory
+from ...vfs import Resource
 from ..mdt.decoder import SealMdtDecoder
 
 
@@ -17,8 +18,8 @@ class SealMdtFormat(BaseFormat[Directory]):
   def asset_type(self) -> Type[Directory]:
     return Directory
 
-  def decoder(self, path: Path) -> Directory:
-    decoder = SealMdtDecoder(path)
+  def decoder(self, res: Resource) -> Directory:
+    decoder = SealMdtDecoder(res.open())
     blobs = decoder.decode()
     return blobs
 

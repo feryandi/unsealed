@@ -1,20 +1,16 @@
 from ...assets.edt import Edt
-from ...utils.file import FileLike, _read_bytes
+from ...utils.file import File
 from .classify import detect_extension
 from .codec import decode
 
 
 class EdtDecoder:
-  def __init__(self, path: FileLike) -> None:
-    self.path: FileLike = path
-    try:
-      self.raw: bytes = _read_bytes(path)
-    except Exception:
-      raise Exception(f"Unable to open edt file: {path}")
+  def __init__(self, file: File) -> None:
+    self.file: File = file
 
   def decode(self) -> Edt:
     edt = Edt()
-    edt.value = decode(self.raw)
-    edt.name = self.path.stem
+    edt.value = decode(self.file.data)
+    edt.name = self.file.stem
     edt.extension = detect_extension(edt.value)
     return edt

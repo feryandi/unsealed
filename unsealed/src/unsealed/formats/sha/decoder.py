@@ -1,23 +1,13 @@
-from typing import Optional
-
 from ...assets.shader import Shaders, Shader
-from ...utils.file import File, FileLike
+from ...utils.file import File
 
 
 class SealShaDecoder:
-  def __init__(self, path: FileLike) -> None:
-    self.path: FileLike = path
-    self.file: Optional[File] = None
-    try:
-      self.file = File(path)
-    except Exception:
-      raise Exception("Unable to open sha file")
+  def __init__(self, file: File) -> None:
+    self.file: File = file
 
   def decode(self) -> Shaders:
     """Decode the SHA file into (material, shader) mappings."""
-    if self.file is None:
-      raise Exception("File was not initialized properly")
-
     shaders = Shaders()
     num_entries = self.file.read_int()
 
