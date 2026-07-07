@@ -67,7 +67,7 @@ Setelah terinstall, jalankan konverter sebagai module atau lewat script
 `unsealed` yang sudah terpasang:
 
 ```bash
-python -m unsealed.reader              # atau cukup:  unsealed
+python -m unsealed.reader              # atau cukup:  unsealed-reader
 python -m unsealed.reader -o output    # simpan hasil ke ./output, bukan di samping file input
 ```
 

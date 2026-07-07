@@ -22,7 +22,7 @@ def main() -> None:
     print(f"  pip install {' '.join(missing)}")
     sys.exit(1)
 
-  from .app import ViewerApp
+  from unsealed.viewer.app import ViewerApp
 
   app = ViewerApp(initial_file)
   app.run()

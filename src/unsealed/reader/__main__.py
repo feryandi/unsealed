@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 import traceback
 
-from .pipelines.main_pipeline import MainPipeline
+from unsealed.reader.pipelines.main_pipeline import MainPipeline
 
 
 def run() -> None:

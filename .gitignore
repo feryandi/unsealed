@@ -31,6 +31,9 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+# ...except the checked-in release build specs used by CI.
+!src/unsealed/reader/unsealed-reader.spec
+!src/unsealed/viewer/unsealed-viewer.spec
 
 # Installer logs
 pip-log.txt

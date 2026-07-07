@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unsealed"
-version = "0.4.1"
+version = "0.5.0"
 description = "Decode/encode Seal Online game files (CLI) with an optional interactive 3D/2D viewer."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -37,7 +37,7 @@ dev = [
 build = ["pyinstaller"]
 
 [project.scripts]
-unsealed = "unsealed.reader.__main__:run"
+unsealed-reader = "unsealed.reader.__main__:run"
 unsealed-viewer = "unsealed.viewer.__main__:main"
 
 [project.urls]
@@ -46,6 +46,9 @@ unsealed-viewer = "unsealed.viewer.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"unsealed.viewer.rendering" = ["glsl/*.glsl"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
