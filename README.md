@@ -29,7 +29,11 @@ Seal Online adalah game online yang sangat populer di Indonesia. Tetapi jika dib
 
 ## Instalasi
 
-Package Python berada di dalam subdirektori `unsealed/` pada repository ini.
+Satu package Python `unsealed` dengan dua subpackage:
+
+- `unsealed.reader` — decoder/encoder + CLI (`unsealed`).
+- `unsealed.viewer` — viewer 3D/2D interaktif (`unsealed-viewer`); dependensi GPU
+  bersifat opsional lewat extra `viewer`.
 
 ```bash
 # Clone repository
@@ -37,21 +41,21 @@ git clone https://github.com/feryandi/unsealed.git
 cd unsealed
 
 # Install CLI inti (disarankan editable install)
-pip install -e ./unsealed
+pip install -e .
 ```
 
-Untuk memakai viewer 3D interaktif, install juga dependensi opsional `viewer`
-(pygame, PyOpenGL, imgui-bundle, …):
+Untuk memakai viewer 3D interaktif (pygame, PyOpenGL, imgui-bundle, …), install
+dengan extra `viewer`:
 
 ```bash
-pip install -e "./unsealed[viewer]"
+pip install -e ".[viewer]"
 ```
 
 > Tips: disarankan menggunakan virtual environment.
 > ```bash
 > python -m venv venv
 > source venv/bin/activate     # Windows: venv\Scripts\activate
-> pip install -e "./unsealed[viewer]"
+> pip install -e ".[viewer]"
 > ```
 
 
@@ -63,8 +67,8 @@ Setelah terinstall, jalankan konverter sebagai module atau lewat script
 `unsealed` yang sudah terpasang:
 
 ```bash
-python -m unsealed              # atau cukup:  unsealed
-python -m unsealed -o output    # simpan hasil ke ./output, bukan di samping file input
+python -m unsealed.reader              # atau cukup:  unsealed
+python -m unsealed.reader -o output    # simpan hasil ke ./output, bukan di samping file input
 ```
 
 Tool akan menampilkan prompt interaktif. Masukkan path file game, lalu file

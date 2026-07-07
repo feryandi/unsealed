@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unsealed"
+version = "0.4.1"
+description = "Decode/encode Seal Online game files (CLI) with an optional interactive 3D/2D viewer."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "feryandi", email = "feryandi.n@gmail.com" }]
+classifiers = ["Programming Language :: Python :: 3"]
+
+dependencies = [
+  "numpy==2.4.1",
+  "scipy==1.17.0",
+  "pillow==12.1.0",
+  "pygltflib==1.16.5",
+]
+
+[project.optional-dependencies]
+viewer = [
+  "pygame",
+  "PyOpenGL",
+  "PyOpenGL_accelerate",
+  "imgui-bundle",
+  "texture2ddecoder",
+]
+dev = [
+  "pytest>=7.0",
+  "ruff==0.14.14",
+  "black",
+  "isort",
+  "mypy",
+  "autopep8==2.3.2",
+]
+build = ["pyinstaller"]
+
+[project.scripts]
+unsealed = "unsealed.reader.__main__:run"
+unsealed-viewer = "unsealed.viewer.__main__:main"
+
+[project.urls]
+"Homepage" = "https://github.com/feryandi/unsealed"
+"Bug Tracker" = "https://github.com/feryandi/unsealed/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

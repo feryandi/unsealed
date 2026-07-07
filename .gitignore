@@ -165,11 +165,13 @@ venv
 tests/
 viewer/node_modules
 
-unsealed/_old/
-unsealed/__pycache__
-unsealed/geometry/__pycache__
-unsealed/docs/assets/maps/
-unsealed/output/
-unsealed/tests/
+# local scratch / generated (tests/, venv, *.egg-info, __pycache__ covered above)
+docs/assets/maps/
+output/
+imgui.ini
 
 web/node_modules
+
+# Claude Code (local)
+.claude/
+CLAUDE.md
