@@ -23,7 +23,7 @@ Unduh binary siap-pakai dari halaman
 [Releases](https://github.com/feryandi/unsealed/releases) — tersedia untuk
 Windows, Linux, dan macOS, tanpa perlu memasang Python. Terdapat dua program:
 
-- **`unsealed-reader`** — decoder/konverter dengan command line (CLI). Jalankan, lalu masukkan path file game pada prompt untuk membukanya (hasil disimpan di tempat yang sama dengan file asal, atau gunakan `-o <dir>` untuk menyimpan di direktori lain).
+- **`unsealed-reader`** — decoder/konverter. Secara default membuka antarmuka grafis (GUI); cukup jalankan lalu buka file lewat sana. Untuk mode non-interaktif, gunakan `unsealed-reader decode <file> [<file> …]` yang langsung mengonversi satu atau beberapa file sekaligus (hasil disimpan di tempat yang sama dengan file asal, atau gunakan `-o <dir>` untuk menyimpan di direktori lain).
 - **`unsealed-viewer`** — viewer 3D/2D interaktif. Jalankan lalu buka file lewat tombol **Open File**, atau berikan path file sebagai argumen.
 
 Ingin menjalankan dari source code? Lihat bagian [Kontribusi](#kontribusi).

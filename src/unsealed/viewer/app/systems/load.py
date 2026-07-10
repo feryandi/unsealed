@@ -6,7 +6,7 @@ import tkinter as tk
 import traceback
 from pathlib import Path, PurePosixPath
 from tkinter import filedialog
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Callable, Dict, Optional
 
 import pygame
 
@@ -92,27 +92,77 @@ class LoadSystem:
             world.request_load(path)
 
     def open_spak(self, path: Path, world: "AppWorld") -> None:
-        """Mount a .spak and show its browser — instant, nothing decrypted yet."""
-        spak = world.spak
-        spak.error = None
+        """Mount a .spak synchronously (startup / scripting) and apply it.
+
+        The interactive path mounts on a worker thread instead
+        (world.open_spak_async) so key resolution can't freeze the UI.
+        """
+        from unsealed.reader.assets.spak import SpakPasswordError
+
+        self.reset_spak(world, path)
         try:
-            source = self._mount_spak(path)
+            result: object = self.mount(path)
+        except SpakPasswordError as e:
+            result = e
         except Exception as e:
             print(f"[viewer] spak error: {e}")
             traceback.print_exc()
-            self._active = None
-            spak.active = True
-            spak.archive_name = path.name
-            spak.entries = []
-            spak.error = str(e)
-            return
+            result = e
+        self.finish_spak(world, path, result)
 
-        self._active = source
+    def reset_spak(self, world: "AppWorld", path: Path) -> None:
+        """Clear prior browser/recovery state before a (re)mount."""
+        spak = world.spak
+        world._spak_path = path
+        spak.error = None
+        spak.needs_key = False
+        spak.alert = None
+        spak.recover_status = None
+
+    def mount(
+        self, path: Path, on_status: Optional[Callable[[str], None]] = None
+    ) -> SpakSource:
+        """Heavy step: open the archive (+siblings) and resolve their keys.
+
+        Safe on a worker thread — touches no viewer/GL state. `on_status`
+        reports progress (which archive is opening, dump scanning) so the
+        caller can keep the user informed instead of appearing to hang.
+        """
+        key = path.resolve()
+        source = self._sources.get(key)
+        if source is None:
+            source = SpakSource(path, on_status=on_status)
+            self._sources[key] = source
+        return source
+
+    def finish_spak(self, world: "AppWorld", path: Path, result: object) -> None:
+        """Main thread: apply a finished mount (a SpakSource, or its error)."""
+        from unsealed.reader.assets.spak import SpakPasswordError
+
+        spak = world.spak
         spak.active = True
         spak.archive_name = path.name
+        if isinstance(result, SpakPasswordError):
+            # Private-server archive whose key isn't known yet — offer recovery.
+            self._active = None
+            spak.entries = []
+            spak.needs_key = True
+            spak.install_dir = str(result.install_dir)
+            spak.error = (
+                "This looks like a private-server archive and its decryption "
+                "key isn't known yet."
+            )
+            return
+        if isinstance(result, Exception):
+            self._active = None
+            spak.entries = []
+            spak.error = str(result)
+            return
+
+        self._active = result  # SpakSource
         spak.entries = sorted(
             PurePosixPath(n)
-            for n in source.primary_names()
+            for n in result.primary_names()
             if PurePosixPath(n).suffix.lower() in _VIEWABLE_EXTS
         )
         spak.filter_text = ""
@@ -120,14 +170,6 @@ class LoadSystem:
     def active_spak_source(self) -> Optional[SpakSource]:
         """The mounted source for the currently-browsed .spak (or None)."""
         return self._active
-
-    def _mount_spak(self, path: Path) -> SpakSource:
-        key = path.resolve()
-        source = self._sources.get(key)
-        if source is None:
-            source = SpakSource(path)
-            self._sources[key] = source
-        return source
 
     def ask_model_file(self, world: "AppWorld") -> Optional[Path]:
         """Modal file picker filtered to model files (.ms1 / .act)."""

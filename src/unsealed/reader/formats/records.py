@@ -327,6 +327,20 @@ class SchemaRegistry:
     (unified view for tooling / tests)."""
     return {name: sch for (f, name), sch in self._schemas.items() if f == fmt}
 
+  def versions_for(self, fmt: str, name: str) -> Tuple[int, ...]:
+    """Sorted union of the versions this schema is dispatched under
+    (across its filename + type rules), or `()` if it's version-agnostic
+    (any version). Lets tooling show which client version a schema
+    targets."""
+    versions: set = set()
+    for f, _pat, vers, n in self._filename_rules:
+      if f == fmt and n == name:
+        versions.update(vers)
+    for f, _typ, vers, n in self._type_rules:
+      if f == fmt and n == name:
+        versions.update(vers)
+    return tuple(sorted(versions))
+
 
 # The single shared registry every format registers into and queries.
 REGISTRY = SchemaRegistry()

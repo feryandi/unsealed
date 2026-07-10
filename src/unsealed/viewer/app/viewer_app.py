@@ -53,7 +53,9 @@ class ViewerApp:
     world.imgui.init(self.WIDTH, self.HEIGHT)
 
     if self._initial_file is not None:
-      world.load(self._initial_file)
+      # Async so a startup .spak (slow key resolution) shows progress in
+      # the status bar instead of freezing before the first frame.
+      world.request_load(self._initial_file)
 
     world.window.running = True
     clock = pygame.time.Clock()
@@ -64,6 +66,8 @@ class ViewerApp:
       _time += dt
       world.process_events()
       world.poll_load()  # finalize a finished background load (GL on main thread)
+      world.poll_recover()  # finalize a finished .spak key recovery
+      world.poll_spak_mount()  # finalize a finished .spak mount
       world.update(dt)
 
       win = world.window
@@ -164,7 +168,9 @@ def _draw_spak_browser(world: AppWorld) -> None:
   if not keep_open:
     world.close_spak()
   if expanded:
-    if spak.error is not None:
+    if spak.needs_key:
+      _draw_spak_recovery(world, spak)
+    elif spak.error is not None:
       imgui.text_wrapped(f"Failed to open archive:\n{spak.error}")
     elif not spak.entries:
       imgui.text_wrapped("No viewable files in this archive.")
@@ -182,3 +188,40 @@ def _draw_spak_browser(world: AppWorld) -> None:
           world.open_spak_entry(rel)
       imgui.end_child()
   imgui.end()
+
+
+def _draw_spak_recovery(world: AppWorld, spak) -> None:
+  """Alert + actions for a private-server archive whose key is unknown."""
+  from imgui_bundle import imgui
+
+  imgui.text_wrapped(spak.error or "This archive needs a decryption key.")
+  imgui.spacing()
+
+  if spak.recover_busy:
+    imgui.text_wrapped(spak.recover_status or "Recovering…")
+    imgui.text_disabled("(scanning client memory — this can take a few seconds)")
+    return
+
+  if spak.alert:
+    # Highlighted problem (e.g. admin required, nothing found).
+    imgui.push_style_color(imgui.Col_.text.value, (1.0, 0.55, 0.25, 1.0))
+    imgui.text_wrapped(spak.alert)
+    imgui.pop_style_color()
+    imgui.spacing()
+
+  if imgui.button("Recover key now"):
+    world.recover_spak_key()
+  imgui.same_line()
+  if imgui.button("Retry"):
+    world.retry_spak()
+
+  imgui.spacing()
+  imgui.separator()
+  imgui.push_text_wrap_pos(0.0)
+  imgui.text_disabled(
+    "Recovery reads the game client's memory, which needs administrator "
+    "rights. If it reports that, close Unsealed and reopen it as "
+    "administrator (right-click the app → Run as administrator), then "
+    "open this archive again."
+  )
+  imgui.pop_text_wrap_pos()

@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import threading
 from pathlib import Path, PurePosixPath
-from typing import Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, NamedTuple, Optional, Tuple
 
 from ..assets.spak import SpakArchive
 
@@ -24,10 +24,24 @@ def _norm(name: str) -> str:
   return name.replace("\\", "/").lower()
 
 
+class SpakEntry(NamedTuple):
+  """One archive entry's browser metadata."""
+
+  name: str
+  size: int  # uncompressed bytes
+  mtime: Optional[tuple]  # zip date_time (Y, M, D, h, m, s), or None
+
+
 class SpakSource:
-  def __init__(self, spak_path: Path) -> None:
+  def __init__(
+    self, spak_path: Path, on_status: Optional[Callable[[str], None]] = None
+  ) -> None:
     self.path = spak_path
-    self.primary = SpakArchive(spak_path)
+    # Reported per archive so mounting a whole install (primary + every
+    # sibling .SPAK, each resolving its own key) shows progress.
+    self._on_status: Callable[[str], None] = on_status or (lambda _m: None)
+    self._on_status(f"Opening {spak_path.name}…")
+    self.primary = SpakArchive(spak_path, on_status=self._on_status)
     self.archives: List[SpakArchive] = [self.primary]
     self._open_siblings(spak_path)
 
@@ -52,7 +66,8 @@ class SpakSource:
       if sp.resolve() == primary:
         continue
       try:
-        self.archives.append(SpakArchive(sp))
+        self._on_status(f"Opening {sp.name}…")
+        self.archives.append(SpakArchive(sp, on_status=self._on_status))
       except Exception as e:
         print(f"[spak] skip sibling {sp.name}: {e}")
 
@@ -91,6 +106,17 @@ class SpakSource:
   def primary_names(self) -> List[str]:
     """Entry names of the opened archive only (for the file browser)."""
     return list(self._primary_names)
+
+  def primary_entries(self) -> List[SpakEntry]:
+    """Opened-archive entries with size + mtime (for the browser)."""
+    out: List[SpakEntry] = []
+    for name in self._primary_names:
+      info = self.primary.info(name)
+      if info is None:
+        out.append(SpakEntry(name, 0, None))
+      else:
+        out.append(SpakEntry(name, info.file_size, info.date_time))
+    return out
 
   def close(self) -> None:
     for arc in self.archives:

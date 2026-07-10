@@ -32,7 +32,7 @@ MANIFEST
 *.manifest
 *.spec
 # ...except the checked-in release build specs used by CI.
-!src/unsealed/reader/unsealed-reader.spec
+!src/unsealed/reader/unsealed-reader-gui.spec
 !src/unsealed/viewer/unsealed-viewer.spec
 
 # Installer logs
