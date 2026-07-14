@@ -15,6 +15,7 @@ import os
 from PyInstaller.utils.hooks import collect_all
 
 _SRC = os.path.abspath(os.path.join(SPECPATH, "..", ".."))  # -> src/
+_ICON = os.path.join(SPECPATH, "..", "icon.ico")  # src/unsealed/icon.ico
 
 datas = []
 binaries = []
@@ -32,6 +33,8 @@ for pkg in ("imgui_bundle", "OpenGL", "OpenGL_accelerate", "pygame"):
 # them.
 datas += [
     (os.path.join(SPECPATH, "rendering", "glsl"), "unsealed/viewer/rendering/glsl"),
+    # App icon, resolved at runtime via unsealed.resources.icon_path().
+    (_ICON, "unsealed"),
 ]
 
 a = Analysis(
@@ -68,4 +71,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=_ICON,
 )

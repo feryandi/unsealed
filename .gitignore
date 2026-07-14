@@ -175,6 +175,11 @@ imgui.ini
 
 web/node_modules
 
+# Vendored bkcrack executables are fetched at build time, not committed:
+#   python -m unsealed.reader.vendor.fetch
+# Keep the license + provenance (text); ignore the downloaded binaries.
+src/unsealed/reader/vendor/bkcrack/bkcrack-*
+
 # Claude Code (local)
 .claude/
 CLAUDE.md

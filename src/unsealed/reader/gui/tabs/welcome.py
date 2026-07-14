@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QPixmap
 from PySide6.QtWidgets import (
   QFrame,
   QHBoxLayout,
@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
   QWidget,
 )
 
+from ....resources import logo_path
 from ..fonts import MONO_FAMILIES, UI_FAMILIES
 from ..style import ACCENT
 
@@ -68,6 +69,10 @@ class WelcomeTab(QWidget):
     col.setContentsMargins(28, 28, 28, 28)
     col.setSpacing(0)
 
+    logo = self._build_logo()
+    if logo is not None:
+      col.addWidget(logo)
+      col.addSpacing(14)
     col.addWidget(self._build_wordmark())
     col.addSpacing(6)
     subtitle = QLabel("Decode Seal Online game files")
@@ -97,6 +102,22 @@ class WelcomeTab(QWidget):
     outer.addStretch(1)
     outer.addWidget(self._column, alignment=Qt.AlignmentFlag.AlignHCenter)
     outer.addStretch(1)
+
+  def _build_logo(self) -> QLabel | None:
+    """Logo above the wordmark; skipped if the asset is missing."""
+    pixmap = QPixmap(str(logo_path()))
+    if pixmap.isNull():
+      return None
+    label = QLabel()
+    label.setObjectName("welcomeLogo")
+    dpr = self.devicePixelRatioF()
+    scaled = pixmap.scaledToHeight(
+      round(88 * dpr),
+      Qt.TransformationMode.SmoothTransformation,
+    )
+    scaled.setDevicePixelRatio(dpr)
+    label.setPixmap(scaled)
+    return label
 
   def _build_wordmark(self) -> QLabel:
     label = QLabel(f'unsealed<span style="color:{ACCENT}">▌</span>')

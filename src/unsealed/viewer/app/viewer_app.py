@@ -22,6 +22,27 @@ class ViewerApp:
     self._world = AppWorld()
     self._initial_file = initial_file
 
+  def _set_window_icon(self) -> None:
+    """Set the taskbar/title-bar icon before the window is created.
+
+    pygame's SDL_image can't always decode `.ico`, so load it via Pillow
+    (a reader dependency the viewer can rely on) and hand pygame an RGBA
+    surface. Best-effort — a missing/undecodable icon must not stop the
+    viewer from opening.
+    """
+    from PIL import Image
+
+    from ...resources import icon_path, set_app_user_model_id
+
+    # Detach the taskbar button from python.exe (see resources.py).
+    set_app_user_model_id("Unsealed.Viewer")
+    try:
+      img = Image.open(icon_path()).convert("RGBA")
+      surface = pygame.image.fromstring(img.tobytes(), img.size, "RGBA")
+      pygame.display.set_icon(surface)
+    except Exception:
+      pass
+
   def run(self) -> None:
     pygame.init()
     pygame.font.init()
@@ -34,6 +55,8 @@ class ViewerApp:
     pygame.display.gl_set_attribute(pygame.GL_DEPTH_SIZE, 24)
     pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLEBUFFERS, 1)
     pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLESAMPLES, 4)
+
+    self._set_window_icon()
 
     pygame.display.set_mode(
       (self.WIDTH, self.HEIGHT),
@@ -66,7 +89,6 @@ class ViewerApp:
       _time += dt
       world.process_events()
       world.poll_load()  # finalize a finished background load (GL on main thread)
-      world.poll_recover()  # finalize a finished .spak key recovery
       world.poll_spak_mount()  # finalize a finished .spak mount
       world.update(dt)
 
@@ -102,6 +124,8 @@ class ViewerApp:
         _draw_welcome(world)
       if world.spak.active:
         _draw_spak_browser(world)
+      if world.status.loading and world.spak.progress is not None:
+        _draw_spak_progress(world)
       _draw_status_bar(world)
       world.imgui.render()
 
@@ -191,37 +215,42 @@ def _draw_spak_browser(world: AppWorld) -> None:
 
 
 def _draw_spak_recovery(world: AppWorld, spak) -> None:
-  """Alert + actions for a private-server archive whose key is unknown."""
+  """Message + retry for a private-server archive whose key wasn't cracked."""
   from imgui_bundle import imgui
 
   imgui.text_wrapped(spak.error or "This archive needs a decryption key.")
   imgui.spacing()
-
-  if spak.recover_busy:
-    imgui.text_wrapped(spak.recover_status or "Recovering…")
-    imgui.text_disabled("(scanning client memory — this can take a few seconds)")
-    return
-
-  if spak.alert:
-    # Highlighted problem (e.g. admin required, nothing found).
-    imgui.push_style_color(imgui.Col_.text.value, (1.0, 0.55, 0.25, 1.0))
-    imgui.text_wrapped(spak.alert)
-    imgui.pop_style_color()
-    imgui.spacing()
-
-  if imgui.button("Recover key now"):
-    world.recover_spak_key()
-  imgui.same_line()
   if imgui.button("Retry"):
     world.retry_spak()
-
   imgui.spacing()
   imgui.separator()
   imgui.push_text_wrap_pos(0.0)
   imgui.text_disabled(
-    "Recovery reads the game client's memory, which needs administrator "
-    "rights. If it reports that, close Unsealed and reopen it as "
-    "administrator (right-click the app → Run as administrator), then "
-    "open this archive again."
+    "The key is recovered automatically with a known-plaintext attack, but "
+    "no embedded plaintext anchor matched this archive. Opening another "
+    "archive from the same server may succeed — the key is shared, so once "
+    "any one is cracked they all open automatically."
   )
   imgui.pop_text_wrap_pos()
+
+
+def _draw_spak_progress(world: AppWorld) -> None:
+  """Centered progress bar while a private-server key is being cracked."""
+  from imgui_bundle import imgui
+
+  spak = world.spak
+  w, h = world.window.width, world.window.height
+  imgui.set_next_window_pos((w * 0.5, h * 0.5), imgui.Cond_.always.value, (0.5, 0.5))
+  imgui.set_next_window_size((360, 0))
+  flags = (
+    imgui.WindowFlags_.no_resize.value
+    | imgui.WindowFlags_.no_move.value
+    | imgui.WindowFlags_.no_collapse.value
+    | imgui.WindowFlags_.no_saved_settings.value
+  )
+  imgui.begin("Recovering key", None, flags)
+  imgui.text_wrapped(spak.recover_status or "Recovering key…")
+  imgui.spacing()
+  frac = max(0.0, min(1.0, spak.progress or 0.0))
+  imgui.progress_bar(frac, (-1.0, 0.0), f"{frac * 100:.0f}%")
+  imgui.end()

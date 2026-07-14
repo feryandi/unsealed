@@ -35,6 +35,22 @@ class ZipDecryptor:
     for byte in password:
       self._update(byte)
 
+  @classmethod
+  def from_keys(cls, k0: int, k1: int, k2: int) -> "ZipDecryptor":
+    """Build a decryptor from the three internal keys directly.
+
+    The password derives these three 32-bit keys once (see
+    ``__init__``); a known-plaintext attack (bkcrack) recovers the same
+    keys without the password, which private servers make too long to
+    brute-force. Decryption only reads the keys, so this suffices --
+    the recovered keys, like the password, decrypt every entry.
+    """
+    self = cls.__new__(cls)
+    self._k0 = k0 & 0xFFFFFFFF
+    self._k1 = k1 & 0xFFFFFFFF
+    self._k2 = k2 & 0xFFFFFFFF
+    return self
+
   def _update(self, ch: int) -> None:
     self._k0 = (self._k0 >> 8) ^ self._CRC32_TABLE[(self._k0 ^ ch) & 0xFF]
     self._k1 = (self._k1 + (self._k0 & 0xFF)) & 0xFFFFFFFF

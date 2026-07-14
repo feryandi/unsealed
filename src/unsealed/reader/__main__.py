@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 import traceback
 
-from unsealed.reader.commands import recover_key
 from unsealed.reader.pipelines.main_pipeline import MainPipeline
 
 
@@ -12,8 +11,8 @@ def _reattach_parent_console() -> None:
   """Make CLI output visible from a frozen windowed build.
 
   The GUI bundle is built windowless (no console) for a clean desktop
-  app, but the same exe also runs the `decode`/`recover-key` subcommands
-  — whose output would otherwise vanish. When invoked WITH arguments
+  app, but the same exe also runs the `decode` subcommand — whose output
+  would otherwise vanish. When invoked WITH arguments
   (i.e. a subcommand) from a terminal, reattach to that parent console
   and rebind stdout/stderr so the output shows. A no-arg launch (the
   GUI) stays windowless. No-op unless this is a frozen Windows build.
@@ -59,7 +58,7 @@ def run_decode(paths: list[str], output_dir: Path | None) -> int:
 
 
 def run() -> None:
-  """Entry point: GUI by default, else a decode/recover-key command."""
+  """Entry point: GUI by default, else the decode command."""
   _reattach_parent_console()
 
   parser = argparse.ArgumentParser(
@@ -98,18 +97,7 @@ def run() -> None:
     help="output directory (default: each input file's directory)",
   )
 
-  recover = sub.add_parser(
-    "recover-key",
-    help="Recover a private-server .spak decryption key from client memory",
-    description=recover_key.__doc__,
-    formatter_class=argparse.RawDescriptionHelpFormatter,
-  )
-  recover_key.add_arguments(recover)
-
   args = parser.parse_args()
-
-  if args.command == "recover-key":
-    raise SystemExit(recover_key.run(args))
 
   output_dir = _resolve_output_dir(getattr(args, "output", None), os.getcwd())
 

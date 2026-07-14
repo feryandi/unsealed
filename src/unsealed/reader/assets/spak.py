@@ -27,12 +27,13 @@ comment, so the password is obtained deterministically.
 Some private servers repack the archives with a **fixed** password and
 an empty comment (no version to derive from). Those keys can't be
 computed. They are not hardcoded here: fallback keys come from the
-local key store (``spak_keystore``, populated by the recovery tool),
-and if none work the reader attempts a safe, scan-only auto-recovery
-from an existing client dump (``utils.spak_recover``). The right key --
-derived, stored, or recovered -- is picked by trial: each candidate is
-verified by decrypting the smallest entry and checking its CRC, so
-official and private archives both load with no key in source.
+local key store (``spak_keystore``), and if none work the reader runs a
+cross-platform known-plaintext attack on the archive itself
+(``utils.spak_plaintext`` + the bundled ``bkcrack``), caching the
+recovered keys back to the store. The right key -- derived, stored, or
+cracked -- is picked by trial: each candidate is verified by decrypting
+the smallest entry and checking its CRC, so official and private
+archives both load with no key in source.
 """
 
 import re
@@ -40,16 +41,21 @@ import struct
 import zipfile
 import zlib
 from pathlib import Path
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Tuple, Union
 
 from ..utils.zipcrypto import ZipDecryptor
 
+# Key material that decrypts an archive: a password, or the three
+# recovered internal keys when the password is unknown (see
+# ZipDecryptor.from_keys and the known-plaintext recovery).
+KeyMaterial = Union[bytes, Tuple[int, int, int]]
+
 
 class SpakPasswordError(Exception):
-  """An archive is encrypted but no known/derivable key decrypts it.
+  """Encrypted, but no known/derivable/crackable key decrypts it.
 
-  Carries the install dir (archive's grandparent) so callers can offer
-  key recovery for that private server.
+  Carries the install dir (archive's grandparent) as context for the
+  private server whose key couldn't be recovered.
   """
 
   def __init__(self, message: str, archive_path: Path) -> None:
@@ -99,27 +105,35 @@ class SpakArchive:
     return SpakArchive.spak_password(int(m.group(1))) if m else None
 
   def __init__(
-    self, path: Path, on_status: Optional[Callable[[str], None]] = None
+    self,
+    path: Path,
+    on_status: Optional[Callable[[str], None]] = None,
+    on_progress: Optional[Callable[[float, str], None]] = None,
   ) -> None:
     self.path = path
-    # Progress callback for the (potentially slow) key resolution, so a
+    # Progress callbacks for the (potentially slow) key resolution, so a
     # UI can say what it's doing instead of appearing to hang.
+    # ``on_status`` is a short line of text; ``on_progress(fraction,
+    # label)`` drives a determinate bar while bkcrack cracks the key.
     self._on_status: Callable[[str], None] = on_status or (lambda _m: None)
+    self._on_progress: Callable[[float, str], None] = on_progress or (
+      lambda _f, _l: None
+    )
     self._zf = zipfile.ZipFile(path, "r")
     self._fp = open(path, "rb")
     self.infos: List[zipfile.ZipInfo] = [
       i for i in self._zf.infolist() if not i.is_dir()
     ]
     self._by_name = {self._normalize(i.filename): i for i in self.infos}
-    self.password = self._resolve_key()
+    self.key = self._resolve_key()
 
-  def _resolve_key(self) -> Optional[bytes]:
+  def _resolve_key(self) -> Optional[KeyMaterial]:
     """Pick the archive password, verifying candidates by trial.
 
     ``None`` for plain (unencrypted) archives. Tries the comment-derived
-    key, then the stored fallback keys, then (unless disabled) a
-    scan-only auto-recovery from an existing client dump -- taking the
-    one that decrypts the smallest entry to its CRC. Raises if none do.
+    key, then the stored fallback keys, then a known-plaintext crack of
+    this archive -- taking the one that decrypts the smallest entry to
+    its CRC. Raises if none do.
     """
     if not any(i.flag_bits & 0x1 for i in self.infos):
       return None
@@ -127,57 +141,61 @@ class SpakArchive:
     from . import spak_keystore
 
     sample = min(self.infos, key=lambda i: i.compress_size)
-    candidates: List[bytes] = []
+    candidates: List[KeyMaterial] = []
     derived = self.comment_password(self._zf.comment)
     if derived is not None:
       candidates.append(derived)
     candidates.extend(spak_keystore.load_keys())
+    candidates.extend(spak_keystore.load_key_triples())
 
-    for pw in candidates:
-      if self._password_ok(pw, sample):
-        return pw
+    for key in candidates:
+      if self._key_ok(key, sample):
+        return key
 
-    recovered = self._auto_recover(sample)
+    recovered = self._crack_key(sample)
     if recovered is not None:
       return recovered
 
     raise SpakPasswordError(
       f"{Path(self.path).name!r} is encrypted but no known key decrypts it "
-      f"(comment={self._zf.comment[:40]!r}). Recover the private-server key "
-      f"with 'unsealed-reader recover-key', then it will load automatically.",
+      f"(comment={self._zf.comment[:40]!r}), and its files matched no embedded "
+      "plaintext anchor, so its key couldn't be recovered automatically.",
       Path(self.path),
     )
 
-  def _auto_recover(self, sample: zipfile.ZipInfo) -> Optional[bytes]:
-    """Scan an existing client memory dump near the install for the key.
+  def _crack_key(self, sample: zipfile.ZipInfo) -> Optional[KeyMaterial]:
+    """Recover a private-server key via the embedded plaintext attack.
 
-    Safe and non-interactive: only reads existing dumps, never launches
-    a process. CRC-gated by this archive, so an unrelated dump yields
-    nothing. A hit is saved to the key store so it loads without a scan
-    next time. Disable with ``UNSEALED_SPAK_NO_AUTORECOVER=1``.
+    Cross-platform and offline: matches an embedded plaintext snippet to
+    one of this archive's entries and hands it to the bundled bkcrack
+    (see ``utils.spak_plaintext``). CRC-gated by this archive. A hit is
+    cached to the key store so it -- and every sibling archive of the
+    same server -- loads without cracking again. ``None`` when no anchor
+    matches or bkcrack isn't available.
     """
-    import os
+    from . import spak_keystore
 
-    if os.environ.get("UNSEALED_SPAK_NO_AUTORECOVER"):
-      return None
-    install = Path(self.path).resolve().parent.parent
     try:
-      from . import spak_keystore
-      from ..utils import spak_recover
+      from ..utils import spak_plaintext
     except Exception:
       return None
 
-    def verify(pw: bytes) -> bool:
-      return self._password_ok(pw, sample)
-
-    found = spak_recover.recover_from_existing_dumps(
-      verify, install, on_status=self._on_status
-    )
-    if found is None:
+    try:
+      keys = spak_plaintext.crack(
+        self.infos,
+        self._read_stored,
+        lambda k: self._key_ok(k, sample),
+        on_status=self._on_status,
+        on_progress=self._on_progress,
+      )
+    except spak_plaintext.BkcrackUnavailable as e:
+      self._on_status(f"Automatic key recovery unavailable: {e}")
       return None
-    key, _dump = found
-    spak_keystore.save_key(key, label=install.name)
-    return key
+    if keys is None:
+      return None
+    install = Path(self.path).resolve().parent.parent
+    spak_keystore.save_key_triple(keys, label=install.name)
+    return keys
 
   def _read_stored(self, info: zipfile.ZipInfo) -> bytes:
     """Raw stored bytes of an entry (still encrypted/compressed)."""
@@ -189,21 +207,28 @@ class SpakArchive:
     self._fp.seek(info.header_offset + lh.size + header[9] + header[10])
     return self._fp.read(info.compress_size)
 
-  def _password_ok(self, password: bytes, info: zipfile.ZipInfo) -> bool:
-    """True if ``password`` decrypts ``info`` to its recorded CRC."""
+  def _key_ok(self, key: KeyMaterial, info: zipfile.ZipInfo) -> bool:
+    """True if ``key`` decrypts ``info`` to its recorded CRC."""
     try:
-      out = self._inflate(self._read_stored(info), info, password)
+      out = self._inflate(self._read_stored(info), info, key)
     except Exception:
       return False
     return (zlib.crc32(out) & 0xFFFFFFFF) == info.CRC
 
   @staticmethod
-  def _inflate(raw: bytes, info: zipfile.ZipInfo, password: Optional[bytes]) -> bytes:
+  def _make_decryptor(key: KeyMaterial) -> ZipDecryptor:
+    """A ZipCrypto decryptor from a password (bytes) or a key triple."""
+    if isinstance(key, (bytes, bytearray)):
+      return ZipDecryptor(bytes(key))
+    return ZipDecryptor.from_keys(*key)
+
+  @staticmethod
+  def _inflate(raw: bytes, info: zipfile.ZipInfo, key: Optional[KeyMaterial]) -> bytes:
     """Decrypt (if keyed) and decompress raw stored bytes."""
     if info.flag_bits & 0x1:  # encrypted -> 12-byte header precedes the data
-      if password is None:
+      if key is None:
         raise Exception(f"{info.filename!r} is encrypted but no key was found")
-      raw = ZipDecryptor(password).decrypt(raw)[12:]
+      raw = SpakArchive._make_decryptor(key).decrypt(raw)[12:]
     if info.compress_type == zipfile.ZIP_DEFLATED:
       return zlib.decompress(raw, -15)
     if info.compress_type == zipfile.ZIP_STORED:
@@ -230,7 +255,7 @@ class SpakArchive:
     info = entry if isinstance(entry, zipfile.ZipInfo) else self.info(entry)
     if info is None:
       raise KeyError(f"{entry!r} not found in {self.path.name!r}")
-    return self._inflate(self._read_stored(info), info, self.password)
+    return self._inflate(self._read_stored(info), info, self.key)
 
   def close(self) -> None:
     self._fp.close()

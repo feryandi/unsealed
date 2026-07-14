@@ -1,8 +1,8 @@
 name: Build & Release
 
-# Build the standalone Windows executables and attach them to a GitHub Release.
-# Windows-only: the tooling targets the Windows game client (e.g. the .spak key
-# recovery dumps the running client's memory), so Linux/macOS builds can't work.
+# Build the standalone executables and attach them to a GitHub Release.
+# Cross-platform: .spak key recovery is now a bundled known-plaintext attack
+# (no client memory dump), so Windows, macOS, and Linux builds all work.
 # Triggers:
 #   * pushing a version tag like `v0.4.1` -> builds + publishes a Release
 #   * manual "Run workflow" -> builds + uploads artifacts only (no Release)
@@ -26,6 +26,12 @@ jobs:
           - os: windows-latest
             suffix: windows-x64
             ext: ".exe"
+          - os: macos-latest
+            suffix: macos-arm64
+            ext: ""
+          - os: ubuntu-latest
+            suffix: linux-x64
+            ext: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -39,9 +45,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[gui,viewer,build]"
 
+      # bkcrack binaries are fetched (checksum-pinned) at build time, not
+      # committed to git; the reader spec bundles this host's build.
+      - name: Fetch vendored bkcrack (host build)
+        run: python -m unsealed.reader.vendor.fetch
+
       # The reader ships as a single GUI bundle built from the full
       # __main__.py entry, so the one exe launches the GUI by default and also
-      # runs the decode/recover-key subcommands (no separate headless build).
+      # runs the decode subcommand (no separate headless build).
       - name: Build unsealed-reader-gui
         run: pyinstaller --noconfirm --clean src/unsealed/reader/unsealed-reader-gui.spec
 

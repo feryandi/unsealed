@@ -17,7 +17,12 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List
+from typing import List, Tuple
+
+# A recovered ZipCrypto key: either a password (bytes) or, when only the
+# internal keys are known (known-plaintext attack -- the password is too
+# long to brute-force), the three 32-bit keys.
+KeyTriple = Tuple[int, int, int]
 
 _HEADER = "# Unsealed recovered .spak keys (one per line). Local only; do not commit.\n"
 
@@ -43,13 +48,34 @@ def load_keys() -> List[bytes]:
   if path.is_file():
     for line in path.read_text(encoding="utf-8").splitlines():
       line = line.split("#", 1)[0].strip()  # allow "key  # label"
-      if line:
+      if line and not line.startswith("keys:"):  # 'keys:' = a key triple
         raw.append(line.encode())
   seen, out = set(), []
   for k in raw:
     if k and k not in seen:
       seen.add(k)
       out.append(k)
+  return out
+
+
+def load_key_triples() -> List[KeyTriple]:
+  """Recovered key triples (``keys:k0,k1,k2`` lines), de-duped."""
+  out: List[KeyTriple] = []
+  seen = set()
+  path = store_path()
+  if path.is_file():
+    for line in path.read_text(encoding="utf-8").splitlines():
+      line = line.split("#", 1)[0].strip()
+      if not line.startswith("keys:"):
+        continue
+      try:
+        k0, k1, k2 = (int(x, 16) for x in line[len("keys:") :].split(","))
+      except ValueError:
+        continue
+      triple = (k0, k1, k2)
+      if triple not in seen:
+        seen.add(triple)
+        out.append(triple)
   return out
 
 
@@ -61,6 +87,24 @@ def save_key(key: bytes, label: str = "") -> Path:
   path.parent.mkdir(parents=True, exist_ok=True)
   new_file = not path.exists() or path.stat().st_size == 0
   line = key.decode("latin1")
+  if label:
+    line = f"{line}  # {label}"
+  with path.open("a", encoding="utf-8") as f:
+    if new_file:
+      f.write(_HEADER)
+    f.write(line + "\n")
+  return path
+
+
+def save_key_triple(keys: KeyTriple, label: str = "") -> Path:
+  """Append recovered internal keys (no-op if present); returns path."""
+  path = store_path()
+  if tuple(keys) in set(load_key_triples()):
+    return path
+  path.parent.mkdir(parents=True, exist_ok=True)
+  new_file = not path.exists() or path.stat().st_size == 0
+  k0, k1, k2 = keys
+  line = f"keys:{k0:08x},{k1:08x},{k2:08x}"
   if label:
     line = f"{line}  # {label}"
   with path.open("a", encoding="utf-8") as f:

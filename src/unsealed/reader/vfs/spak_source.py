@@ -34,14 +34,22 @@ class SpakEntry(NamedTuple):
 
 class SpakSource:
   def __init__(
-    self, spak_path: Path, on_status: Optional[Callable[[str], None]] = None
+    self,
+    spak_path: Path,
+    on_status: Optional[Callable[[str], None]] = None,
+    on_progress: Optional[Callable[[float, str], None]] = None,
   ) -> None:
     self.path = spak_path
     # Reported per archive so mounting a whole install (primary + every
     # sibling .SPAK, each resolving its own key) shows progress.
+    # ``on_progress`` drives a determinate bar while the primary's key
+    # is cracked; siblings then reuse the cached key with no bar.
     self._on_status: Callable[[str], None] = on_status or (lambda _m: None)
+    self._on_progress = on_progress
     self._on_status(f"Opening {spak_path.name}…")
-    self.primary = SpakArchive(spak_path, on_status=self._on_status)
+    self.primary = SpakArchive(
+      spak_path, on_status=self._on_status, on_progress=on_progress
+    )
     self.archives: List[SpakArchive] = [self.primary]
     self._open_siblings(spak_path)
 

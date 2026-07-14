@@ -116,22 +116,26 @@ class LoadSystem:
         world._spak_path = path
         spak.error = None
         spak.needs_key = False
-        spak.alert = None
         spak.recover_status = None
+        spak.progress = None
 
     def mount(
-        self, path: Path, on_status: Optional[Callable[[str], None]] = None
+        self,
+        path: Path,
+        on_status: Optional[Callable[[str], None]] = None,
+        on_progress: Optional[Callable[[float, str], None]] = None,
     ) -> SpakSource:
         """Heavy step: open the archive (+siblings) and resolve their keys.
 
         Safe on a worker thread — touches no viewer/GL state. `on_status`
-        reports progress (which archive is opening, dump scanning) so the
-        caller can keep the user informed instead of appearing to hang.
+        reports which archive is opening; `on_progress(fraction, label)`
+        drives a determinate bar while a private-server key is cracked, so
+        the caller can keep the user informed instead of appearing to hang.
         """
         key = path.resolve()
         source = self._sources.get(key)
         if source is None:
-            source = SpakSource(path, on_status=on_status)
+            source = SpakSource(path, on_status=on_status, on_progress=on_progress)
             self._sources[key] = source
         return source
 
@@ -143,14 +147,15 @@ class LoadSystem:
         spak.active = True
         spak.archive_name = path.name
         if isinstance(result, SpakPasswordError):
-            # Private-server archive whose key isn't known yet — offer recovery.
+            # Private-server archive whose key couldn't be cracked from the
+            # embedded plaintext anchors — surface it gracefully.
             self._active = None
             spak.entries = []
             spak.needs_key = True
-            spak.install_dir = str(result.install_dir)
             spak.error = (
-                "This looks like a private-server archive and its decryption "
-                "key isn't known yet."
+                "This looks like a private-server archive and its key couldn't "
+                "be recovered automatically. Try opening another archive from "
+                "the same server — the key is shared."
             )
             return
         if isinstance(result, Exception):

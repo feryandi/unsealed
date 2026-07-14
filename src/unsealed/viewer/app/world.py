@@ -47,15 +47,11 @@ class AppWorld:
         self._bg_result: Optional[Tuple["ViewerContext", Path]] = None
         self._bg_error: Optional[Exception] = None
 
-        # .spak key recovery plumbing (separate from the load worker so the
-        # user can keep interacting while the client is dumped + scanned).
-        self._spak_path: Optional[Path] = None
-        self._recover_thread: Optional[threading.Thread] = None
-        self._recover_result: Any = None  # bytes key, Exception, or None
-
         # .spak mount worker: opening an archive resolves keys for it and
-        # every sibling (and may scan a client dump), which is too slow to
-        # run inline — it froze the UI. Runs off-thread with status updates.
+        # every sibling (cracking a private-server key can take ~10s), which
+        # is too slow to run inline — it froze the UI. Runs off-thread with
+        # status + progress updates.
+        self._spak_path: Optional[Path] = None
         self._spak_thread: Optional[threading.Thread] = None
         self._spak_mount_result: Any = None  # SpakSource or Exception
 
@@ -256,75 +252,10 @@ class AppWorld:
     # ── .spak key recovery ──────────────────────────────────────────────────────
 
     def retry_spak(self) -> None:
-        """Re-mount the current .spak (picks up a newly recovered key)."""
+        """Re-mount the current .spak (e.g. after opening a sibling that
+        cracked the shared key)."""
         if self._spak_path is not None:
             self.open_spak_async(self._spak_path)
-
-    def recover_spak_key(self) -> None:
-        """Recover the private-server key for the current .spak in the background.
-
-        Scans any existing client memory dump; if none and the client isn't
-        elevated, surfaces an admin-privilege alert instead of failing silently.
-        """
-        if self._recover_thread is not None or self._spak_path is None:
-            return
-        spak = self.spak
-        spak.recover_busy = True
-        spak.alert = None
-        spak.recover_status = "Starting recovery…"
-        self._recover_result = None
-        self._recover_thread = threading.Thread(
-            target=self._run_recover, args=(self._spak_path,), daemon=True
-        )
-        self._recover_thread.start()
-
-    def _run_recover(self, spak_path: Path) -> None:
-        from unsealed.reader.utils import spak_recover
-
-        try:
-            install = Path(spak_path).resolve().parent.parent
-            verify = spak_recover.make_verifier(spak_path)
-            self._recover_result = spak_recover.recover_key(
-                install,
-                verify,
-                on_status=lambda m: setattr(self.spak, "recover_status", m),
-            )
-        except Exception as e:  # RecoveryNeedsAdmin or any failure
-            self._recover_result = e
-            traceback.print_exc()
-
-    def poll_recover(self) -> None:
-        """Finalize a finished key-recovery on the main thread."""
-        if self._recover_thread is None or self._recover_thread.is_alive():
-            return
-        self._recover_thread = None
-        result = self._recover_result
-        self._recover_result = None
-        self.spak.recover_busy = False
-        self.spak.recover_status = None
-
-        if isinstance(result, (bytes, bytearray)):
-            from unsealed.reader.assets import spak_keystore
-
-            install = Path(self._spak_path).resolve().parent.parent
-            spak_keystore.save_key(bytes(result), label=install.name)
-            self.retry_spak()  # now decrypts; browser repopulates
-        elif isinstance(result, Exception):
-            from unsealed.reader.utils.spak_recover import RecoveryNeedsAdmin
-
-            if isinstance(result, RecoveryNeedsAdmin):
-                self.spak.alert = (
-                    "Recovering this key needs administrator rights. Close "
-                    "Unsealed and reopen it as administrator (right-click the "
-                    "app → Run as administrator), then open this archive again."
-                )
-            else:
-                self.spak.alert = str(result)
-        else:  # None -> nothing found and nothing to launch
-            self.spak.alert = (
-                "No key found. Launch the game client to its login screen so "
-                "it unpacks in memory, then click Retry."
-            )
 
     # ── background loading ──────────────────────────────────────────────────────
 
@@ -348,8 +279,8 @@ class AppWorld:
         """Mount a .spak on a worker thread, reporting progress on the status bar.
 
         Resolving the archive's key (deriving it, trying stored keys, or
-        scanning an existing client memory dump) can take a while; doing it
-        inline froze the whole viewer.
+        cracking a private-server key with the bundled known-plaintext
+        attack) can take a while; doing it inline froze the whole viewer.
         """
         if self.status.loading or self._spak_thread is not None:
             return
@@ -369,8 +300,12 @@ class AppWorld:
         def on_status(msg: str) -> None:
             self.status.message = msg
 
+        def on_progress(fraction: float, label: str) -> None:
+            self.spak.progress = fraction
+            self.spak.recover_status = label
+
         try:
-            self._spak_mount_result = self._load_sys.mount(path, on_status)
+            self._spak_mount_result = self._load_sys.mount(path, on_status, on_progress)
         except SpakPasswordError as e:
             self._spak_mount_result = e  # expected outcome, not a crash
         except Exception as e:
@@ -385,6 +320,8 @@ class AppWorld:
         result = self._spak_mount_result
         self._spak_mount_result = None
         self.status.loading = False
+        self.spak.progress = None
+        self.spak.recover_status = None
         path = self._spak_path
         if path is None:
             return

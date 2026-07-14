@@ -24,7 +24,7 @@ def run_gui(output_dir: Path | None = None) -> int:
     if getattr(sys, "frozen", False):
       # A frozen build can't pip-install; the GUI ships as its own zip.
       print("This build has no GUI. Use the separate 'unsealed-reader-gui'")
-      print("download, or run a 'decode' / 'recover-key' command here.")
+      print("download, or run a 'decode' command here.")
     else:
       print("The GUI requires PySide6. Install it with:")
       print('  pip install -e ".[gui]"')
