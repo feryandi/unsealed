@@ -70,9 +70,18 @@ jobs:
       # The GUI is a onedir bundle (Qt shipped as external DLLs for LGPL), so
       # zip the whole dist/unsealed-reader-gui folder into one release asset.
       - name: Stage GUI bundle (zip)
-        shell: pwsh
+        shell: bash
         run: |
-          Compress-Archive -Path dist/unsealed-reader-gui -DestinationPath "out/unsealed-reader-gui-${{ matrix.suffix }}.zip" -Force
+          mkdir -p out
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            # Windows uses PowerShell to zip cleanly
+            powershell -Command "Compress-Archive -Path dist/unsealed-reader-gui -DestinationPath 'out/unsealed-reader-gui-${{ matrix.suffix }}.zip' -Force"
+          else
+            # macOS and Linux use native zip to properly preserve symlinks
+            cd dist
+            zip -r ../out/unsealed-reader-gui-${{ matrix.suffix }}.zip unsealed-reader-gui
+            cd ..
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
