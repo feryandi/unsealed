@@ -1,16 +1,22 @@
-"""ItemFile (`Seal Online ItemFile`) schemas -- two on-disk layouts.
+"""ItemFile (`Seal Online ItemFile`) schemas -- three on-disk layouts.
 
 v4 (`ITEM_V4_SCHEMA`): fixed 176-byte block with a null-terminated name
 at its start (numeric fields fill the rest and are dropped) + a
 null-terminated `description`. Walks exactly `count` records; `id` is the
 row index (record 0 is a placeholder named "a").
 
-v10 (`ITEM_V10_SCHEMA`): `int32 id` + length-prefixed `name` + 82 stat
-fields (int32/float, mapped below) + length-prefixed `description`. The
-header `count` is the GLOBAL item total across all id bands, while this
-file only holds the leading band, so records are walked to EOF
-(`until_eof=True`) and the header count is kept as `declared_count`.
+v10 / v12 (`ITEM_V10_SCHEMA`, `ITEM_V12_SCHEMA`): `int32 id` +
+length-prefixed `name` + stat fields (int32/float, mapped below) +
+length-prefixed `description`. The two are the SAME layout -- identical
+stat names at identical indices -- and differ only in how many stats
+follow (82 vs 84), so they share one map and one builder.
+
+v10/v12 are also the layout of the headerless `.ed<n>` bands: the same
+records with no file header, which the band reads by resolving this
+schema off its companion `item.edt` master (see `formats/edt/band.py`).
 """
+
+from typing import Tuple
 
 from .base import Column, Cstr, RecordSchema, F32, I32, Pstr, Str, register_schema
 
@@ -32,9 +38,11 @@ register_schema(
   versions=(4,),
 )
 
-# --- v10 ------------------------------------------------------------------
+# --- v10 / v12 ------------------------------------------------------------
 
-_V10_STAT_MAP = {
+# Stat index -> name. Shared: v12 is v10 plus two more (still
+# unidentified) stats at the end.
+_STAT_MAP = {
   0: "item_type",  # 7=dagger 9=mace 17=helmet 16=suit 19/20=shoes 1=potion 3=misc
   1: "min_level",
   3: "min_fame",
@@ -74,24 +82,48 @@ _V10_STAT_MAP = {
   71: "icon_id",
 }
 # Per-refine stat increments are float-encoded.
-_V10_FLOATS = frozenset({57, 59, 61, 63, 65, 67})
+_STAT_FLOATS = frozenset({57, 59, 61, 63, 65, 67})
 
-_V10_STATS = tuple(
-  Column(_V10_STAT_MAP.get(i, f"stat_{i}"), F32 if i in _V10_FLOATS else I32)
-  for i in range(82)
-)
 
-ITEM_V10_SCHEMA = RecordSchema(
-  name="item_v10",
-  until_eof=True,  # header count is a GLOBAL total; walk the leading band to EOF
-  columns=(Column("id", I32), Column("name", Pstr))
-  + _V10_STATS
-  + (Column("description", Pstr),),
-)
+def _stat_columns(count: int) -> Tuple[Column, ...]:
+  """The first `count` stat cells. An index nobody has identified yet
+  falls back to `stat_<i>`, so an unknown column still reads (and keeps
+  its position visible)."""
+  return tuple(
+    Column(_STAT_MAP.get(i, f"stat_{i}"), F32 if i in _STAT_FLOATS else I32)
+    for i in range(count)
+  )
+
+
+def _itemfile_schema(name: str, stat_count: int) -> RecordSchema:
+  """`id` + length-prefixed `name` + `stat_count` stats + `description`.
+
+  `until_eof`: the header `count` is the GLOBAL item total across all id
+  bands while the file holds only the leading band, so records are walked
+  to EOF and the header count is kept as `declared_count`.
+  """
+  return RecordSchema(
+    name=name,
+    until_eof=True,
+    columns=(Column("id", I32), Column("name", Pstr))
+    + _stat_columns(stat_count)
+    + (Column("description", Pstr),),
+  )
+
+
+ITEM_V10_SCHEMA = _itemfile_schema("item_v10", 82)
+ITEM_V12_SCHEMA = _itemfile_schema("item_v12", 84)
 
 register_schema(
   "dat",
   ITEM_V10_SCHEMA,
   type_names=("Seal Online ItemFile",),
   versions=(10,),
+)
+
+register_schema(
+  "dat",
+  ITEM_V12_SCHEMA,
+  type_names=("Seal Online ItemFile",),
+  versions=(12,),
 )

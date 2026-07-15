@@ -1,17 +1,24 @@
-"""Seal Online `.edp` item-package container decoder.
+"""Seal Online `.edp` (EDT Package) container decoder.
 
-`.edp` (e.g. `item_pak.edp`) bundles every item-db shard into ONE file
-behind a two-layer LCG stream cipher. Both layers are the same generator
-as `.edt` (keystream byte = high byte of the running seed; the seed
-chains on the ciphertext byte) and differ only in seed/multiplier/addend:
+`.edp` (e.g. `item.edp`) bundles every item-db shard into ONE file: it is
+an archive whose members are ordinary `.edt`-encrypted files
+(`ITEM.ED1` .. `ITEM.ED17`, `ITEM.EDT`). Two LCG cipher layers are
+involved, but only the OUTER one belongs to the container:
 
-  1. Header pass -- decrypt the whole body after the 16-byte file header
-     with per-file parameters stored (XOR-masked) in that header:
+  1. Header pass (this module) -- decrypt everything after the 16-byte
+     file header with per-file parameters stored (XOR-masked) in it:
          mult = u32@4  ^ 0xC8A397EF
          add  = u32@8  ^ 0xB209DDC5
          seed = u32@12 ^ 0xF82B796A
-  2. Block pass -- decrypt each member's bytes again with the fixed `.edt`
-     constants (seed 0x11CFD, mult 0xCE6D, add 0x58BF).
+  2. The member's own `.edt` decryption -- NOT done here. Its constants
+     (seed 0x11CFD, mult 0xCE6D, add 0x58BF) are exactly `edt/codec.py`'s,
+     because after pass 1 a member IS an `.edt` file, byte for byte.
+
+So this decoder stops at pass 1: it hands out the members still
+encrypted, and whoever opens one runs it through the normal `.edt` path
+(`SealEdtFormat`, which claims `.edt` and `.ed<n>` alike). That keeps one
+cipher implementation and lets a single member be opened on its own,
+like any other archive member.
 
 After the header pass the body is a directory of `count` (int32 @0x28)
 64-byte entries starting at offset 0x50:
@@ -21,11 +28,7 @@ After the header pass the body is a directory of `count` (int32 @0x28)
      +0x2C  int32   data offset (relative to the end of the directory)
      +0x34  int32   data size
 
-The member payloads follow the directory contiguously. `ITEM.ED<n>`
-members are flat item-db record lists (parsed by `formats.ed`); the lone
-`ITEM.EDT` member is a "Seal Online ItemFile v10" `.dat` (parsed by the
-`.dat` framework). The keystream byte only depends on the seed mod 2**16,
-so full 32-bit state and 0xFFFF-masked state are equivalent.
+The member payloads follow the directory contiguously.
 
 Reverse-engineered from `EDPUnpaker.exe` (sub_402790 header pass,
 sub_4026F0 block pass, sub_402800 driver).
@@ -34,14 +37,13 @@ sub_4026F0 block pass, sub_402800 driver).
 # `struct.unpack_from` is used for the container directory: its 64-byte
 # entries are addressed at absolute offsets and the payload is decrypted
 # in place in a mutable bytearray, which the forward-only `File` stream
-# (utils.file) can't model. Members, once sliced out, ARE parsed through
-# the File-based `.dat` / item-db decoders.
+# (utils.file) can't model.
 import struct
+from pathlib import PurePosixPath
 
-from ...assets.edp import EdpArchive
+from ...assets.blob import Blob
+from ...assets.directory import Directory
 from ...utils.file import File
-from ..dat.decoder import SealDatDecoder
-from ..ed.decoder import parse_item_db
 
 _HEADER = 0x10
 _DIR = 0x50
@@ -56,9 +58,6 @@ _MULT_MASK = 0xC8A397EF
 _ADD_MASK = 0xB209DDC5
 _SEED_MASK = 0xF82B796A
 
-# Fixed `.edt` cipher constants for the per-member block pass.
-_ED_SEED, _ED_MULT, _ED_ADD = 0x11CFD, 0xCE6D, 0x58BF
-
 
 def _lcg_decrypt(
   buf: bytearray, start: int, length: int, seed: int, mult: int, add: int
@@ -71,17 +70,27 @@ def _lcg_decrypt(
     seed = ((seed + fb) * mult + add) & 0xFFFFFFFF
 
 
+def _blob(name: str, payload: bytes) -> Blob:
+  """One member as a `Blob`, split into stem + extension so the archive
+  browser and the extract pipeline can rebuild "ITEM.ED1"."""
+  blob = Blob()
+  blob.value = payload
+  path = PurePosixPath(name)
+  blob.name = path.stem
+  blob.extension = path.suffix.lstrip(".") or None
+  return blob
+
+
 class EdpDecoder:
   def __init__(self, file: File) -> None:
     self.file: File = file
     self.raw: bytes = file.data
 
-  def decode(self) -> EdpArchive:
+  def decode(self) -> Directory:
     buf = bytearray(self.raw)
-    arc = EdpArchive()
-    arc.source_name = self.file.name
+    directory = Directory(self.file.name)
     if len(buf) < _DIR + 4:
-      return arc
+      return directory
 
     # Pass 1: header cipher over the whole body (everything past the header).
     mult = struct.unpack_from("<I", buf, 4)[0] ^ _MULT_MASK
@@ -91,10 +100,9 @@ class EdpDecoder:
 
     count = struct.unpack_from("<i", buf, _COUNT_OFF)[0]
     if count <= 0:
-      return arc
+      return directory
     data = _DIR + count * _ENTRY
 
-    members = []
     for i in range(count):
       entry = _DIR + i * _ENTRY
       if entry + _ENTRY > len(buf):
@@ -106,23 +114,7 @@ class EdpDecoder:
       start = data + offset
       if size < 0 or start < 0 or start + size > len(buf):
         continue
-      # Pass 2: fixed `.edt` cipher over just this member's bytes.
-      _lcg_decrypt(buf, start, size, _ED_SEED, _ED_MULT, _ED_ADD)
-      members.append(self._parse_member(name, bytes(buf[start : start + size])))
+      # Still `.edt`-encrypted: the member decrypts itself when opened.
+      directory.list.append(_blob(name, bytes(buf[start : start + size])))
 
-    arc.members = members
-    return arc
-
-  def _parse_member(self, name: str, payload: bytes) -> dict:
-    """Parse a decrypted member: `ITEM.EDT` is a "Seal Online ItemFile"
-    `.dat`; the `ITEM.ED<n>` shards are flat item-db record lists."""
-    if payload[:11] == b"Seal Online" or payload[:10] == b"SealOnline":
-      dat = SealDatDecoder(File(payload)).decode()
-      return {
-        "name": name,
-        "format": f"{dat.type_name} v{dat.version}",
-        "count": len(dat.elements),
-        "items": dat.elements,
-      }
-    fmt, items = parse_item_db(payload)
-    return {"name": name, "format": fmt, "count": len(items), "items": items}
+    return directory

@@ -10,9 +10,8 @@ name. Layout (v1), after the shared 64-byte header + int32 count:
 
 `field_count` is NOT a reliable read stride: it counts logical fields,
 which diverges from the int32-cell width whenever a file packs wide
-fields (Mission has an i64 field: 15 fields / 16 cells; ItemString has
-fixed-length string fields: 3 fields / 194 cells). So the row width in
-cells is resolved per-file, known up front because the schema is keyed
+fields (Mission has an i64 field: 15 fields / 16 cells). So the row width
+in cells is resolved per-file, known up front because the schema is keyed
 by FILENAME:
 
   * tagged file   -> `schema.total_cells` (authoritative: the schema
@@ -39,8 +38,8 @@ _HEADER_AND_COUNT = 68  # 64-byte header + int32 count
 class DataTableBody(DatBody):
   type_name = "Seal Online Data"
   # Any version — the container (count + field_count + fixed-width rows)
-  # is version-agnostic. Seen: v1 (config tables) and v13 (the current
-  # client's item.edt = 35871 rows x 92 int32 stats, and ItemString.edt).
+  # is version-agnostic. Only v1 (the config tables) has ever been seen
+  # in a sample.
   versions = ()
 
   def decode(self, file: File, dat: DatFile) -> None:

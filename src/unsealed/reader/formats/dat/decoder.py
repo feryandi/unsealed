@@ -1,4 +1,5 @@
 import re
+from typing import Optional, Tuple
 
 from ...assets.dat import DatFile
 from ...utils.file import File
@@ -24,6 +25,21 @@ def _parse_version(token: str) -> int:
   return 0
 
 
+def parse_header(raw: bytes) -> Tuple[str, Optional[int]]:
+  """`(type_name, version)` from a `.dat`'s 64-byte header title.
+
+  `version` is None when the title carries no ` v<num>` — the caller
+  decides whether that's fatal. Only the first 64 bytes are read, so a
+  caller holding just the header prefix can identify a file without
+  decoding it (see `formats/edt/band.py`).
+  """
+  title = raw[:_HEADER_LEN].split(b"\x00", 1)[0].decode("latin-1", "ignore").strip()
+  match = _TITLE.match(title)
+  if not match:
+    return title, None
+  return match.group("type").strip(), _parse_version(match.group("ver"))
+
+
 class SealDatDecoder:
   """Decode a Seal Online `.dat`: shared header + count, then dispatch
   the records to the body decoder registered for this type+version."""
@@ -38,15 +54,12 @@ class SealDatDecoder:
     if len(self.raw) < _HEADER_LEN + 4:
       raise Exception("Not a valid .dat file (shorter than header + count)")
 
-    title = self.raw[:_HEADER_LEN].split(b"\x00", 1)[0]
-    title_str = title.decode("latin-1", "ignore").strip()
-    m = _TITLE.match(title_str)
-    if m:
-      dat.type_name = m.group("type").strip()
-      dat.version = _parse_version(m.group("ver"))
+    type_name, version = parse_header(self.raw)
+    dat.type_name = type_name
+    if version is None:  # no " v<num>" in the title: keep it verbatim
+      dat.unknown["header"] = type_name
     else:
-      dat.type_name = title_str
-      dat.unknown["header"] = title_str
+      dat.version = version
 
     file = File(self.raw)
     file.read(_HEADER_LEN)  # skip the 64-byte header

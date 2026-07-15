@@ -30,10 +30,8 @@ from . import harddungeondecomposition  # noqa: F401
 from . import harddungeonpenalty_template  # noqa: F401
 from . import hardfieldpenalty  # noqa: F401
 from . import iopt_cost  # noqa: F401
-from . import item  # noqa: F401
-from . import item_data  # noqa: F401
+from . import item  # noqa: F401  — ItemFile v4/v10/v12
 from . import item_exchange  # noqa: F401
-from . import item_string  # noqa: F401
 from . import itemgrow_template  # noqa: F401
 from . import job_type  # noqa: F401
 from . import level  # noqa: F401

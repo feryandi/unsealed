@@ -134,13 +134,28 @@ class _Cstr(FieldType):
 class _Pstr(FieldType):
   """Length-prefixed EUC-KR string: [int32 len][len bytes]. The declared
   length often includes a trailing null terminator, so the value is cut
-  at the first null (an all-null buffer reads as an empty string)."""
+  at the first null (an all-null buffer reads as an empty string).
+
+  A length that can't be satisfied raises rather than reading short. It
+  means the cursor is misaligned -- the wrong schema, or a corrupt file
+  -- and a silent short read hides that: the bogus length swallows the
+  rest of the buffer, so the reader lands exactly on EOF and a caller
+  probing "did this layout fit?" (`formats/edt/band.py`) is told yes.
+  Raising lets the probe fail and fall back.
+  """
 
   cells = None
 
   def read(self, cursor, record=None):
     n = cursor.read_int()
-    return _kr(cursor.read(n).split(b"\x00", 1)[0]) if n > 0 else ""
+    if n <= 0:
+      if n < 0:
+        raise ValueError(f"Pstr: negative length {n}")
+      return ""  # 0 is a legitimately empty string
+    raw = cursor.read(n)
+    if len(raw) != n:
+      raise ValueError(f"Pstr: declared {n} bytes, {len(raw)} left")
+    return _kr(raw.split(b"\x00", 1)[0])
 
 
 # Singletons for the byte-only zero-argument types (`I32`/`U32`/`F32` are

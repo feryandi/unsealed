@@ -1,33 +1,63 @@
-import json
 from pathlib import Path
+from typing import List
 
 from ..formats.edp.format import SealEdpFormat
 
 
 class EdpPipeline:
-  """Decode a `.edp` item package (`item_pak.edp`) and write a JSON file
-  listing every bundled member (`ITEM.ED1` .. `ITEM.EDT`) with its parsed
-  item records."""
+  """Unpacks a Seal Online `.edp` (EDT package), then runs the matching
+  pipeline on each extracted member.
+
+  Members come out still `.edt`-encrypted (an `.edp` is a bundle of
+  `.edt` files — see `formats/edp/decoder.py`), so extracting them yields
+  real, self-contained `ITEM.ED1` / `ITEM.EDT` files; dispatching each
+  one back through the reader then decrypts and parses it exactly as a
+  loose shard on disk would be.
+  """
 
   def run(self, filepath: Path, output_dir: Path) -> None:
-    if not filepath.is_file():
+    if not filepath.exists():
       raise Exception(f"File not found: {filepath}")
 
-    archive = SealEdpFormat().decode(filepath)
+    directory = SealEdpFormat().decode(filepath)
 
-    total = sum(m["count"] for m in archive.members)
-    summary = {
-      "source": archive.source_name,
-      "members": len(archive.members),
-      "total_items": total,
-      "contents": archive.members,
-    }
-    out = output_dir / f"{filepath.name}.json"
-    out.write_text(
-      json.dumps(summary, indent=2, ensure_ascii=False, default=str),
-      encoding="utf-8",
-    )
-    print(
-      f"{filepath.name}: {len(archive.members)} member(s), "
-      f"{total} item(s) -> {out.name}"
-    )
+    extract_dir = output_dir / filepath.stem
+    extract_dir.mkdir(parents=True, exist_ok=True)
+
+    extracted: List[Path] = []
+    for blob in directory.list:
+      if blob.value is None or blob.name is None:
+        continue
+      rel = blob.name + (f".{blob.extension}" if blob.extension else "")
+      dest = extract_dir / rel
+      with open(dest, "wb") as f:
+        f.write(blob.value)
+      extracted.append(dest)
+      print(f"Extracted {rel}")
+
+    # Imported lazily: main_pipeline registers EdpPipeline. Dispatching
+    # through MainPipeline (rather than SUPPORTED_FILE_TYPES directly, as
+    # MdtPipeline does) is what gets the `.ed<n>` band suffixes matched —
+    # they live in PATTERN_FILE_TYPES, not the fixed table.
+    from .main_pipeline import MainPipeline
+
+    main = MainPipeline()
+    self._decode(main, extracted, extract_dir)
+
+    # An `.edt` member only decrypts to its payload (ITEM.EDT -> the
+    # ItemFile ITEM.dat), so decode that second layer too — otherwise the
+    # one headered member is the only one left unparsed.
+    produced = [
+      p
+      for p in sorted(extract_dir.iterdir())
+      if p.is_file() and p not in extracted and p.suffix.lower() != ".json"
+    ]
+    self._decode(main, produced, extract_dir)
+
+  @staticmethod
+  def _decode(main, paths: List[Path], output_dir: Path) -> None:
+    for path in paths:
+      try:
+        main.run(path, output_dir)
+      except Exception as e:
+        print(f"Warning: failed to process {path.name}: {e}")

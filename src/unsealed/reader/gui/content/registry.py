@@ -13,8 +13,9 @@ a loose disk file is wrapped in a DiskSource-backed `Resource` at the
 inside a mounted `.spak`.
 """
 
+import re
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any, Callable, List, Optional, Pattern, Tuple
 
 from ...vfs import Resource
 
@@ -48,15 +49,26 @@ class FormatHandler:
   extensions: tuple[str, ...]  # lowercased, with dot: (".ms1",)
   decode: DecodeFn
   view: Optional[ViewFn] = None  # None = generic tree
+  # Suffixes that vary by a numeric band (`.ed1` … `.ed17`) can't be
+  # enumerated as fixed keys, so a handler may also claim filename
+  # regexes. Mirrors `pipelines/main_pipeline.py:PATTERN_FILE_TYPES`.
+  patterns: Tuple[str, ...] = ()
 
 
 _HANDLERS: dict[str, FormatHandler] = {}
+_PATTERNS: List[Tuple[Pattern[str], FormatHandler]] = []
 
 
 def register(handler: FormatHandler) -> None:
   for ext in handler.extensions:
     _HANDLERS[ext.lower()] = handler
+  for pattern in handler.patterns:
+    _PATTERNS.append((re.compile(pattern, re.IGNORECASE), handler))
 
 
 def for_resource(resource: Resource) -> Optional[FormatHandler]:
-  return _HANDLERS.get(resource.suffix.lower())
+  """The handler for this resource: exact suffix first, then patterns."""
+  handler = _HANDLERS.get(resource.suffix.lower())
+  if handler is not None:
+    return handler
+  return next((h for pat, h in _PATTERNS if pat.search(resource.name)), None)

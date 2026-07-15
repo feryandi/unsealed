@@ -1,11 +1,17 @@
-"""`.mdt` archives -> an in-app member browser (opens members).
+"""A `Directory` archive -> an in-app member browser (opens members).
 
-An `.mdt` is a flat container of named blobs. Unlike a `.spak` it's
-unencrypted, so the handler decodes the whole Directory up front and
-this view just lists it — there's no mount worker, key panel, or
-decrypt-on-demand. Every member is mounted into one `MemorySource` so a
-member's sibling lookups (`.ms1` -> `.bn1`/`.tex`) resolve within the
-archive, and double-clicking a row opens that member in a new tab.
+Shared by the flat, eagerly-decoded containers: `.mdt` (model data) and
+`.edp` (EDT package). Unlike a `.spak` neither needs a mount worker, key
+panel, or decrypt-on-demand — the handler decodes the whole `Directory`
+up front and this view just lists it. Every member is mounted into one
+`MemorySource` so a member's sibling lookups (`.ms1` -> `.bn1`/`.tex`)
+resolve within the archive, and double-clicking a row opens that member
+in a new tab.
+
+Members are handed out exactly as they sit in the container, so whatever
+handler claims the member's extension does the real work — an `.edp`'s
+members are still `.edt`-encrypted and decrypt when opened, the same as
+a loose shard on disk.
 """
 
 from __future__ import annotations
@@ -65,7 +71,7 @@ def _entries(directory: Directory) -> List[Tuple[str, bytes]]:
   return out
 
 
-class MdtView(QWidget):
+class DirectoryView(QWidget):
   """A filterable table of the archive's members over a MemorySource."""
 
   def __init__(self, directory: Directory, ctx: ContentContext) -> None:

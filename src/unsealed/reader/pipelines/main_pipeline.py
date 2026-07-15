@@ -4,7 +4,6 @@ from typing import List, Tuple
 
 from .actor_pipeline import ActorPipeline
 from .dat_pipeline import DatPipeline
-from .ed_pipeline import EdPipeline
 from .edp_pipeline import EdpPipeline
 from .edt_pipeline import EdtPipeline
 from .map_pipeline import MapPipeline
@@ -26,7 +25,7 @@ SUPPORTED_FILE_TYPES = {
   ".spak": {"name": "Packed Archive", "pipeline": SpakPipeline()},
   ".mdt": {"name": "Model Data Archive", "pipeline": MdtPipeline()},
   ".edt": {"name": "Encoded Data File", "pipeline": EdtPipeline()},
-  ".edp": {"name": "Item Package Archive", "pipeline": EdpPipeline()},
+  ".edp": {"name": "EDT Package Archive", "pipeline": EdpPipeline()},
   ".dat": {"name": "Data File", "pipeline": DatPipeline()},
   ".scr": {"name": "Script File", "pipeline": ScrPipeline()},
   ".tsv": {"name": "Tab-Separated Table", "pipeline": TsvPipeline()},
@@ -35,10 +34,12 @@ SUPPORTED_FILE_TYPES = {
 
 # Suffixes that vary by a numeric band (e.g. .ed1 … .ed17) and so can't be
 # enumerated as fixed keys; matched by pattern after the exact lookup.
+# A band is just an `.edt` whose plaintext is a headerless ItemFile, so
+# it rides the same pipeline.
 PATTERN_FILE_TYPES = [
   (
     re.compile(r"\.ed\d+$", re.IGNORECASE),
-    {"name": "Item DB File", "pipeline": EdPipeline()},
+    {"name": "Item DB Shard", "pipeline": EdtPipeline()},
   ),
 ]
 
@@ -48,7 +49,9 @@ class MainPipeline:
     if not filepath.exists():
       raise Exception(f"File not found: {filepath}")
 
-    filetype = filepath.suffix
+    # Lowercased: archive members carry the on-disk casing (an `.edp`
+    # bundles "ITEM.EDT"), and the fixed table is keyed lowercase.
+    filetype = filepath.suffix.lower()
     setup = SUPPORTED_FILE_TYPES.get(filetype)
     if setup is None:
       setup = next(

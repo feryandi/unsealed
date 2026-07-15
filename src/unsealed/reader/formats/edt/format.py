@@ -11,11 +11,16 @@ from .codec import encode
 
 
 class SealEdtFormat(BaseFormat[Edt]):
-  """Decoder/encoder for Seal Online `.edt` (LCG stream cipher)."""
+  """Decoder/encoder for Seal Online `.edt` (LCG stream cipher).
+
+  Also claims the item-db shards (`.ed1` … `.ed<n>`): they are the same
+  cipher and the same container, differing only in what the plaintext
+  turns out to be (a headerless ItemFile band — see `band.py`).
+  """
 
   @property
   def extensions(self) -> Pattern[str]:
-    return re.compile(r"\.edt$", re.IGNORECASE)
+    return re.compile(r"\.(edt|ed\d+)$", re.IGNORECASE)
 
   @property
   def asset_type(self) -> Type[Edt]:

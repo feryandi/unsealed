@@ -229,16 +229,30 @@ class DatTableAdapter:
   real decoder produced (its type-matched schema); picking another
   schema re-reads the raw bytes through a `SchemaBody`. A schema fits
   when its fixed record width matches the file's byte layout.
+
+  `header_size` is how many bytes precede the first record: 68 for a
+  `.dat` (the 64-byte header + the int32 count), but 0 for an `.ed<n>`
+  item band, whose records start at offset 0 (see `formats/edt/band.py`).
   """
 
   AUTO = "Auto — decoded"
+  DAT_HEADER = 64 + 4  # shared header + int32 element count
 
-  def __init__(self, dat: DatFile, raw: bytes, stem: str) -> None:
+  def __init__(
+    self,
+    dat: DatFile,
+    raw: bytes,
+    stem: str,
+    *,
+    header_size: int = DAT_HEADER,
+    suffix: str = ".dat",
+  ) -> None:
     self._dat = dat
     self._raw = raw
+    self._header_size = header_size
     self._schemas: Dict[str, RecordSchema] = REGISTRY.by_format("dat")
     label = f"{dat.type_name} v{dat.version}" if dat.type_name else "unknown type"
-    self.title = f"{stem}.dat  ·  {label}"
+    self.title = f"{stem}{suffix}  ·  {label}"
 
     body = for_type(dat.type_name, dat.version)
     self._default = body.schema.name if isinstance(body, SchemaBody) else self.AUTO
@@ -283,8 +297,7 @@ class DatTableAdapter:
 
   def _decode_with(self, schema: RecordSchema) -> List[Any]:
     file = File(self._raw)
-    file.read(64)  # skip the shared header
-    file.read_int()  # skip the int32 count
+    file.read(self._header_size)  # skip the header + count (0 for a band)
     scratch = DatFile()
     scratch.count = self._dat.count
     scratch.version = self._dat.version
@@ -295,5 +308,5 @@ class DatTableAdapter:
     total = schema.total_cells
     if total is None or self._dat.count <= 0:
       return False  # variable width or empty: can't cheaply verify
-    region = len(self._raw) - 64 - 4 - 4 * schema.header_extra
+    region = len(self._raw) - self._header_size - 4 * schema.header_extra
     return region == self._dat.count * total * 4
