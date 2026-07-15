@@ -259,8 +259,8 @@ class SchemaRegistry:
 
   def register(
     self,
-    schema: RecordSchema,
     fmt: str,
+    schema: RecordSchema,
     *,
     patterns: Tuple[str, ...] = (),
     type_names: Tuple[str, ...] = (),
@@ -344,3 +344,29 @@ class SchemaRegistry:
 
 # The single shared registry every format registers into and queries.
 REGISTRY = SchemaRegistry()
+
+
+def register_schema(
+  fmt: str,
+  schema: RecordSchema,
+  *,
+  patterns: Tuple[str, ...] = (),
+  type_names: Tuple[str, ...] = (),
+  versions: Tuple[int, ...] = (),
+) -> None:
+  """The single registration entry point shared by every schema format
+  (`.dat` / `.scr` / `.tsv`): register `schema` into `REGISTRY` under
+  `fmt`, dispatched by filename `patterns` and/or `type_names`,
+  optionally scoped to `versions` (`()` = any). Schema modules call this
+  directly -- there are no per-format registration wrappers."""
+  REGISTRY.register(
+    fmt, schema, patterns=patterns, type_names=type_names, versions=versions
+  )
+
+
+def schema_for_filename(
+  fmt: str, stem: str, version: Optional[int] = None
+) -> Optional[RecordSchema]:
+  """Filename+version schema lookup within `fmt` -- the read-side
+  counterpart to `register_schema` (any version if unscoped)."""
+  return REGISTRY.for_filename(fmt, stem, version)

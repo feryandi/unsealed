@@ -24,8 +24,6 @@ builds the same regardless of the working directory.
 """
 import os
 
-from PyInstaller.utils.hooks import collect_submodules
-
 _SRC = os.path.abspath(os.path.join(SPECPATH, "..", ".."))  # -> src/
 _ICON = os.path.join(SPECPATH, "..", "icon.ico")  # src/unsealed/icon.ico
 _LOGO = os.path.join(SPECPATH, "..", "logo.png")  # src/unsealed/logo.png
@@ -66,8 +64,7 @@ else:
         "'python -m unsealed.reader.vendor.fetch' before pyinstaller."
     )
 
-# scipy pulls in submodules dynamically; make sure they're all collected.
-hiddenimports = collect_submodules("scipy")
+hiddenimports = []
 
 a = Analysis(
     [os.path.join(SPECPATH, "__main__.py")],
@@ -86,6 +83,12 @@ a = Analysis(
         "OpenGL",
         "OpenGL_accelerate",
         "imgui_bundle",
+        # scipy (~55 MB) is no longer used: utils/matrix.py does its one
+        # matrix->quaternion in numpy now (verified equal to scipy to
+        # machine epsilon), so exclude it and its heavy friends outright.
+        "scipy",
+        "pandas",
+        "matplotlib",
         # This GUI imports only QtCore/QtGui/QtWidgets (verified). Drop the
         # heavyweight Qt modules PyInstaller's PySide6 hook bundles by
         # default -- WebEngine alone is a whole Chromium (~130 MB), and

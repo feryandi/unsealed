@@ -26,6 +26,7 @@ from typing import Any, Dict, List
 from ...schemas import REGISTRY
 from ...assets.celltable import CellTable
 from ...assets.dat import DatFile
+from ...assets.xml import Xml
 from ...formats.celltable import CellCursor
 from ...formats.dat.registry import SchemaBody, for_type
 from ...formats.records import RecordSchema
@@ -184,6 +185,41 @@ class CellTableAdapter:
         if col.type.cells is not None and rec.get(col.name) is None:
           return False
     return True
+
+
+class XmlTableAdapter:
+  """Schema source over a decoded `.xml` table (`Xml`).
+
+  Unlike `.scr`/`.tsv`/`.dat`, the schema is EMBEDDED in the file (the
+  `<item>` attribute names the decoder already extracted into
+  `asset.columns`), so there is no `REGISTRY` lookup and a single option:
+  the root tag. A non-table document (no `<item>` children) shows its raw
+  lines instead.
+  """
+
+  def __init__(self, asset: Xml, stem: str) -> None:
+    self._asset = asset
+    self._label = asset.root_tag or "embedded"
+    root = f"  ·  <{asset.root_tag}>" if asset.root_tag else ""
+    self.title = f"{asset.name or stem}  ·  XML table{root}"
+
+  @property
+  def default_label(self) -> str:
+    return self._label
+
+  def options(self) -> List[SchemaOption]:
+    return [SchemaOption(self._label, True)]
+
+  def apply(self, label: str) -> TableData:
+    if not self._asset.is_table:
+      strings = self._asset.strings
+      return TableData(["line"], [[s] for s in strings[:MAX_ROWS]])
+    columns = list(self._asset.columns)
+    records = self._asset.records
+    rows = [
+      [render_cell(rec.get(col)) for col in columns] for rec in records[:MAX_ROWS]
+    ]
+    return TableData(columns, rows, truncated=len(records) > MAX_ROWS)
 
 
 class DatTableAdapter:

@@ -1,9 +1,10 @@
 """Opt_Gem_Cmps_Rst_Grp config table (`Seal Online Data` container, columns not yet identified)."""
 
-from .base import Column, DataSchema, I32, register_data_schema
+from .base import Column, RecordSchema, I32, register_schema
 
-register_data_schema(
-  DataSchema(
+register_schema(
+  "dat",
+  RecordSchema(
     name="opt_gem_cmps_rst_grp",
     columns=(
       Column("field_0", I32),

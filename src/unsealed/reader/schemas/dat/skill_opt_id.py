@@ -1,9 +1,10 @@
 """Skill_Opt_ID config table (`Seal Online Data` container, columns not yet identified)."""
 
-from .base import Column, DataSchema, I32, register_data_schema
+from .base import Column, RecordSchema, I32, register_schema
 
-register_data_schema(
-  DataSchema(
+register_schema(
+  "dat",
+  RecordSchema(
     name="skill_opt_id",
     columns=(
       Column("field_0", I32),

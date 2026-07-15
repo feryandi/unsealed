@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from ..formats.scr.decoder import SealScrDecoder
-from ..schemas.scr import schema_for_filename
+from ..formats.records import schema_for_filename
 from ..vfs import Resource
 
 
@@ -16,7 +16,7 @@ class ScrPipeline:
     if not filepath.is_file():
       raise Exception(f"File not found: {filepath}")
 
-    schema = schema_for_filename(filepath.stem)
+    schema = schema_for_filename("scr", filepath.stem)
     scr = SealScrDecoder(Resource.for_disk_file(filepath).open()).decode(schema)
     scr.name = filepath.stem
 

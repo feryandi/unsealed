@@ -12,11 +12,11 @@ file only holds the leading band, so records are walked to EOF
 (`until_eof=True`) and the header count is kept as `declared_count`.
 """
 
-from .base import Column, Cstr, DataSchema, F32, I32, Pstr, Str, register_type_schema
+from .base import Column, Cstr, RecordSchema, F32, I32, Pstr, Str, register_schema
 
 # --- v4 -------------------------------------------------------------------
 
-ITEM_V4_SCHEMA = DataSchema(
+ITEM_V4_SCHEMA = RecordSchema(
   name="item_v4",
   index_field="id",
   columns=(
@@ -25,7 +25,12 @@ ITEM_V4_SCHEMA = DataSchema(
   ),
 )
 
-register_type_schema(ITEM_V4_SCHEMA, "Seal Online ItemFile", (4,))
+register_schema(
+  "dat",
+  ITEM_V4_SCHEMA,
+  type_names=("Seal Online ItemFile",),
+  versions=(4,),
+)
 
 # --- v10 ------------------------------------------------------------------
 
@@ -76,10 +81,15 @@ _V10_STATS = tuple(
   for i in range(82)
 )
 
-ITEM_V10_SCHEMA = DataSchema(
+ITEM_V10_SCHEMA = RecordSchema(
   name="item_v10",
   until_eof=True,  # header count is a GLOBAL total; walk the leading band to EOF
   columns=(Column("id", I32), Column("name", Pstr)) + _V10_STATS + (Column("description", Pstr),),
 )
 
-register_type_schema(ITEM_V10_SCHEMA, "Seal Online ItemFile", (10,))
+register_schema(
+  "dat",
+  ITEM_V10_SCHEMA,
+  type_names=("Seal Online ItemFile",),
+  versions=(10,),
+)

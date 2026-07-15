@@ -10,7 +10,7 @@ buff_1..4_id join the Buff table; buff_1_chance/durations and the
 `*_refine`-style multipliers are float-encoded (see the `_FLOATS` set).
 """
 
-from .base import Column, DataSchema, F32, I32, Pstr, Str, register_type_schema
+from .base import Column, RecordSchema, F32, I32, Pstr, Str, register_schema
 
 _STAT_MAP = {
   0: "job_id",
@@ -55,9 +55,14 @@ _STATS = tuple(
   Column(_STAT_MAP.get(i, f"stat_{i}"), F32 if i in _FLOATS else I32) for i in range(40)
 )
 
-SKILL_SCHEMA = DataSchema(
+SKILL_SCHEMA = RecordSchema(
   name="skill",
   columns=(Column("id", I32), Column("name", Str(32))) + _STATS + (Column("description", Pstr),),
 )
 
-register_type_schema(SKILL_SCHEMA, "Seal Online SkillFile", (8,))
+register_schema(
+  "dat",
+  SKILL_SCHEMA,
+  type_names=("Seal Online SkillFile",),
+  versions=(8,),
+)

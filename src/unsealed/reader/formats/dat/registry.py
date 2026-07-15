@@ -67,9 +67,9 @@ class DatBody(ABC):
 
 class SchemaBody(DatBody):
   """A `DatBody` that decodes a self-describing `.dat` type from a
-  declarative `DataSchema` instead of bespoke code. Reads `header_extra`
-  int32s after the count (stored in `dat.unknown`), then walks the
-  records via `schema.read_record`.
+  declarative `RecordSchema` instead of bespoke code. Reads
+  `header_extra` int32s after the count (stored in `dat.unknown`), then
+  walks the records via `schema.read_record`.
 
   The schema is not held by a registered body -- it lives in the shared
   `REGISTRY` (registered by `schemas/dat/`), and `for_type` builds a

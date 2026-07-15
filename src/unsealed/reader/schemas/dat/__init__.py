@@ -1,14 +1,15 @@
 """Declarative schemas for Seal Online `.dat` files.
 
-`base.py` holds the dat schema vocabulary (byte leaf `DataType`s +
-registration wrappers). Every other module declares ONE schema and
-registers it into the shared `REGISTRY` (formats/records.py) on import,
-so adding a table/type is adding one file here:
+`base.py` holds the dat schema vocabulary (byte leaf `FieldType`s +
+`generic_schema`). Every other module declares ONE schema and registers
+it into the shared `REGISTRY` (formats/records.py) via the single
+`register_schema("dat", ...)`, so adding a table/type is adding one file
+here:
 
   * TYPE_NAME-dispatched self-describing types (item, monster, skill,
-    buff, pet_food_table, quest, seller, mesh) call `register_type_schema`.
-  * FILENAME-dispatched `Seal Online Data` container tables call
-    `register_data_schema`.
+    buff, pet_food_table, quest, seller, mesh) pass `type_names=`.
+  * FILENAME-dispatched `Seal Online Data` container tables pass
+    `patterns=`.
 
 Importing this package imports them all, so their registrations happen.
 No decoder is involved -- the dat decoder later queries `REGISTRY`.

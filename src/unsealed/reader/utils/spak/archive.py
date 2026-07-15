@@ -27,9 +27,9 @@ comment, so the password is obtained deterministically.
 Some private servers repack the archives with a **fixed** password and
 an empty comment (no version to derive from). Those keys can't be
 computed. They are not hardcoded here: fallback keys come from the
-local key store (``spak_keystore``), and if none work the reader runs a
+local key store (``keystore``), and if none work the reader runs a
 cross-platform known-plaintext attack on the archive itself
-(``utils.spak_plaintext`` + the bundled ``bkcrack``), caching the
+(``utils.spak.plaintext`` + the bundled ``bkcrack``), caching the
 recovered keys back to the store. The right key -- derived, stored, or
 cracked -- is picked by trial: each candidate is verified by decrypting
 the smallest entry and checking its CRC, so official and private
@@ -41,14 +41,15 @@ import struct
 import zipfile
 import zlib
 from pathlib import Path
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Union
 
-from ..utils.zipcrypto import ZipDecryptor
+from ..zipcrypto import ZipDecryptor
+from .keystore import KeyTriple
 
-# Key material that decrypts an archive: a password, or the three
-# recovered internal keys when the password is unknown (see
+# Key material that decrypts an archive: a password, or a KeyTriple --
+# the three recovered internal keys when the password is unknown (see
 # ZipDecryptor.from_keys and the known-plaintext recovery).
-KeyMaterial = Union[bytes, Tuple[int, int, int]]
+KeyMaterial = Union[bytes, KeyTriple]
 
 
 class SpakPasswordError(Exception):
@@ -138,15 +139,15 @@ class SpakArchive:
     if not any(i.flag_bits & 0x1 for i in self.infos):
       return None
 
-    from . import spak_keystore
+    from . import keystore
 
     sample = min(self.infos, key=lambda i: i.compress_size)
     candidates: List[KeyMaterial] = []
     derived = self.comment_password(self._zf.comment)
     if derived is not None:
       candidates.append(derived)
-    candidates.extend(spak_keystore.load_keys())
-    candidates.extend(spak_keystore.load_key_triples())
+    candidates.extend(keystore.load_keys())
+    candidates.extend(keystore.load_key_triples())
 
     for key in candidates:
       if self._key_ok(key, sample):
@@ -168,33 +169,33 @@ class SpakArchive:
 
     Cross-platform and offline: matches an embedded plaintext snippet to
     one of this archive's entries and hands it to the bundled bkcrack
-    (see ``utils.spak_plaintext``). CRC-gated by this archive. A hit is
+    (see ``utils.spak.plaintext``). CRC-gated by this archive. A hit is
     cached to the key store so it -- and every sibling archive of the
     same server -- loads without cracking again. ``None`` when no anchor
     matches or bkcrack isn't available.
     """
-    from . import spak_keystore
+    from . import keystore
 
     try:
-      from ..utils import spak_plaintext
+      from . import plaintext
     except Exception:
       return None
 
     try:
-      keys = spak_plaintext.crack(
+      keys = plaintext.crack(
         self.infos,
         self._read_stored,
         lambda k: self._key_ok(k, sample),
         on_status=self._on_status,
         on_progress=self._on_progress,
       )
-    except spak_plaintext.BkcrackUnavailable as e:
+    except plaintext.BkcrackUnavailable as e:
       self._on_status(f"Automatic key recovery unavailable: {e}")
       return None
     if keys is None:
       return None
     install = Path(self.path).resolve().parent.parent
-    spak_keystore.save_key_triple(keys, label=install.name)
+    keystore.save_key_triple(keys, label=install.name)
     return keys
 
   def _read_stored(self, info: zipfile.ZipInfo) -> bytes:

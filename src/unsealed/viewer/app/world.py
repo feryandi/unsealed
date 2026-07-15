@@ -295,7 +295,7 @@ class AppWorld:
         self._spak_thread.start()
 
     def _run_spak_mount(self, path: Path) -> None:
-        from unsealed.reader.assets.spak import SpakPasswordError
+        from unsealed.reader.utils.spak import SpakPasswordError
 
         def on_status(msg: str) -> None:
             self.status.message = msg

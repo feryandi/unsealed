@@ -17,7 +17,7 @@ import threading
 from pathlib import Path, PurePosixPath
 from typing import Callable, Dict, List, NamedTuple, Optional, Tuple
 
-from ..assets.spak import SpakArchive
+from ...utils.spak import SpakArchive
 
 
 def _norm(name: str) -> str:

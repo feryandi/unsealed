@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 from ..formats.tsv.decoder import SealTsvDecoder
-from ..schemas.tsv import schema_for_filename
+from ..formats.records import schema_for_filename
 from ..vfs import Resource
 
 
@@ -15,7 +15,7 @@ class TsvPipeline:
     if not filepath.is_file():
       raise Exception(f"File not found: {filepath}")
 
-    schema = schema_for_filename(filepath.stem)
+    schema = schema_for_filename("tsv", filepath.stem)
     tsv = SealTsvDecoder(Resource.for_disk_file(filepath).open()).decode(schema)
     tsv.name = filepath.stem
 

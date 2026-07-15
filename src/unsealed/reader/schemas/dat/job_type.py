@@ -1,9 +1,10 @@
 """Job_type config table (`Seal Online Data` container)."""
 
-from .base import Column, DataSchema, I32, register_data_schema
+from .base import Column, RecordSchema, I32, register_schema
 
-register_data_schema(
-  DataSchema(
+register_schema(
+  "dat",
+  RecordSchema(
     name="job_type",
     columns=(
       Column("job_id", I32),

@@ -7,7 +7,7 @@ known (the rest stay `field_N`). Model id (`model_id`, field 38) indexes
 the Mon_Grapic table; `talk_id` (42) joins the QuestFile dialog tree.
 """
 
-from .base import Column, DataSchema, I32, register_type_schema
+from .base import Column, RecordSchema, I32, register_schema
 
 _NAMED = {
   0: "id",
@@ -34,10 +34,15 @@ _NAMED = {
   56: "aggro_range",
 }
 
-MONSTER_SCHEMA = DataSchema(
+MONSTER_SCHEMA = RecordSchema(
   name="monster_data",
   header_extra=1,
   columns=tuple(Column(_NAMED.get(i, f"field_{i}"), I32) for i in range(64)),
 )
 
-register_type_schema(MONSTER_SCHEMA, "SealOnline MonsterDataFile", (12,))
+register_schema(
+  "dat",
+  MONSTER_SCHEMA,
+  type_names=("SealOnline MonsterDataFile",),
+  versions=(12,),
+)

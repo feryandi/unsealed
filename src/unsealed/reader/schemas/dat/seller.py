@@ -7,13 +7,18 @@ one shop; the slots are a zero-terminated list of item ids it sells (the
 the row index.
 """
 
-from .base import Column, DataSchema, I32, register_type_schema
+from .base import Column, RecordSchema, I32, register_schema
 
-SELLER_SCHEMA = DataSchema(
+SELLER_SCHEMA = RecordSchema(
   name="seller",
   header_extra=1,
   index_field="id",
   columns=tuple(Column(f"field_{i}", I32) for i in range(30)),
 )
 
-register_type_schema(SELLER_SCHEMA, "Seal Online SellerFile", (1,))
+register_schema(
+  "dat",
+  SELLER_SCHEMA,
+  type_names=("Seal Online SellerFile",),
+  versions=(1,),
+)

@@ -3,10 +3,11 @@
 Every field is an 8-byte int.
 """
 
-from .base import Column, DataSchema, I64, register_data_schema
+from .base import Column, RecordSchema, I64, register_schema
 
-register_data_schema(
-  DataSchema(
+register_schema(
+  "dat",
+  RecordSchema(
     name="itemgrow_template",
     columns=tuple(Column(f"field_{i}", I64) for i in range(18)),
   ),

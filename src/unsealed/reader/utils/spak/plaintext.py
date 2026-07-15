@@ -1,7 +1,7 @@
 """Recover a private-server .spak key by a known-plaintext attack.
 
 No memory dump and no reference client: a few tiny plaintext snippets
-are embedded (``spak_anchors``) -- short fragments of the deflate
+are embedded (``anchors``) -- short fragments of the deflate
 stream of files byte-identical across Seal Online builds. We match one
 to an entry in the target by its cleartext CRC-32, hand that entry's
 ciphertext plus the snippet to the bundled ``bkcrack``, and it recovers
@@ -27,9 +27,9 @@ import zipfile
 from pathlib import Path
 from typing import Callable, Iterator, List, Optional
 
-from ..assets.spak_keystore import KeyTriple
-from ..vendor import BkcrackUnavailable, bkcrack_path
-from . import spak_anchors
+from .keystore import KeyTriple
+from ...vendor import BkcrackUnavailable, bkcrack_path
+from . import anchors
 
 Status = Callable[[str], None]
 # ``on_progress(fraction, label)`` -- fraction in 0..1 over the whole
@@ -167,7 +167,7 @@ def crack(
   if not by_crc:
     return None
 
-  for anchor in spak_anchors.ANCHORS:
+  for anchor in anchors.ANCHORS:
     info = by_crc.get((anchor.crc, anchor.usize))
     # Require the same compressed length: then the target's deflate
     # stream equals the anchor's, so the snippet is a valid prefix.

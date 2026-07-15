@@ -20,7 +20,7 @@ by FILENAME:
   * untagged file -> the file-size cell grid, (size - 72) / count / 4,
                      i.e. a uniform int32 row
 
-Each file's COLUMNS mean different things, so a per-file `DataSchema`
+Each file's COLUMNS mean different things, so a per-file `RecordSchema`
 (see `schemas/dat/`) names/types the columns; an untagged file gets a
 synthesized `generic_schema(width)` of `field_0..field_N` int32 columns
 (width from the file size) so it still decodes to named rows.
@@ -28,7 +28,8 @@ synthesized `generic_schema(width)` of `field_0..field_N` int32 columns
 """
 
 from ...assets.dat import DatFile
-from ...schemas.dat.base import data_schema_for, generic_schema
+from ...formats.records import schema_for_filename
+from ...schemas.dat.base import generic_schema
 from ...utils.file import File
 from .registry import DatBody, register
 
@@ -51,8 +52,8 @@ class DataTableBody(DatBody):
 
     # The schema is known here (keyed by filename+version). Untagged files
     # fall back to a uniform int32 grid sized from the file. Either way the
-    # record layout is a `DataSchema`, so reading is one code path.
-    schema = data_schema_for(dat.source_name, dat.version)
+    # record layout is a `RecordSchema`, so reading is one code path.
+    schema = schema_for_filename("dat", dat.source_name, dat.version)
     if schema is None:
       body = file.size - (_HEADER_AND_COUNT + 4)
       schema = generic_schema(body // dat.count // 4)

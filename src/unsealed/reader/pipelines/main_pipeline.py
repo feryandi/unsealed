@@ -15,6 +15,7 @@ from .scr_pipeline import ScrPipeline
 from .spak_pipeline import SpakPipeline
 from .texture_pipeline import TexturePipeline
 from .tsv_pipeline import TsvPipeline
+from .xml_pipeline import XmlPipeline
 
 SUPPORTED_FILE_TYPES = {
   ".act": {"name": "Actor File", "pipeline": ActorPipeline()},
@@ -29,6 +30,7 @@ SUPPORTED_FILE_TYPES = {
   ".dat": {"name": "Data File", "pipeline": DatPipeline()},
   ".scr": {"name": "Script File", "pipeline": ScrPipeline()},
   ".tsv": {"name": "Tab-Separated Table", "pipeline": TsvPipeline()},
+  ".xml": {"name": "XML Data Table", "pipeline": XmlPipeline()},
 }
 
 # Suffixes that vary by a numeric band (e.g. .ed1 … .ed17) and so can't be

@@ -4,10 +4,11 @@ A 92-int stat table; named columns were recovered by correlation vs the
 old ItemFile v10 (item.dat). The rest stay `field_N`.
 """
 
-from .base import Column, DataSchema, F32, I32, register_data_schema
+from .base import Column, RecordSchema, F32, I32, register_schema
 
-register_data_schema(
-  DataSchema(
+register_schema(
+  "dat",
+  RecordSchema(
     name="item_data",
     columns=(
       Column("id", I32),

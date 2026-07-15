@@ -11,8 +11,7 @@ from typing import TYPE_CHECKING, Callable, Dict, Optional
 import pygame
 
 from ...modes import MODES, ImageScene, MenScene, SprScene
-from unsealed.reader.vfs import DiskSource, Resource
-from unsealed.reader.vfs.spak_source import SpakSource
+from unsealed.reader.vfs import DiskSource, Resource, SpakSource
 from ..context import ViewerContext
 
 if TYPE_CHECKING:
@@ -97,7 +96,7 @@ class LoadSystem:
         The interactive path mounts on a worker thread instead
         (world.open_spak_async) so key resolution can't freeze the UI.
         """
-        from unsealed.reader.assets.spak import SpakPasswordError
+        from unsealed.reader.utils.spak import SpakPasswordError
 
         self.reset_spak(world, path)
         try:
@@ -141,7 +140,7 @@ class LoadSystem:
 
     def finish_spak(self, world: "AppWorld", path: Path, result: object) -> None:
         """Main thread: apply a finished mount (a SpakSource, or its error)."""
-        from unsealed.reader.assets.spak import SpakPasswordError
+        from unsealed.reader.utils.spak import SpakPasswordError
 
         spak = world.spak
         spak.active = True

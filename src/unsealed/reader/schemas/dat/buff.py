@@ -6,9 +6,9 @@ point into. Field 1 is a float (round-millisecond duration); the rest
 are int32, still unlabelled (see the shape notes in git history).
 """
 
-from .base import Column, DataSchema, F32, I32, Str, register_type_schema
+from .base import Column, RecordSchema, F32, I32, Str, register_schema
 
-BUFF_SCHEMA = DataSchema(
+BUFF_SCHEMA = RecordSchema(
   name="buff",
   columns=(
     Column("id", I32),
@@ -22,4 +22,9 @@ BUFF_SCHEMA = DataSchema(
   ),
 )
 
-register_type_schema(BUFF_SCHEMA, "Seal Online Buff", (2,))
+register_schema(
+  "dat",
+  BUFF_SCHEMA,
+  type_names=("Seal Online Buff",),
+  versions=(2,),
+)

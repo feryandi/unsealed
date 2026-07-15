@@ -2,7 +2,7 @@ from pathlib import Path, PurePosixPath
 
 from ...assets.blob import Blob
 from ...assets.directory import Directory
-from ...assets.spak import SpakArchive
+from ...utils.spak import SpakArchive
 
 
 class SpakDecoder:

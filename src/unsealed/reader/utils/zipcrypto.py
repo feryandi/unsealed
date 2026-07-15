@@ -4,7 +4,7 @@ A standalone reimplementation of the cipher the standard library runs
 internally, so callers depend only on ``zipfile``'s public API rather
 than its private ``_ZipDecrypter``. Used to decrypt Seal Online ``.spak``
 entries, whose minizip-written check byte makes the fully managed
-``ZipFile.read`` reject them (see ``assets/spak.py``).
+``ZipFile.read`` reject them (see ``utils/spak/archive.py``).
 """
 
 

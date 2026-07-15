@@ -3,10 +3,11 @@
 id + fixed-length name/description strings.
 """
 
-from .base import Column, DataSchema, I32, Str, register_data_schema
+from .base import Column, RecordSchema, I32, Str, register_schema
 
-register_data_schema(
-  DataSchema(
+register_schema(
+  "dat",
+  RecordSchema(
     name="item_string",
     columns=(
       Column("id", I32),

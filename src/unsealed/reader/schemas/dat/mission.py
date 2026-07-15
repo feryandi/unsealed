@@ -3,10 +3,11 @@
 field_8 is an 8-byte int (cells 8-9); the rest are int32.
 """
 
-from .base import Column, DataSchema, I32, I64, register_data_schema
+from .base import Column, RecordSchema, I32, I64, register_schema
 
-register_data_schema(
-  DataSchema(
+register_schema(
+  "dat",
+  RecordSchema(
     name="mission",
     columns=(
       Column("field_0", I32),

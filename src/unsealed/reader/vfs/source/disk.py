@@ -1,36 +1,9 @@
-"""FileSource — where a Resource's bytes come from.
-
-Two implementations exist: DiskSource (a real directory of loose files)
-and SpakSource (mounted .spak archives, decrypt-on-demand; lives in
-vfs/spak_source.py). Both expose the same read/exists/resolve/list API
-so decoders are agnostic to the origin.
-
-Logical names are forward-slash and matched leniently: resolve is the
-one place case-insensitivity + fallback lookups live, so callers never
-re-implement them.
-"""
+"""DiskSource — a FileSource over a directory of loose files."""
 
 from __future__ import annotations
 
 from pathlib import Path, PurePosixPath
-from typing import List, Optional, Protocol, runtime_checkable
-
-
-@runtime_checkable
-class FileSource(Protocol):
-  def read(self, name: str) -> bytes:
-    """Return the bytes of *name*; raise FileNotFoundError if absent."""
-    ...
-
-  def exists(self, name: str) -> bool: ...
-
-  def resolve(self, name: str) -> Optional[str]:
-    """Canonical stored name for *name*, or None if it doesn't exist."""
-    ...
-
-  def list(self, suffix: Optional[str] = None) -> List[str]:
-    """All entry names, optionally filtered by *suffix*."""
-    ...
+from typing import List, Optional
 
 
 class DiskSource:

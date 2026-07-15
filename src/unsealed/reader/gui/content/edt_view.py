@@ -6,8 +6,9 @@ binary — see `formats/edt/classify.py`). This view does the whole chain
 automatically: it hands the decrypted bytes to the same handler that
 would open a loose file of the detected type (via an in-memory
 `Resource`), so the user sees the final table/preview, not the
-ciphertext — with a slim banner noting what it decoded to. XML and
-unrecognized binary have no handler, so they fall back to text / hex.
+ciphertext — with a slim banner noting what it decoded to. XML decodes
+to its embedded-schema table like the others; only unrecognized binary
+has no handler and falls back to text / hex.
 """
 
 from __future__ import annotations
@@ -15,8 +16,7 @@ from __future__ import annotations
 from PySide6.QtWidgets import QLabel, QPlainTextEdit, QVBoxLayout, QWidget
 
 from ...assets.edt import Edt
-from ...vfs import Resource
-from ...vfs.memory_source import MemorySource
+from ...vfs import MemorySource, Resource
 from .registry import ContentContext, for_resource
 from .tree import AssetTree, Node
 

@@ -32,9 +32,8 @@ from PySide6.QtWidgets import (
   QWidget,
 )
 
-from ...assets.spak import SpakPasswordError
-from ...vfs import Resource
-from ...vfs.spak_source import SpakSource
+from ...utils.spak import SpakPasswordError
+from ...vfs import Resource, SpakSource
 from .registry import ContentContext
 
 # Strong refs to running workers so they aren't GC'd mid-run even if

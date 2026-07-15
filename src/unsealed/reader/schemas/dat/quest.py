@@ -15,7 +15,7 @@ group_id form one NPC's dialog; the tree is built from parent_idx.
 has_flag/set_flag join flag.dat; item/reward ids join item.dat.
 """
 
-from .base import Array, Column, DataSchema, I32, Pstr, register_type_schema
+from .base import Array, Column, RecordSchema, I32, Pstr, register_schema
 
 _CONDITIONS = (
   "has_item_0",
@@ -52,7 +52,7 @@ _CONSEQUENCES = (
   "revival_point_id",
 )
 
-QUEST_SCHEMA = DataSchema(
+QUEST_SCHEMA = RecordSchema(
   name="quest",
   columns=(
     (Column("group_id", I32), Column("talk_id", I32))
@@ -67,4 +67,9 @@ QUEST_SCHEMA = DataSchema(
   ),
 )
 
-register_type_schema(QUEST_SCHEMA, "Seal Online QuestFile", (3,))
+register_schema(
+  "dat",
+  QUEST_SCHEMA,
+  type_names=("Seal Online QuestFile",),
+  versions=(3,),
+)

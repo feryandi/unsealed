@@ -26,8 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from ...assets.directory import Directory
-from ...vfs import Resource
-from ...vfs.memory_source import MemorySource
+from ...vfs import MemorySource, Resource
 from .registry import ContentContext
 
 

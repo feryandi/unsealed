@@ -16,6 +16,7 @@ from . import (  # noqa: F401
   spr,
   tex,
   tsv,
+  xml,
 )
 
 __all__ = [
@@ -34,4 +35,5 @@ __all__ = [
   "spr",
   "tex",
   "tsv",
+  "xml",
 ]
