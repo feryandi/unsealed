@@ -39,9 +39,7 @@ class SprMode(BaseMode):
   def render_extensions(self) -> "Iterable[RenderExtension]":
     return self._render_extensions
 
-  def decode(
-    self, res: Resource, shader_cache: Optional[dict] = None
-  ) -> "ViewerScene":
+  def decode(self, res: Resource, shader_cache: Optional[dict] = None) -> "ViewerScene":
     return SprViewerPipeline().run(res)
 
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
@@ -109,7 +107,7 @@ class SprMode(BaseMode):
 
     for atlas_idx, atlas in enumerate(scene.atlases):
       flag = base_flag
-      is_active = (atlas_idx == scene.selected_atlas)
+      is_active = atlas_idx == scene.selected_atlas
       if is_active and scene.selected_sprite == FULL_ATLAS_IDX:
         flag |= imgui.TreeNodeFlags_.selected.value
       label = _atlas_label(atlas.name)
@@ -124,7 +122,7 @@ class SprMode(BaseMode):
         )
         for sprite_idx in sprite_indices:
           item_label = f"sprite_{sprite_idx}##a{atlas_idx}s{sprite_idx}"
-          selected = (is_active and scene.selected_sprite == sprite_idx)
+          selected = is_active and scene.selected_sprite == sprite_idx
           if imgui.selectable(item_label, selected)[0]:
             world.select_spr_entry(atlas_idx, sprite_idx)
         imgui.tree_pop()
@@ -136,9 +134,7 @@ class SprMode(BaseMode):
       cast(SprCamera, mctx.camera).pan(dx, dy)
 
   def on_scroll(self, direction: int, mx: int, my: int, mctx: "ModeContext") -> None:
-    cast(SprCamera, mctx.camera).zoom_step(
-      direction, mx, my, mctx.width, mctx.height
-    )
+    cast(SprCamera, mctx.camera).zoom_step(direction, mx, my, mctx.width, mctx.height)
 
 
 def _atlas_label(ref_filename: str) -> str:

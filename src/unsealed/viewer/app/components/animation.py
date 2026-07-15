@@ -20,6 +20,7 @@ class EntityAnimState:
   node-based matrices are computed for non-skinned meshes whose name matches
   an animation track.
   """
+
   enabled: bool = False
   group_idx: int = 0
   time: float = 0.0
@@ -47,6 +48,7 @@ class AnimationComponent:
   `primary_entity` is the entity controllable by the UI (model mode = entity
   0; map mode = None — all entities auto-play).
   """
+
   states: List[EntityAnimState] = field(default_factory=list)
   primary_entity: Optional[int] = None
 
@@ -55,10 +57,16 @@ class AnimationComponent:
   node_matrices: Dict[int, NDArray] = field(default_factory=dict)
 
   # Lookup helpers rebuilt at each `load()` call.
-  mesh_to_entity: Dict[int, int] = field(default_factory=dict)   # global mesh idx → entity idx
-  mesh_to_local: Dict[int, int] = field(default_factory=dict)    # global mesh idx → entity-local mesh idx
+  mesh_to_entity: Dict[int, int] = field(
+    default_factory=dict
+  )  # global mesh idx → entity idx
+  mesh_to_local: Dict[int, int] = field(
+    default_factory=dict
+  )  # global mesh idx → entity-local mesh idx
   # (mesh_name_lc, source_file) → global mesh idx — for parent-mesh hierarchy lookups.
-  mesh_src_name_to_idx: Dict[Tuple[str, Optional[str]], int] = field(default_factory=dict)
+  mesh_src_name_to_idx: Dict[Tuple[str, Optional[str]], int] = field(
+    default_factory=dict
+  )
 
   # ── UI convenience ───────────────────────────────────────────────────────
 

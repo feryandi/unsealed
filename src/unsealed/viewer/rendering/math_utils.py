@@ -28,13 +28,13 @@ def spherical_billboard(model_mat: NDArray, view: NDArray) -> NDArray:
   scale_z = float(np.linalg.norm(model_mat[:3, 2]))
 
   right = view[0, :3]
-  up    = view[1, :3]
-  fwd   = -view[2, :3]
+  up = view[1, :3]
+  fwd = -view[2, :3]
 
   bb = np.identity(4, dtype=np.float32)
   bb[:3, 0] = right * scale_x
-  bb[:3, 1] = up    * scale_y
-  bb[:3, 2] = fwd   * scale_z
+  bb[:3, 1] = up * scale_y
+  bb[:3, 2] = fwd * scale_z
   bb[:3, 3] = pos
   return bb
 
@@ -62,14 +62,17 @@ def compute_tex_matrix(
       angle = np.radians(params[0] * time)
       cos_a, sin_a = np.cos(angle), np.sin(angle)
       # Rotate around UV centre (0.5, 0.5): T(-0.5) R T(0.5)
-      t_to   = np.array([[1, 0, -0.5], [0, 1, -0.5], [0, 0, 1]], dtype=np.float64)
-      rot    = np.array([[cos_a, -sin_a, 0], [sin_a, cos_a, 0], [0, 0, 1]], dtype=np.float64)
+      t_to = np.array([[1, 0, -0.5], [0, 1, -0.5], [0, 0, 1]], dtype=np.float64)
+      rot = np.array(
+        [[cos_a, -sin_a, 0], [sin_a, cos_a, 0], [0, 0, 1]], dtype=np.float64
+      )
       t_back = np.array([[1, 0, 0.5], [0, 1, 0.5], [0, 0, 1]], dtype=np.float64)
       result = t_back @ rot @ t_to @ result
 
     elif mod_type == "scroll" and len(params) >= 2:
-      # Q3 scroll is in game UV space (V=0 at top). Vertex shader flips V into GL
-      # UV space before applying this matrix, so T must be negated to preserve direction.
+      # Q3 scroll is in game UV space (V=0 at top). Vertex shader flips V
+      # into GL UV space before applying this matrix, so T must be negated
+      # to preserve direction.
       tx, ty = params[0] * time, -params[1] * time
       trans = np.array([[1, 0, tx], [0, 1, ty], [0, 0, 1]], dtype=np.float64)
       result = trans @ result

@@ -67,7 +67,10 @@ def _kr(raw: bytes) -> str:
 @dataclass(frozen=True)
 class _I64(FieldType):
   cells = 2
-  def read(self, cursor, record=None): return struct.unpack("<q", cursor.read(8))[0]
+
+  def read(self, cursor, record=None):
+    return struct.unpack("<q", cursor.read(8))[0]
+
   def from_cells(self, cells):
     raw = (cells[0] & 0xFFFFFFFF) | ((cells[1] & 0xFFFFFFFF) << 32)
     return raw - (1 << 64) if raw >= (1 << 63) else raw
@@ -76,7 +79,10 @@ class _I64(FieldType):
 @dataclass(frozen=True)
 class _U64(FieldType):
   cells = 2
-  def read(self, cursor, record=None): return struct.unpack("<Q", cursor.read(8))[0]
+
+  def read(self, cursor, record=None):
+    return struct.unpack("<Q", cursor.read(8))[0]
+
   def from_cells(self, cells):
     return (cells[0] & 0xFFFFFFFF) | ((cells[1] & 0xFFFFFFFF) << 32)
 
@@ -84,9 +90,14 @@ class _U64(FieldType):
 @dataclass(frozen=True)
 class _F64(FieldType):
   cells = 2
-  def read(self, cursor, record=None): return struct.unpack("<d", cursor.read(8))[0]
+
+  def read(self, cursor, record=None):
+    return struct.unpack("<d", cursor.read(8))[0]
+
   def from_cells(self, cells):
-    return struct.unpack("<d", struct.pack("<II", cells[0] & 0xFFFFFFFF, cells[1] & 0xFFFFFFFF))[0]
+    return struct.unpack(
+      "<d", struct.pack("<II", cells[0] & 0xFFFFFFFF, cells[1] & 0xFFFFFFFF)
+    )[0]
 
 
 @dataclass(frozen=True)
@@ -112,7 +123,9 @@ class Str(FieldType):
 @dataclass(frozen=True)
 class _Cstr(FieldType):
   """Null-terminated EUC-KR string (variable length)."""
+
   cells = None
+
   def read(self, cursor, record=None):
     return _kr(cursor.read_cstring())
 
@@ -122,7 +135,9 @@ class _Pstr(FieldType):
   """Length-prefixed EUC-KR string: [int32 len][len bytes]. The declared
   length often includes a trailing null terminator, so the value is cut
   at the first null (an all-null buffer reads as an empty string)."""
+
   cells = None
+
   def read(self, cursor, record=None):
     n = cursor.read_int()
     return _kr(cursor.read(n).split(b"\x00", 1)[0]) if n > 0 else ""
@@ -142,4 +157,6 @@ Cstr, Pstr = _Cstr(), _Pstr()
 def generic_schema(width: int) -> RecordSchema:
   """Placeholder schema of `width` plain int32 columns (field_0...), for
   untagged `Seal Online Data` files so they still decode to named rows."""
-  return RecordSchema(name="generic", columns=tuple(Column(f"field_{i}", I32) for i in range(width)))
+  return RecordSchema(
+    name="generic", columns=tuple(Column(f"field_{i}", I32) for i in range(width))
+  )

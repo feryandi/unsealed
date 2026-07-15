@@ -28,5 +28,6 @@ class EdpPipeline:
       encoding="utf-8",
     )
     print(
-      f"{filepath.name}: {len(archive.members)} member(s), {total} item(s) -> {out.name}"
+      f"{filepath.name}: {len(archive.members)} member(s), "
+      f"{total} item(s) -> {out.name}"
     )

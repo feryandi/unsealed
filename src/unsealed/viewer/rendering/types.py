@@ -16,13 +16,14 @@ from unsealed.viewer.camera.base import Camera
 # Maximum bones supported by the skinning shader.
 _MAX_BONES = 128
 
-# Pre-built flat array of _MAX_BONES identity matrices (row-major, ready for GL_TRUE upload).
+# Pre-built flat array of _MAX_BONES identity matrices (row-major, ready
+# for GL_TRUE upload).
 _IDENTITY_BONE_FLAT = np.tile(np.identity(4, dtype=np.float32).flatten(), _MAX_BONES)
 
 
 @dataclass
 class _Q3GpuStage:
-  """GPU-side representation of one Q3 shader stage (uploaded texture + blend params)."""
+  """One Q3 shader stage on the GPU (uploaded texture + blend params)."""
 
   tex_id: Optional[int]
   blend_src: int

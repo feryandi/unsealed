@@ -13,7 +13,12 @@ from ...scenes import AnimatedEntity, ViewerMesh
 from ...scenes.scene import _STRIDE_PLAIN, _STRIDE_SKINNED
 from ..base import AnimationPolicy, BaseMode, RenderExtension
 from .camera import MapCamera
-from .extensions import GridExtension, SkyExtension, TerrainExtension, WalkabilityExtension
+from .extensions import (
+  GridExtension,
+  SkyExtension,
+  TerrainExtension,
+  WalkabilityExtension,
+)
 from .pipeline import MapViewerPipeline
 from .scene import MapScene
 
@@ -122,9 +127,7 @@ class MapMode(BaseMode):
       imgui.text_disabled(line)
     imgui.end()
 
-  def _draw_rendering_settings_window(
-    self, world: "AppWorld", scene: MapScene
-  ) -> None:
+  def _draw_rendering_settings_window(self, world: "AppWorld", scene: MapScene) -> None:
     """Toggle buttons for shader / grid / walkability overlays."""
     imgui.set_next_window_pos((10, 220), imgui.Cond_.first_use_ever.value)
     imgui.begin("Rendering Settings")
@@ -192,7 +195,7 @@ class MapMode(BaseMode):
       imgui.separator()
       imgui.text("Shaders (click for detail):")
       for s in shaders:
-        active = (world.scene.selected_shader is s)
+        active = world.scene.selected_shader is s
         if imgui.selectable(f"{s.name}##sh{id(s)}", active)[0]:
           world.select_shader(s)
     imgui.end()

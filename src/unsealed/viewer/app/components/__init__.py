@@ -6,4 +6,12 @@ from .scene_state import SceneComponent
 from .spak_state import SpakComponent
 from .status_state import StatusComponent
 
-__all__ = ["AnimationComponent", "WindowComponent", "InputComponent", "RenderComponent", "SceneComponent", "SpakComponent", "StatusComponent"]
+__all__ = [
+  "AnimationComponent",
+  "WindowComponent",
+  "InputComponent",
+  "RenderComponent",
+  "SceneComponent",
+  "SpakComponent",
+  "StatusComponent",
+]

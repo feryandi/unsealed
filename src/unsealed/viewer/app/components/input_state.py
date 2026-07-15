@@ -6,6 +6,6 @@ from typing import List, Optional
 
 @dataclass
 class InputComponent:
-    btn: List[bool] = field(default_factory=lambda: [False, False, False])
-    captured: bool = False
-    lmb_down_pos: Optional[tuple[int, int]] = None
+  btn: List[bool] = field(default_factory=lambda: [False, False, False])
+  captured: bool = False
+  lmb_down_pos: Optional[tuple[int, int]] = None

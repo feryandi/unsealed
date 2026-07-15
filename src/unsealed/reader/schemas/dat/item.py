@@ -84,7 +84,9 @@ _V10_STATS = tuple(
 ITEM_V10_SCHEMA = RecordSchema(
   name="item_v10",
   until_eof=True,  # header count is a GLOBAL total; walk the leading band to EOF
-  columns=(Column("id", I32), Column("name", Pstr)) + _V10_STATS + (Column("description", Pstr),),
+  columns=(Column("id", I32), Column("name", Pstr))
+  + _V10_STATS
+  + (Column("description", Pstr),),
 )
 
 register_schema(

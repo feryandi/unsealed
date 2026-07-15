@@ -13,36 +13,42 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from OpenGL.GL import (
-    GL_ARRAY_BUFFER,
-    GL_DEPTH_TEST,
-    GL_DYNAMIC_DRAW,
-    GL_FALSE,
-    GL_FLOAT,
-    GL_TEXTURE0,
-    GL_TEXTURE_2D,
-    GL_TRIANGLES,
-    glActiveTexture,
-    glBindBuffer,
-    glBindTexture,
-    glBindVertexArray,
-    glBufferData,
-    glDeleteBuffers,
-    glDeleteProgram,
-    glDeleteTextures,
-    glDeleteVertexArrays,
-    glDisable,
-    glDrawArrays,
-    glEnable,
-    glEnableVertexAttribArray,
-    glGenBuffers,
-    glGenVertexArrays,
-    glGetUniformLocation,
-    glUniform1i,
-    glUseProgram,
-    glVertexAttribPointer,
+  GL_ARRAY_BUFFER,
+  GL_DEPTH_TEST,
+  GL_DYNAMIC_DRAW,
+  GL_FALSE,
+  GL_FLOAT,
+  GL_TEXTURE0,
+  GL_TEXTURE_2D,
+  GL_TRIANGLES,
+  glActiveTexture,
+  glBindBuffer,
+  glBindTexture,
+  glBindVertexArray,
+  glBufferData,
+  glDeleteBuffers,
+  glDeleteProgram,
+  glDeleteTextures,
+  glDeleteVertexArrays,
+  glDisable,
+  glDrawArrays,
+  glEnable,
+  glEnableVertexAttribArray,
+  glGenBuffers,
+  glGenVertexArrays,
+  glGetUniformLocation,
+  glUniform1i,
+  glUseProgram,
+  glVertexAttribPointer,
 )
 
-from ...rendering.shaders import _IMG_FRAG, _IMG_VERT, _compile_prog, _u_mat4, _upload_rgba
+from ...rendering.shaders import (
+  _IMG_FRAG,
+  _IMG_VERT,
+  _compile_prog,
+  _u_mat4,
+  _upload_rgba,
+)
 from ..base import RenderPhase
 from .camera import ImageCamera
 from .scene import ImageScene
@@ -56,6 +62,7 @@ if TYPE_CHECKING:
 
 class ImageExtension:
   """Renders the 2-D texture quad. Owned by ImageMode."""
+
   phase = RenderPhase.BACKGROUND
 
   def __init__(self) -> None:
@@ -93,12 +100,36 @@ class ImageExtension:
     hh = self._image_h * 0.5
     verts = np.array(
       [
-        -hw, -hh, 0.0, 0.0, 0.0,
-         hw, -hh, 0.0, 1.0, 0.0,
-         hw,  hh, 0.0, 1.0, 1.0,
-        -hw, -hh, 0.0, 0.0, 0.0,
-         hw,  hh, 0.0, 1.0, 1.0,
-        -hw,  hh, 0.0, 0.0, 1.0,
+        -hw,
+        -hh,
+        0.0,
+        0.0,
+        0.0,
+        hw,
+        -hh,
+        0.0,
+        1.0,
+        0.0,
+        hw,
+        hh,
+        0.0,
+        1.0,
+        1.0,
+        -hw,
+        -hh,
+        0.0,
+        0.0,
+        0.0,
+        hw,
+        hh,
+        0.0,
+        1.0,
+        1.0,
+        -hw,
+        hh,
+        0.0,
+        0.0,
+        1.0,
       ],
       dtype=np.float32,
     )

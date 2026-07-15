@@ -33,11 +33,11 @@ from imgui_bundle.python_backends.pygame_backend import PygameRenderer
 # list). imgui 1.92's dynamic atlas rasterizes glyphs on demand — no glyph
 # ranges needed.
 _FONT_CANDIDATES = (
-    r"C:\Windows\Fonts\malgun.ttf",  # Malgun Gothic (Windows Korean UI font)
-    r"C:\Windows\Fonts\gulim.ttc",
-    r"C:\Windows\Fonts\batang.ttc",
-    "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
-    "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+  r"C:\Windows\Fonts\malgun.ttf",  # Malgun Gothic (Windows Korean UI font)
+  r"C:\Windows\Fonts\gulim.ttc",
+  r"C:\Windows\Fonts\batang.ttc",
+  "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+  "/System/Library/Fonts/AppleSDGothicNeo.ttc",
 )
 _FONT_SIZE = 16.0
 

@@ -106,9 +106,7 @@ class _ImageCanvas(QWidget):
 class ImageView(QWidget):
   """Preview canvas (left) + properties panel (right)."""
 
-  def __init__(
-    self, pixmap: Optional[QPixmap], sections: list[Section]
-  ) -> None:
+  def __init__(self, pixmap: Optional[QPixmap], sections: list[Section]) -> None:
     super().__init__()
     self.setObjectName("imageView")
 

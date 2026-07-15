@@ -4,6 +4,7 @@ GLSL shader loader and compilation helpers.
 Shader source files live in the glsl/ subdirectory alongside this module.
 The module-level constants (_MESH_VERT, etc.) are loaded once at import time.
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -11,7 +12,44 @@ from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
-from OpenGL.GL import *  # noqa: F401, F403
+from OpenGL.GL import (
+  GL_COMPILE_STATUS,
+  GL_FRAGMENT_SHADER,
+  GL_LINEAR,
+  GL_LINEAR_MIPMAP_LINEAR,
+  GL_LINK_STATUS,
+  GL_REPEAT,
+  GL_RGBA,
+  GL_TEXTURE_2D,
+  GL_TEXTURE_MAG_FILTER,
+  GL_TEXTURE_MIN_FILTER,
+  GL_TEXTURE_WRAP_S,
+  GL_TEXTURE_WRAP_T,
+  GL_TRUE,
+  GL_UNSIGNED_BYTE,
+  GL_VERTEX_SHADER,
+  glAttachShader,
+  glBindTexture,
+  glCompileShader,
+  glCreateProgram,
+  glCreateShader,
+  glDeleteShader,
+  glGenerateMipmap,
+  glGenTextures,
+  glGetFloatv,
+  glGetProgramInfoLog,
+  glGetProgramiv,
+  glGetShaderInfoLog,
+  glGetShaderiv,
+  glGetUniformLocation,
+  glLinkProgram,
+  glShaderSource,
+  glTexImage2D,
+  glTexParameterf,
+  glTexParameteri,
+  glUniform3f,
+  glUniformMatrix4fv,
+)
 
 
 _GLSL_DIR = Path(__file__).parent / "glsl"
@@ -23,28 +61,28 @@ def _load(name: str) -> str:
 
 # ─── Shader sources (loaded from glsl/) ──────────────────────────────────────
 
-_MESH_VERT     = _load("mesh.vert.glsl")
-_SKIN_VERT     = _load("skin.vert.glsl")
-_MESH_FRAG     = _load("mesh.frag.glsl")
-_INST_VERT     = _load("inst.vert.glsl")
-_WIRE_VERT     = _load("wire.vert.glsl")
-_WIRE_FRAG     = _load("wire.frag.glsl")
-_IMG_VERT      = _load("img.vert.glsl")
-_IMG_FRAG      = _load("img.frag.glsl")
-_TERRAIN_VERT  = _load("terrain.vert.glsl")
-_TERRAIN_FRAG  = _load("terrain.frag.glsl")
-_SEL_VERT      = _load("sel.vert.glsl")
+_MESH_VERT = _load("mesh.vert.glsl")
+_SKIN_VERT = _load("skin.vert.glsl")
+_MESH_FRAG = _load("mesh.frag.glsl")
+_INST_VERT = _load("inst.vert.glsl")
+_WIRE_VERT = _load("wire.vert.glsl")
+_WIRE_FRAG = _load("wire.frag.glsl")
+_IMG_VERT = _load("img.vert.glsl")
+_IMG_FRAG = _load("img.frag.glsl")
+_TERRAIN_VERT = _load("terrain.vert.glsl")
+_TERRAIN_FRAG = _load("terrain.frag.glsl")
+_SEL_VERT = _load("sel.vert.glsl")
 _SEL_INST_VERT = _load("sel_inst.vert.glsl")
-_SEL_FRAG      = _load("sel.frag.glsl")
-_HUD_VERT      = _load("hud.vert.glsl")
-_HUD_FRAG      = _load("hud.frag.glsl")
-_GBUFFER_FRAG  = _load("gbuffer.frag.glsl")
+_SEL_FRAG = _load("sel.frag.glsl")
+_HUD_VERT = _load("hud.vert.glsl")
+_HUD_FRAG = _load("hud.frag.glsl")
+_GBUFFER_FRAG = _load("gbuffer.frag.glsl")
 _LIGHTING_VERT = _load("lighting.vert.glsl")
 _LIGHTING_FRAG = _load("lighting.frag.glsl")
-_Q3STAGE_VERT  = _load("q3stage.vert.glsl")
-_Q3STAGE_FRAG  = _load("q3stage.frag.glsl")
-_SKY_VERT      = _load("sky.vert.glsl")
-_SKY_FRAG      = _load("sky.frag.glsl")
+_Q3STAGE_VERT = _load("q3stage.vert.glsl")
+_Q3STAGE_FRAG = _load("q3stage.frag.glsl")
+_SKY_VERT = _load("sky.vert.glsl")
+_SKY_FRAG = _load("sky.frag.glsl")
 
 
 # ─── GL compilation helpers ───────────────────────────────────────────────────
@@ -108,6 +146,7 @@ def _aniso_setup() -> None:
       GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT,
       GL_TEXTURE_MAX_ANISOTROPY_EXT,
     )
+
     _ANISO_MAX = float(glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT))
     _ANISO_TEX_PARAM = GL_TEXTURE_MAX_ANISOTROPY_EXT
   except Exception:

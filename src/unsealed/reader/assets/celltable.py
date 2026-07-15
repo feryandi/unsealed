@@ -32,4 +32,7 @@ class CellTable(Asset):
     self.records: List[Dict[str, Any]] = []
 
   def __repr__(self) -> str:
-    return f"<{type(self).__name__} {self.name!r} lines:{len(self.lines)} rows:{len(self.rows)}>"
+    return (
+      f"<{type(self).__name__} {self.name!r} "
+      f"lines:{len(self.lines)} rows:{len(self.rows)}>"
+    )

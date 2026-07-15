@@ -14,7 +14,6 @@ pixels so only the blocked region paints.
 from __future__ import annotations
 
 import ctypes
-from typing import Optional
 
 import numpy as np
 from numpy.typing import NDArray
@@ -26,7 +25,6 @@ from OpenGL.GL import (
   GL_ELEMENT_ARRAY_BUFFER,
   GL_FALSE,
   GL_FLOAT,
-  GL_LINEAR,
   GL_NEAREST,
   GL_ONE_MINUS_SRC_ALPHA,
   GL_R8,
@@ -54,7 +52,6 @@ from OpenGL.GL import (
   glDeleteTextures,
   glDeleteVertexArrays,
   glDepthMask,
-  glDisable,
   glDrawElements,
   glEnable,
   glEnableVertexAttribArray,
@@ -71,10 +68,10 @@ from OpenGL.GL import (
   glVertexAttribPointer,
 )
 
-GL_UNPACK_ALIGNMENT = 0x0CF5  # not always re-exported by PyOpenGL.GL package
-
 from ...rendering.shaders import _compile_prog, _u_mat4
 from .scene import MapScene
+
+GL_UNPACK_ALIGNMENT = 0x0CF5  # not always re-exported by PyOpenGL.GL package
 
 
 _WALK_VERT = """
@@ -205,9 +202,7 @@ class WalkabilityRenderer:
     self._tex = glGenTextures(1)
     glBindTexture(GL_TEXTURE_2D, self._tex)
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
-    glTexImage2D(
-      GL_TEXTURE_2D, 0, GL_R8, W, H, 0, GL_RED, GL_UNSIGNED_BYTE, data
-    )
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, W, H, 0, GL_RED, GL_UNSIGNED_BYTE, data)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
@@ -266,6 +261,7 @@ class WalkabilityRenderer:
     loc = glGetUniformLocation(self._prog, "uBlockedColor")
     if loc != -1:
       from OpenGL.GL import glUniform4f
+
       glUniform4f(loc, *self._BLOCKED_COLOR)
 
     glBindVertexArray(self._vao)

@@ -1,7 +1,6 @@
 import base64
 import io
 import math
-from platform import node
 import struct
 from typing import Any, Dict, List, Optional
 
@@ -80,7 +79,9 @@ class GltfEncoder:
         bitmaps.append(bitmap)
       # else:
       #   if not is_string_empty(material.bitmap):
-      #     raise Exception("Expect bitmap to be empty on material that has submaterial")
+      #     raise Exception(
+      #       "Expect bitmap to be empty on material that has submaterial"
+      #     )
       self.geo_material_idx_to_gltf_material_idx[idx] = len(bitmaps) - max(1, len(subs))
 
   def __add_material(self, bitmap: str, alpha_mode: str = "MASK") -> None:
@@ -96,11 +97,8 @@ class GltfEncoder:
     if not is_string_empty(bitmap):
       bitmap_filename = bitmap.split(".")[0]
       bitmap_png = bitmap_filename + ".png"  # TODO: Streamline this into pipeline
-      self.gltf["images"].append(
-        {
-          "uri": bitmap_png  # TODO: Streamline this into pipeline, GLTF only supports PNG/JPG
-        }
-      )
+      # TODO: Streamline this into pipeline, GLTF only supports PNG/JPG
+      self.gltf["images"].append({"uri": bitmap_png})
       self.gltf["textures"].append({"source": len(self.gltf["images"]) - 1})
       self.gltf["materials"][-1]["pbrMetallicRoughness"]["baseColorTexture"] = {
         "index": len(self.gltf["textures"]) - 1

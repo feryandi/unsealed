@@ -57,7 +57,9 @@ _STATS = tuple(
 
 SKILL_SCHEMA = RecordSchema(
   name="skill",
-  columns=(Column("id", I32), Column("name", Str(32))) + _STATS + (Column("description", Pstr),),
+  columns=(Column("id", I32), Column("name", Str(32)))
+  + _STATS
+  + (Column("description", Pstr),),
 )
 
 register_schema(

@@ -1,4 +1,7 @@
-"""exbox_exchange config table (`Seal Online Data` container, columns not yet identified)."""
+"""exbox_exchange config table.
+
+A `Seal Online Data` container; columns are not yet identified.
+"""
 
 from .base import Column, RecordSchema, I32, register_schema
 

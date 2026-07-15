@@ -1,4 +1,7 @@
-"""Attendance_Reward config table (`Seal Online Data` container, columns not yet identified)."""
+"""Attendance_Reward config table.
+
+A `Seal Online Data` container; columns are not yet identified.
+"""
 
 from .base import Column, RecordSchema, I32, register_schema
 
@@ -7,14 +10,14 @@ register_schema(
   RecordSchema(
     name="attendance_reward",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
+      Column("ID", I32),
+      Column("day", I32),
       Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
+      Column("reward_item_id", I32),
+      Column("reward_amount", I32),
       Column("field_5", I32),
-      Column("field_6", I32),
-      Column("field_7", I32),
+      Column("cummulative_reward_item_id", I32),
+      Column("cummulative_reward_amount", I32),
       Column("field_8", I32),
     ),
   ),

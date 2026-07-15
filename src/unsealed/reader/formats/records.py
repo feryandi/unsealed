@@ -59,22 +59,34 @@ class FieldType:
 @dataclass(frozen=True)
 class _I32(FieldType):
   cells = 1
-  def read(self, cursor, record=None): return cursor.read_int()
-  def from_cells(self, cells): return cells[0]
+
+  def read(self, cursor, record=None):
+    return cursor.read_int()
+
+  def from_cells(self, cells):
+    return cells[0]
 
 
 @dataclass(frozen=True)
 class _U32(FieldType):
   cells = 1
-  def read(self, cursor, record=None): return cursor.read_uint()
-  def from_cells(self, cells): return cells[0] & 0xFFFFFFFF
+
+  def read(self, cursor, record=None):
+    return cursor.read_uint()
+
+  def from_cells(self, cells):
+    return cells[0] & 0xFFFFFFFF
 
 
 @dataclass(frozen=True)
 class _F32(FieldType):
   cells = 1
-  def read(self, cursor, record=None): return cursor.read_float()
-  def from_cells(self, cells): return struct.unpack("<f", struct.pack("<i", cells[0]))[0]
+
+  def read(self, cursor, record=None):
+    return cursor.read_float()
+
+  def from_cells(self, cells):
+    return struct.unpack("<f", struct.pack("<i", cells[0]))[0]
 
 
 I32, U32, F32 = _I32(), _U32(), _F32()
@@ -214,7 +226,7 @@ class RecordSchema:
       pos = 0
       for c in self.columns:
         n = c.type.cells
-        rec[c.name] = c.type.from_cells(cells[pos:pos + n])
+        rec[c.name] = c.type.from_cells(cells[pos : pos + n])
         pos += n
     else:  # stream field by field (variable length, or a cell cursor)
       for c in self.columns:
@@ -280,7 +292,9 @@ class SchemaRegistry:
       raise ValueError(f"duplicate schema name {schema.name!r} for format {fmt!r}")
     self._schemas[key] = schema
     for pat in patterns:
-      self._filename_rules.append((fmt, re.compile(pat, re.IGNORECASE), versions, schema.name))
+      self._filename_rules.append(
+        (fmt, re.compile(pat, re.IGNORECASE), versions, schema.name)
+      )
     for type_name in type_names:
       self._type_rules.append((fmt, _normalize_type(type_name), versions, schema.name))
 

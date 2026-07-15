@@ -318,7 +318,10 @@ class ModelViewerPipeline:
 
   @staticmethod
   def _build_animation_groups(animations: Dict) -> List[ViewerAnimationGroup]:
-    """Convert model.animations (Dict[str, List[Animation]]) into ViewerAnimationGroups."""
+    """Convert model.animations into ViewerAnimationGroups.
+
+    The input is a Dict[str, List[Animation]].
+    """
     groups: List[ViewerAnimationGroup] = []
     for action_name, anim_list in animations.items():
       group = ViewerAnimationGroup(

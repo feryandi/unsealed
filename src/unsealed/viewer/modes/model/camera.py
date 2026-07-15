@@ -21,10 +21,10 @@ class OrbitCamera(Camera):
   """
 
   def __init__(self) -> None:
-    self.theta: float = 45.0    # azimuth, degrees
-    self.phi: float = 25.0      # elevation, degrees
+    self.theta: float = 45.0  # azimuth, degrees
+    self.phi: float = 25.0  # elevation, degrees
     self.distance: float = 10.0
-    self._dist_target: float = 10.0   # smooth-zoom target
+    self._dist_target: float = 10.0  # smooth-zoom target
     self.target: NDArray = np.zeros(3, dtype=np.float32)
     self.fov: float = 45.0
     self.near: float = 0.01
@@ -54,7 +54,9 @@ class OrbitCamera(Camera):
       np.array([0.0, 1.0, 0.0], dtype=np.float32),
     )
 
-  def projection_matrix(self, aspect: float, width: int = 0, height: int = 0) -> NDArray:
+  def projection_matrix(
+    self, aspect: float, width: int = 0, height: int = 0
+  ) -> NDArray:
     return self.perspective(self.fov, aspect, self.near, self.far)
 
   # ── input handlers ────────────────────────────────────────────────────────

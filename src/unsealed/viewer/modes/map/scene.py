@@ -17,7 +17,8 @@ class MapScene(ThreeDimensionalScene):
   terrain_vertex_data: Optional[NDArray] = None
   # Flat uint32 index buffer for GL_TRIANGLES
   terrain_index_data: Optional[NDArray] = None
-  # 64-element lists: terrain_layer_a[tile] / terrain_layer_b[tile] → 1-based texture slot
+  # 64-element lists: terrain_layer_a[tile] / terrain_layer_b[tile] →
+  # 1-based texture slot
   terrain_layer_a: List[int] = field(default_factory=list)
   terrain_layer_b: List[int] = field(default_factory=list)
   # Up to 12 terrain texture slots (raw RGBA bytes, top-to-bottom row order)

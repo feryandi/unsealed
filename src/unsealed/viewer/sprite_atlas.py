@@ -55,9 +55,9 @@ class SpriteAtlas:
   width/height stay around for UV math.
   """
 
-  name: str               # the original `ref_filename` field from the .spr
-  width: int              # pixels
-  height: int             # pixels
+  name: str  # the original `ref_filename` field from the .spr
+  width: int  # pixels
+  height: int  # pixels
   rgba: Optional[np.ndarray] = None  # HxWx4 uint8; None after GPU upload
 
 
@@ -138,12 +138,14 @@ def decode_spr_for_viewer(
     if arr is None:
       continue
     idx_by_name[ref] = len(atlases)
-    atlases.append(SpriteAtlas(
-      name=ref,
-      width=int(arr.shape[1]),
-      height=int(arr.shape[0]),
-      rgba=arr,
-    ))
+    atlases.append(
+      SpriteAtlas(
+        name=ref,
+        width=int(arr.shape[1]),
+        height=int(arr.shape[0]),
+        rgba=arr,
+      )
+    )
 
   # Build sprite_refs from the .spr's quad entries. Bounds-clamp so a
   # malformed quad can't produce a negative or out-of-image rect.
@@ -160,14 +162,14 @@ def decode_spr_for_viewer(
       atlas_idx=atlas_idx, left=0, top=0, right=w, bottom=h
     )
     for i, (left, right, top, bottom) in enumerate(quads):
-      l = max(0, min(int(left), w))
-      r = max(0, min(int(right), w))
-      t = max(0, min(int(top), h))
-      b = max(0, min(int(bottom), h))
-      if r <= l or b <= t:
+      left = max(0, min(int(left), w))
+      right = max(0, min(int(right), w))
+      top = max(0, min(int(top), h))
+      bottom = max(0, min(int(bottom), h))
+      if right <= left or bottom <= top:
         continue
       sprite_refs[(ref_filename, i)] = SpriteRef(
-        atlas_idx=atlas_idx, left=l, top=t, right=r, bottom=b
+        atlas_idx=atlas_idx, left=left, top=top, right=right, bottom=bottom
       )
 
   if _PROFILE:
@@ -245,6 +247,7 @@ def _decode_atlas_to_rgba(
   t0 = time.perf_counter()
   try:
     from PIL import Image
+
     image = Image.open(BytesIO(blob.value))
     if image.mode != "RGBA":
       image = image.convert("RGBA")

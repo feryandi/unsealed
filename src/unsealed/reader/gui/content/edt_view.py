@@ -9,11 +9,26 @@ would open a loose file of the detected type (via an in-memory
 ciphertext — with a slim banner noting what it decoded to. XML decodes
 to its embedded-schema table like the others; only unrecognized binary
 has no handler and falls back to text / hex.
+
+The banner also switches between that parsed view and the decrypted
+payload as it sits on disk — raw text or a hexdump — so a schema can be
+checked against the bytes it was read from.
 """
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QLabel, QPlainTextEdit, QVBoxLayout, QWidget
+from typing import Callable
+
+from PySide6.QtWidgets import (
+  QButtonGroup,
+  QHBoxLayout,
+  QLabel,
+  QPlainTextEdit,
+  QPushButton,
+  QStackedWidget,
+  QVBoxLayout,
+  QWidget,
+)
 
 from ...assets.edt import Edt
 from ...vfs import MemorySource, Resource
@@ -39,7 +54,7 @@ def _decode_text(data: bytes) -> str:
   return data.decode("latin-1", "replace")
 
 
-def _hexdump(data: bytes, limit: int = 8192) -> str:
+def _hexdump(data: bytes, limit: int = 1 << 18) -> str:
   lines = []
   for off in range(0, min(len(data), limit), 16):
     chunk = data[off : off + 16]
@@ -104,28 +119,72 @@ def _looks_textual(data: bytes) -> bool:
   return bad / len(text) < 0.05
 
 
+class _Lazy(QWidget):
+  """Builds its child the first time the page is shown."""
+
+  def __init__(self, build: Callable[[], QWidget]) -> None:
+    super().__init__()
+    self._build = build
+    self._layout = QVBoxLayout(self)
+    self._layout.setContentsMargins(0, 0, 0, 0)
+
+  def showEvent(self, event) -> None:
+    if self._build is not None:
+      self._layout.addWidget(self._build())
+      self._build = None
+    super().showEvent(event)
+
+
 class EdtView(QWidget):
-  """Banner ("decoded to …") over the converted inner view."""
+  """Banner ("decoded to …") + view switcher over the inner view.
+
+  Three pages share the one decrypted payload: the parsed view a loose
+  file of the detected type would get, the payload as text, and a
+  hexdump. The raw pages are built lazily — a multi-MB hexdump is not
+  worth formatting for a user who only wanted the table."""
 
   def __init__(self, edt: Edt, ctx: ContentContext) -> None:
     super().__init__()
     self.setObjectName("edtView")
-    data = edt.value or b""
+    self._data = edt.value or b""
     ext = (edt.extension or "bin").lower()
     stem = edt.name or ctx.resource.stem
     name = f"{stem}.{ext}"
 
     try:
-      inner, kind = _inner_view(name, data, ext, ctx)
+      inner, kind = _inner_view(name, self._data, ext, ctx)
     except Exception as exc:  # a bad inner decode shouldn't lose the banner
       inner = _text_preview(f"Couldn't open the decoded {ext!r} content:\n\n{exc}")
       kind = _KIND.get(ext, ext)
 
-    banner = QLabel(f"Decrypted .edt  →  {kind}   ·   {len(data):,} bytes")
+    self._stack = QStackedWidget()
+    self._stack.addWidget(inner)
+    self._stack.addWidget(_Lazy(lambda: _text_preview(_decode_text(self._data))))
+    self._stack.addWidget(_Lazy(lambda: _text_preview(_hexdump(self._data))))
+
+    label = QLabel(f"Decrypted .edt  →  {kind}   ·   {len(self._data):,} bytes")
+    label.setObjectName("edtBannerLabel")
+
+    banner = QWidget()
     banner.setObjectName("edtBanner")
+    row = QHBoxLayout(banner)
+    row.setContentsMargins(12, 6, 12, 6)
+    row.setSpacing(6)
+    row.addWidget(label)
+    row.addStretch(1)
+    self._buttons = QButtonGroup(self)
+    self._buttons.setExclusive(True)
+    for index, text in enumerate(("Parsed", "Raw", "Hex")):
+      button = QPushButton(text)
+      button.setObjectName("edtModeButton")
+      button.setCheckable(True)
+      button.setChecked(index == 0)
+      self._buttons.addButton(button, index)
+      row.addWidget(button)
+    self._buttons.idClicked.connect(self._stack.setCurrentIndex)
 
     layout = QVBoxLayout(self)
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(0)
     layout.addWidget(banner)
-    layout.addWidget(inner, stretch=1)
+    layout.addWidget(self._stack, stretch=1)

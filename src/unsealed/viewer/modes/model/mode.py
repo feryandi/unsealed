@@ -127,7 +127,7 @@ class ModelMode(BaseMode):
     if kr is not None:
       imgui.push_font(kr, 0.0)  # 0.0 = keep current size
     for i, group in enumerate(entity.animation_groups):
-      selected = (i == current_idx)
+      selected = i == current_idx
       if imgui.selectable(f"{group.name}##anim{i}", selected)[0]:
         world.anim_select(i)
     if kr is not None:

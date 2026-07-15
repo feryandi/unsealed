@@ -191,12 +191,24 @@ QScrollArea#imageProps {{
 
 /* EDT decrypt-and-convert view ------------------------------- */
 QWidget#edtView {{ background: {BG}; }}
-QLabel#edtBanner {{
+QWidget#edtBanner {{
   background: {TAB_STRIP};
-  color: {ACCENT};
   border-bottom: 1px solid {BORDER};
-  padding: 6px 12px;
+}}
+QLabel#edtBannerLabel {{ color: {ACCENT}; font-size: 12px; }}
+QPushButton#edtModeButton {{
+  color: {MUTED};
+  background: {TAB_INACTIVE};
+  border: 1px solid {BORDER};
+  border-radius: 5px;
+  padding: 3px 12px;
   font-size: 12px;
+}}
+QPushButton#edtModeButton:hover {{ color: {TEXT}; border-color: {ACCENT}; }}
+QPushButton#edtModeButton:checked {{
+  color: {TEXT};
+  background: {BG};
+  border-color: {ACCENT};
 }}
 QPlainTextEdit#edtText {{
   background: {BG};

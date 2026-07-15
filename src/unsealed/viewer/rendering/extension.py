@@ -23,11 +23,12 @@ class RenderPhase(IntEnum):
   Mode-supplied `RenderExtension`s declare a phase; the renderer runs them
   at the right time relative to its built-in passes.
   """
-  BACKGROUND     = 10  # sky dome, environment (after deferred lighting + depth blit)
+
+  BACKGROUND = 10  # sky dome, environment (after deferred lighting + depth blit)
   FORWARD_OPAQUE = 20  # terrain or other forward opaque geometry
-  FORWARD_Q3     = 30  # core: Q3 multi-stage shaders
-  TRANSPARENT    = 40  # core: alpha-blend pass
-  OVERLAY        = 50  # core: wireframe, selection highlight
+  FORWARD_Q3 = 30  # core: Q3 multi-stage shaders
+  TRANSPARENT = 40  # core: alpha-blend pass
+  OVERLAY = 50  # core: wireframe, selection highlight
 
 
 @runtime_checkable
@@ -41,6 +42,7 @@ class RenderExtension(Protocol):
     free_scene()        — when a different scene loads (release per-scene GPU state)
     dispose()           — at Renderer.cleanup() (release everything incl. shaders)
   """
+
   phase: RenderPhase
 
   def init(self) -> None: ...

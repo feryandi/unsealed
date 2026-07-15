@@ -31,9 +31,7 @@ class ImageMode(BaseMode):
   def render_extensions(self) -> "Iterable[RenderExtension]":
     return self._render_extensions
 
-  def decode(
-    self, res: Resource, shader_cache: Optional[dict] = None
-  ) -> "ViewerScene":
+  def decode(self, res: Resource, shader_cache: Optional[dict] = None) -> "ViewerScene":
     return TexViewerPipeline().run(res)
 
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
@@ -67,6 +65,4 @@ class ImageMode(BaseMode):
       cast(ImageCamera, mctx.camera).pan(dx, dy)
 
   def on_scroll(self, direction: int, mx: int, my: int, mctx: "ModeContext") -> None:
-    cast(ImageCamera, mctx.camera).zoom_step(
-      direction, mx, my, mctx.width, mctx.height
-    )
+    cast(ImageCamera, mctx.camera).zoom_step(direction, mx, my, mctx.width, mctx.height)

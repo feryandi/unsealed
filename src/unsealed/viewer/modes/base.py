@@ -47,12 +47,14 @@ __all__ = [
 class AnimationPolicy:
   """How AnimationSystem should treat freshly-loaded entities for this mode.
 
-  has_primary    — set `primary_entity` to the first enabled entity (UI-controlled, paused).
+  has_primary    — set `primary_entity` to the first enabled entity
+                   (UI-controlled, paused).
   auto_play_all  — every enabled entity starts `playing=True` immediately.
 
   Modes set the combination that matches their UI semantics. Both False
   means animations are loaded but neither playing nor UI-controlled.
   """
+
   has_primary: bool = False
   auto_play_all: bool = False
 
@@ -65,26 +67,33 @@ class Mode(Protocol):
   Implementations live under `viewer/modes/<name>/mode.py` and are
   registered in `viewer/modes/__init__.py`.
   """
+
   name: str
-  extensions: tuple[str, ...]      # e.g. (".ms1", ".act")
+  extensions: tuple[str, ...]  # e.g. (".ms1", ".act")
   scene_type: type["ViewerScene"]  # concrete ViewerScene subclass
   animation_policy: AnimationPolicy
 
   # ── file → scene ──────────────────────────────────────────────────────────
-  def decode(self, res: "Resource", shader_cache: Optional[dict] = None) -> "ViewerScene":
-    ...
+  def decode(
+    self, res: "Resource", shader_cache: Optional[dict] = None
+  ) -> "ViewerScene": ...
 
   # ── app wiring (was SceneConfig) ──────────────────────────────────────────
-  def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
-    ...
+  def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera": ...
 
   def draw_hud(self, world: "AppWorld") -> None: ...
 
   def on_key(self, key: int, mctx: "ModeContext") -> None: ...
-  def on_mouse_down(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None: ...
-  def on_mouse_up(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None: ...
+  def on_mouse_down(
+    self, button: int, pos: tuple[int, int], mctx: "ModeContext"
+  ) -> None: ...
+  def on_mouse_up(
+    self, button: int, pos: tuple[int, int], mctx: "ModeContext"
+  ) -> None: ...
   def on_mouse_motion(self, dx: int, dy: int, mctx: "ModeContext") -> None: ...
-  def on_scroll(self, direction: int, mx: int, my: int, mctx: "ModeContext") -> None: ...
+  def on_scroll(
+    self, direction: int, mx: int, my: int, mctx: "ModeContext"
+  ) -> None: ...
 
   # ── renderer extensions ───────────────────────────────────────────────────
   def render_extensions(self) -> "Iterable[RenderExtension]": ...
@@ -106,12 +115,12 @@ class BaseMode(ABC):
   animation_policy: AnimationPolicy = AnimationPolicy()
 
   @abstractmethod
-  def decode(self, res: "Resource", shader_cache: Optional[dict] = None) -> "ViewerScene":
-    ...
+  def decode(
+    self, res: "Resource", shader_cache: Optional[dict] = None
+  ) -> "ViewerScene": ...
 
   @abstractmethod
-  def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
-    ...
+  def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera": ...
 
   @abstractmethod
   def draw_hud(self, world: "AppWorld") -> None:
@@ -127,7 +136,9 @@ class BaseMode(ABC):
   def on_key(self, key: int, mctx: "ModeContext") -> None:
     pass
 
-  def on_mouse_down(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None:
+  def on_mouse_down(
+    self, button: int, pos: tuple[int, int], mctx: "ModeContext"
+  ) -> None:
     pass
 
   def on_mouse_up(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None:

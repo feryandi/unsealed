@@ -43,7 +43,13 @@ from OpenGL.GL import (
   GL_UNSIGNED_INT,
 )
 
-from ...rendering.shaders import _compile_prog, _u_mat4, _upload_rgba, _TERRAIN_VERT, _TERRAIN_FRAG
+from ...rendering.shaders import (
+  _compile_prog,
+  _u_mat4,
+  _upload_rgba,
+  _TERRAIN_VERT,
+  _TERRAIN_FRAG,
+)
 from .scene import MapScene
 
 
@@ -67,7 +73,10 @@ class TerrainRenderer:
     self._sampler_arr: NDArray = np.arange(12, dtype=np.int32)
 
   def init(self) -> None:
-    """Compile the terrain shader and create the fallback texture. Call once after GL context."""
+    """Compile the terrain shader and create the fallback texture.
+
+    Call once after the GL context exists.
+    """
     self._prog = _compile_prog(_TERRAIN_VERT, _TERRAIN_FRAG)
     self._fallback_tex = _upload_rgba(bytes([255, 255, 255, 255]), 1, 1)
 
@@ -178,7 +187,10 @@ class TerrainRenderer:
     glActiveTexture(GL_TEXTURE0)
 
   def free_scene(self) -> None:
-    """Free per-scene GL objects (VAO, VBO, EBO, textures). Keeps fallback_tex and prog."""
+    """Free per-scene GL objects (VAO, VBO, EBO, textures).
+
+    Keeps fallback_tex and prog.
+    """
     if self._ebo:
       glDeleteBuffers(1, [self._ebo])
       self._ebo = 0

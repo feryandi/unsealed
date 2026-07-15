@@ -71,7 +71,11 @@ def _draw_field(key: str, value: Any) -> None:
 
   if isinstance(value, (bytes, bytearray)):
     hexed = value[:_MAX_BYTES_PREVIEW].hex(" ")
-    suffix = "" if len(value) <= _MAX_BYTES_PREVIEW else f" … (+{len(value) - _MAX_BYTES_PREVIEW}B)"
+    suffix = (
+      ""
+      if len(value) <= _MAX_BYTES_PREVIEW
+      else f" … (+{len(value) - _MAX_BYTES_PREVIEW}B)"
+    )
     imgui.text(f"{key}: <{len(value)}B> {hexed}{suffix}")
     return
 

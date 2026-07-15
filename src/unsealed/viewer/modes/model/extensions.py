@@ -121,8 +121,8 @@ void main()
     vec3 majorCol = vec3(0.55);
     vec3 col = minorCol * minor;
     col = mix(col, majorCol, major);
-    col = mix(col, vec3(0.85, 0.25, 0.30), axisZ);          // Z axis = X coord = 0 → red
-    col = mix(col, vec3(0.25, 0.45, 0.90), axisX);          // X axis = Z coord = 0 → blue
+    col = mix(col, vec3(0.85, 0.25, 0.30), axisZ);  // Z axis = X coord = 0 → red
+    col = mix(col, vec3(0.25, 0.45, 0.90), axisX);  // X axis = Z coord = 0 → blue
 
     float alpha = max(max(minor, major), max(axisX, axisZ));
     if (alpha <= 0.0) discard;

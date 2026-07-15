@@ -2,7 +2,7 @@ import re
 from PIL import Image
 
 from pathlib import Path
-from typing import Pattern, Type, List
+from typing import Pattern, Type
 import numpy as np
 
 from ..base import BaseFormat

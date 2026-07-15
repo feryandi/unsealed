@@ -36,7 +36,10 @@ SUPPORTED_FILE_TYPES = {
 # Suffixes that vary by a numeric band (e.g. .ed1 … .ed17) and so can't be
 # enumerated as fixed keys; matched by pattern after the exact lookup.
 PATTERN_FILE_TYPES = [
-  (re.compile(r"\.ed\d+$", re.IGNORECASE), {"name": "Item DB File", "pipeline": EdPipeline()}),
+  (
+    re.compile(r"\.ed\d+$", re.IGNORECASE),
+    {"name": "Item DB File", "pipeline": EdPipeline()},
+  ),
 ]
 
 
@@ -59,6 +62,8 @@ class MainPipeline:
     setup["pipeline"].run(filepath, output_dir)
 
   def get_supported_file_types(self) -> List[Tuple[str, str]]:
-    fixed = [(filetype, info["name"]) for filetype, info in SUPPORTED_FILE_TYPES.items()]
+    fixed = [
+      (filetype, info["name"]) for filetype, info in SUPPORTED_FILE_TYPES.items()
+    ]
     patterned = [(pat.pattern, info["name"]) for pat, info in PATTERN_FILE_TYPES]
     return fixed + patterned

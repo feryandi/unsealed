@@ -1,4 +1,7 @@
-"""Pet_Fail config table (`Seal Online Data` container, columns not yet identified)."""
+"""Pet_Fail config table.
+
+A `Seal Online Data` container; columns are not yet identified.
+"""
 
 from .base import Column, RecordSchema, I32, register_schema
 

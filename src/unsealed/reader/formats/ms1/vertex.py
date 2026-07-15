@@ -7,7 +7,9 @@ from ...utils.file import File
 
 
 class SealMeshVertexDecoder:
-  def __init__(self, file: File, transformation_matrix: Optional[List[List[float]]] = None) -> None:
+  def __init__(
+    self, file: File, transformation_matrix: Optional[List[List[float]]] = None
+  ) -> None:
     self.file: File = file
     self.tm: Optional[List[List[float]]] = transformation_matrix
 

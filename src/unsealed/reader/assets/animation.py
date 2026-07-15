@@ -28,7 +28,12 @@ class Animation(Asset):
     self.btree: Optional[BinaryTree] = None
 
   def __repr__(self) -> str:
-    return f"<Animation name:{self.name} start_frame:{self.start_frame} end_frame:{self.end_frame} fps:{self.fps} mesh_name:{self.mesh_name} transforms:{self.transforms} rotations:{self.rotations} scales:{self.scales}>"
+    return (
+      f"<Animation name:{self.name} start_frame:{self.start_frame} "
+      f"end_frame:{self.end_frame} fps:{self.fps} mesh_name:{self.mesh_name} "
+      f"transforms:{self.transforms} rotations:{self.rotations} "
+      f"scales:{self.scales}>"
+    )
 
 
 class Keyframe(Asset):

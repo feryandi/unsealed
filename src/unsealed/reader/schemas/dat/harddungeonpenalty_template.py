@@ -1,4 +1,7 @@
-"""HardDungeonpenalty_Template config table (`Seal Online Data` container, columns not yet identified)."""
+"""HardDungeonpenalty_Template config table.
+
+A `Seal Online Data` container; columns are not yet identified.
+"""
 
 from .base import Column, RecordSchema, I32, register_schema
 

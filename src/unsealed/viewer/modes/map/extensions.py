@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
 class SkyExtension:
   """Sky dome — renders before opaque geometry in the BACKGROUND phase."""
+
   phase = RenderPhase.BACKGROUND
 
   def __init__(self) -> None:
@@ -50,6 +51,7 @@ class SkyExtension:
 
 class TerrainExtension:
   """Heightmap terrain — forward opaque draw, runs after sky."""
+
   phase = RenderPhase.FORWARD_OPAQUE
 
   def __init__(self) -> None:
@@ -61,6 +63,7 @@ class TerrainExtension:
   def upload(self, scene: "ViewerScene") -> None:
     # MapMode owns this extension, so scene is always a MapScene here.
     from .scene import MapScene
+
     if isinstance(scene, MapScene):
       self._terrain.upload(scene)
 
@@ -80,6 +83,7 @@ class WalkabilityExtension:
   Phase OVERLAY (before grid extension below), so the colored region sits
   on top of terrain/objects but the grid lines can still layer over it.
   """
+
   phase = RenderPhase.OVERLAY
 
   def __init__(self) -> None:
@@ -91,12 +95,14 @@ class WalkabilityExtension:
 
   def upload(self, scene: "ViewerScene") -> None:
     from .scene import MapScene
+
     self._scene = scene
     if isinstance(scene, MapScene):
       self._walk.upload(scene)
 
   def render(self, ctx: "RenderContext", view: "NDArray", proj: "NDArray") -> None:
     from .scene import MapScene
+
     scene = self._scene
     if not isinstance(scene, MapScene) or not scene.walkability_enabled:
       return
@@ -117,6 +123,7 @@ class GridExtension:
   visible no matter what's in front. The grid follows the heightmap so
   cells trace the actual surface. Toggleable via `MapScene.grid_enabled`.
   """
+
   phase = RenderPhase.OVERLAY
 
   def __init__(self) -> None:
@@ -128,12 +135,14 @@ class GridExtension:
 
   def upload(self, scene: "ViewerScene") -> None:
     from .scene import MapScene
+
     self._scene = scene
     if isinstance(scene, MapScene):
       self._grid.upload(scene)
 
   def render(self, ctx: "RenderContext", view: "NDArray", proj: "NDArray") -> None:
     from .scene import MapScene
+
     scene = self._scene
     if not isinstance(scene, MapScene) or not scene.grid_enabled:
       return

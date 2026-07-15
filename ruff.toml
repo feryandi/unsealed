@@ -9,4 +9,6 @@ line-ending = "auto"
 
 [lint.pycodestyle]
 max-line-length = 88
-max-doc-length = 72
+# Docs/comments wrap at the same column as code. The narrower PEP 8
+# prose width (72) was never what this codebase was written to.
+max-doc-length = 88

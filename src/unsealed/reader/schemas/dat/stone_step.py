@@ -1,4 +1,7 @@
-"""Stone_Step config table (`Seal Online Data` container, columns not yet identified)."""
+"""Stone_Step config table.
+
+A `Seal Online Data` container; columns are not yet identified.
+"""
 
 from .base import Column, RecordSchema, I32, register_schema
 

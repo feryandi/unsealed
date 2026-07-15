@@ -18,7 +18,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Union
 
-from .records import Array, Column, FieldType, Fill, FromField, I32, REGISTRY, RecordSchema, Struct
+from .records import (
+  Array,
+  Column,
+  FieldType,
+  Fill,
+  FromField,
+  I32,
+  REGISTRY,
+  RecordSchema,
+  Struct,
+)
 
 # A raw token is text until a `Column` type reads it; the labelled value is
 # whatever that type produces (int for `I32`, str for `Text`, ...).
@@ -97,7 +107,7 @@ class CellCursor:
   def drain(self) -> List[str]:
     """Consume and return whatever is left in the row (surfaces as the
     record's `_extra`)."""
-    rest = self._tokens[self._pos:]
+    rest = self._tokens[self._pos :]
     self._pos = len(self._tokens)
     return rest
 
@@ -110,7 +120,9 @@ def i32s(*names: str) -> Tuple[Column, ...]:
   return tuple(Column(n, I32) for n in names)
 
 
-def group(name: str, fields: Tuple[str, ...], count_field: Optional[str] = None) -> Column:
+def group(
+  name: str, fields: Tuple[str, ...], count_field: Optional[str] = None
+) -> Column:
   """A trailing repeating group: `Array` of a `Struct` of int fields,
   sized by a prior `count_field` column, or fill-to-end when None."""
   element = Struct(i32s(*fields))
@@ -156,7 +168,9 @@ def _is_table(header_lines: List[str], rows: List[List[str]]) -> bool:
   return bool(rows)
 
 
-def _partition(text: str, delimiter: str) -> Tuple[List[str], List[str], List[List[str]], List[str]]:
+def _partition(
+  text: str, delimiter: str
+) -> Tuple[List[str], List[str], List[List[str]], List[str]]:
   """Split text into (all lines, leading header lines, delimited rows as
   raw tokens, non-blank content lines). `#` comments and blanks skipped."""
   lines = text.splitlines()
@@ -198,5 +212,7 @@ def load_cell_table(asset, raw: bytes, delimiter: str, schema, fmt: str):
   if sch is not None:
     asset.schema_name = sch.name
     asset.header_values = apply_headers(sch, asset.headers)
-    asset.records = [sch.read_record(CellCursor(row), i) for i, row in enumerate(asset.rows)]
+    asset.records = [
+      sch.read_record(CellCursor(row), i) for i, row in enumerate(asset.rows)
+    ]
   return asset

@@ -6,7 +6,6 @@ import zlib
 
 from array import array
 from ..core.asset import Asset
-from unsealed.reader.core import asset
 
 
 class Terrain(Asset):

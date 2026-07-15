@@ -36,6 +36,7 @@ from . import item_exchange  # noqa: F401
 from . import item_string  # noqa: F401
 from . import itemgrow_template  # noqa: F401
 from . import job_type  # noqa: F401
+from . import level  # noqa: F401
 from . import macro_constant  # noqa: F401
 from . import mesh  # noqa: F401
 from . import mission  # noqa: F401

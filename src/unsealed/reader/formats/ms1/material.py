@@ -109,8 +109,10 @@ class SealMeshMaterialDecoder:
     # Hacky logic
     # 01 00 01 00 05 00 06 00 04 00 04 00 FF FF FF FF -- Prop_Stuff
     # 01 00 01 00 05 00 06 00 04 00 04 00 FF FF FF FF -- Archi Portal
-    # 01 00 01 00 05 00 02 00 04 00 04 00 FF FF FF FF 2D 01 -- Dragon .. Depends if repeat
-    # 03 00 01 00 05 00 06 00 04 00 04 00 FF FF FF FF 75 -- Samael .. 30 block + 15 bytes
+    # 01 00 01 00 05 00 02 00 04 00 04 00 FF FF FF FF 2D 01 -- Dragon
+    #   .. Depends if repeat
+    # 03 00 01 00 05 00 06 00 04 00 04 00 FF FF FF FF 75 -- Samael
+    #   .. 30 block + 15 bytes
     # 01 00 01 00 05 00 02 00 04 00 04 00 FF FF FF FF 00 00 00 00 size
     check = self.file.seek(4)
     if check == b"\x2d\x01\x00\x00":

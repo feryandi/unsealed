@@ -167,8 +167,11 @@ class MenExtension:
       if atlas.rgba is None or atlas.rgba.size == 0:
         self._atlas_tex_ids.append(0)
         continue
-      data = atlas.rgba.tobytes() if atlas.rgba.flags["C_CONTIGUOUS"] \
+      data = (
+        atlas.rgba.tobytes()
+        if atlas.rgba.flags["C_CONTIGUOUS"]
         else np.ascontiguousarray(atlas.rgba).tobytes()
+      )
       try:
         tex_id = _upload_rgba(
           data, atlas.width, atlas.height, mipmaps=False, flip_y=False
@@ -316,7 +319,7 @@ class MenExtension:
     glBindBuffer(GL_ARRAY_BUFFER, self._img_vbo)
     for i in changed:
       offset = i * _BYTES_PER_QUAD
-      slice_ = self._verts[i * _FLOATS_PER_QUAD:(i + 1) * _FLOATS_PER_QUAD]
+      slice_ = self._verts[i * _FLOATS_PER_QUAD : (i + 1) * _FLOATS_PER_QUAD]
       glBufferSubData(GL_ARRAY_BUFFER, offset, _BYTES_PER_QUAD, slice_)
     glBindBuffer(GL_ARRAY_BUFFER, 0)
 
@@ -354,24 +357,23 @@ class MenExtension:
       el.rectangle, self._scene.canvas_w, self._scene.canvas_h
     )
     ref = el.state_refs.get(el.active_state)
-    if ref is None or ref.atlas_idx < 0 \
-        or ref.atlas_idx >= len(self._scene.atlases):
-      self._verts[base:base + _FLOATS_PER_QUAD] = 0.0
+    if ref is None or ref.atlas_idx < 0 or ref.atlas_idx >= len(self._scene.atlases):
+      self._verts[base : base + _FLOATS_PER_QUAD] = 0.0
       return
     atlas = self._scene.atlases[ref.atlas_idx]
     aw = max(1, atlas.width)
     ah = max(1, atlas.height)
-    u0 = ref.left   / aw
-    u1 = ref.right  / aw
-    v0 = ref.top    / ah  # top of sprite = lower v (image row 0)
+    u0 = ref.left / aw
+    u1 = ref.right / aw
+    v0 = ref.top / ah  # top of sprite = lower v (image row 0)
     v1 = ref.bottom / ah  # bottom of sprite = higher v
     # bottom-left, bottom-right, top-right, bottom-left, top-right, top-left
-    self._verts[base + 0:base + 5]   = (x0, y0, 0.0, u0, v1)
-    self._verts[base + 5:base + 10]  = (x1, y0, 0.0, u1, v1)
-    self._verts[base + 10:base + 15] = (x1, y1, 0.0, u1, v0)
-    self._verts[base + 15:base + 20] = (x0, y0, 0.0, u0, v1)
-    self._verts[base + 20:base + 25] = (x1, y1, 0.0, u1, v0)
-    self._verts[base + 25:base + 30] = (x0, y1, 0.0, u0, v0)
+    self._verts[base + 0 : base + 5] = (x0, y0, 0.0, u0, v1)
+    self._verts[base + 5 : base + 10] = (x1, y0, 0.0, u1, v1)
+    self._verts[base + 10 : base + 15] = (x1, y1, 0.0, u1, v0)
+    self._verts[base + 15 : base + 20] = (x0, y0, 0.0, u0, v1)
+    self._verts[base + 20 : base + 25] = (x1, y1, 0.0, u1, v0)
+    self._verts[base + 25 : base + 30] = (x0, y1, 0.0, u0, v0)
 
   def _upload_full_vbo(self) -> None:
     """Push the entire packed VBO + bake the attribute layout into the VAO."""
@@ -395,10 +397,30 @@ class MenExtension:
     )
     verts = np.array(
       [
-        x0, y0, 0.0,  x1, y0, 0.0,
-        x1, y0, 0.0,  x1, y1, 0.0,
-        x1, y1, 0.0,  x0, y1, 0.0,
-        x0, y1, 0.0,  x0, y0, 0.0,
+        x0,
+        y0,
+        0.0,
+        x1,
+        y0,
+        0.0,
+        x1,
+        y0,
+        0.0,
+        x1,
+        y1,
+        0.0,
+        x1,
+        y1,
+        0.0,
+        x0,
+        y1,
+        0.0,
+        x0,
+        y1,
+        0.0,
+        x0,
+        y0,
+        0.0,
       ],
       dtype=np.float32,
     )

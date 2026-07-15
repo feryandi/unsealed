@@ -76,7 +76,10 @@ class Camera(ABC):
   def ortho(
     left: float, right: float, bottom: float, top: float, near: float, far: float
   ) -> NDArray:
-    """Standard column-major orthographic projection matrix (row-major numpy storage)."""
+    """Standard column-major orthographic projection matrix.
+
+    Stored row-major, as numpy does.
+    """
     m = np.zeros((4, 4), dtype=np.float32)
     m[0, 0] = 2.0 / (right - left)
     m[1, 1] = 2.0 / (top - bottom)

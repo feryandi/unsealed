@@ -115,8 +115,12 @@ class MenViewerPipeline:
       else:
         elements[parent_idx].children.append(idx)
       MenViewerPipeline._flatten_tree(
-        raw.get("sub_elements") or [], idx, elements, root_indices,
-        sprite_refs, fallback_atlas_name,
+        raw.get("sub_elements") or [],
+        idx,
+        elements,
+        root_indices,
+        sprite_refs,
+        fallback_atlas_name,
       )
       el.subtree_size = len(elements) - idx - 1
 

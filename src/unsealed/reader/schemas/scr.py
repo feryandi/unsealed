@@ -9,7 +9,7 @@ each token's type. Callers may also pass their own `RecordSchema`.
 
 from __future__ import annotations
 
-from ..formats.celltable import group, i32s
+from ..formats.celltable import group, i32s, Text
 from ..formats.records import Column, I32, RecordSchema, register_schema
 
 # ── built-in schemas (current client format, per tests/output) ──
@@ -51,7 +51,11 @@ register_schema(
   "scr",
   RecordSchema(
     name="map_object",
-    headers=(Column("unknown", I32), Column("total_count", I32), Column("row_count", I32)),
+    headers=(
+      Column("unknown", I32),
+      Column("total_count", I32),
+      Column("row_count", I32),
+    ),
     columns=i32s("id", "count")
     + (group("positions", ("x", "y"), count_field="count"),),
   ),
@@ -68,4 +72,33 @@ register_schema(
     columns=i32s("field_0", "field_1", "field_2"),
   ),
   patterns=(r"^warp", r"^worp"),
+)
+
+register_schema(
+  "scr",
+  RecordSchema(
+    name="buffdesc",
+    headers=(
+      Column("unknown", I32),
+      Column("unknown", I32),
+      Column("row_count", I32),
+    ),
+    columns=(
+      Column("id", I32),
+      Column("field_1", I32),
+      Column("field_2", I32),
+      Column("field_3", I32),
+      Column("name", Text),
+      Column("animation", Text),
+      Column("field_6", I32),
+      Column("field_7", I32),
+      Column("field_8", Text),
+      Column("field_9", Text),
+      Column("field_10", Text),
+      Column("field_11", I32),
+      Column("field_12", I32),
+      Column("field_13", I32),
+    ),
+  ),
+  patterns=(r"^buffdesc",),
 )

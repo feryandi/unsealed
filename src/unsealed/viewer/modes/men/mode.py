@@ -31,9 +31,7 @@ class MenMode(BaseMode):
   def render_extensions(self) -> "Iterable[RenderExtension]":
     return self._render_extensions
 
-  def decode(
-    self, res: Resource, shader_cache: Optional[dict] = None
-  ) -> "ViewerScene":
+  def decode(self, res: Resource, shader_cache: Optional[dict] = None) -> "ViewerScene":
     return MenViewerPipeline().run(res)
 
   def make_camera(self, scene: "ViewerScene", win_w: int, win_h: int) -> "Camera":
@@ -82,7 +80,9 @@ class MenMode(BaseMode):
     """Left-side tree of all elements in DFS order, with hide toggles per node."""
     win_h = world.window.height
     imgui.set_next_window_pos((10, 240), imgui.Cond_.first_use_ever.value)
-    imgui.set_next_window_size((300, max(200, win_h - 260)), imgui.Cond_.first_use_ever.value)
+    imgui.set_next_window_size(
+      (300, max(200, win_h - 260)), imgui.Cond_.first_use_ever.value
+    )
     imgui.begin("Elements")
     if not scene.elements:
       imgui.text_disabled("(no elements)")
@@ -93,12 +93,10 @@ class MenMode(BaseMode):
       self._draw_element_node(world, scene, root)
     imgui.end()
 
-  def _draw_element_node(
-    self, world: "AppWorld", scene: MenScene, idx: int
-  ) -> None:
+  def _draw_element_node(self, world: "AppWorld", scene: MenScene, idx: int) -> None:
     el = scene.elements[idx]
     label = el.label or f"<el {idx}>"
-    selected = (idx == scene.selected_element_idx)
+    selected = idx == scene.selected_element_idx
 
     flag = (
       imgui.TreeNodeFlags_.open_on_arrow.value
@@ -161,8 +159,7 @@ class MenMode(BaseMode):
     # Group / tree info.
     if imgui.collapsing_header("Group", imgui.TreeNodeFlags_.default_open.value):
       imgui.text(
-        f"  parent       : "
-        f"{element.parent if element.parent is not None else '<root>'}"
+        f"  parent       : {element.parent if element.parent is not None else '<root>'}"
       )
       imgui.text(f"  subtree_size : {element.subtree_size}")
       if element.children:
@@ -178,10 +175,8 @@ class MenMode(BaseMode):
     ):
       for state in present_states:
         sprite_idx = element.state_indices[state]
-        is_active = (state == element.active_state)
-        if imgui.selectable(
-          f"{state:<8}: {sprite_idx}##st{state}", is_active
-        )[0]:
+        is_active = state == element.active_state
+        if imgui.selectable(f"{state:<8}: {sprite_idx}##st{state}", is_active)[0]:
           world.set_men_state(idx, state)
 
     # Captured-but-unnamed fields (the various unknown ints).
@@ -201,7 +196,9 @@ class MenMode(BaseMode):
 
   # ── input handlers ──────────────────────────────────────────────────────
 
-  def on_mouse_down(self, button: int, pos: tuple[int, int], mctx: "ModeContext") -> None:
+  def on_mouse_down(
+    self, button: int, pos: tuple[int, int], mctx: "ModeContext"
+  ) -> None:
     # Record where LMB went down so we can distinguish a click from a drag
     # in on_mouse_up (any drag distance cancels the pick).
     if button == 1:
@@ -223,9 +220,7 @@ class MenMode(BaseMode):
       cast(MenCamera, mctx.camera).pan(dx, dy)
 
   def on_scroll(self, direction: int, mx: int, my: int, mctx: "ModeContext") -> None:
-    cast(MenCamera, mctx.camera).zoom_step(
-      direction, mx, my, mctx.width, mctx.height
-    )
+    cast(MenCamera, mctx.camera).zoom_step(direction, mx, my, mctx.width, mctx.height)
 
   # ── private ─────────────────────────────────────────────────────────────
 
@@ -239,8 +234,9 @@ class MenMode(BaseMode):
       return
     scene = cast(MenScene, ctx.scene)
     cam = cast(MenCamera, ctx.camera)
-    canvas = _screen_to_canvas(pos, cam, mctx.width, mctx.height,
-                               scene.canvas_w, scene.canvas_h)
+    canvas = _screen_to_canvas(
+      pos, cam, mctx.width, mctx.height, scene.canvas_w, scene.canvas_h
+    )
     if canvas is None:
       scene.selected_element_idx = None
       return
@@ -257,8 +253,12 @@ class MenMode(BaseMode):
 
 
 def _screen_to_canvas(
-  pos: tuple[int, int], cam: MenCamera, win_w: int, win_h: int,
-  canvas_w: int, canvas_h: int,
+  pos: tuple[int, int],
+  cam: MenCamera,
+  win_w: int,
+  win_h: int,
+  canvas_w: int,
+  canvas_h: int,
 ) -> Optional[Tuple[float, float]]:
   """Map screen pixel pos to canvas pixel coords (origin top-left, y-down)."""
   if cam.zoom <= 0 or canvas_w <= 0 or canvas_h <= 0:

@@ -42,7 +42,13 @@ from OpenGL.GL import (
   glVertexAttribPointer,
 )
 
-from ...rendering.shaders import _IMG_FRAG, _IMG_VERT, _compile_prog, _u_mat4, _upload_rgba
+from ...rendering.shaders import (
+  _IMG_FRAG,
+  _IMG_VERT,
+  _compile_prog,
+  _u_mat4,
+  _upload_rgba,
+)
 from ..base import RenderPhase
 from .camera import SprCamera
 from .scene import SprScene
@@ -95,8 +101,11 @@ class SprExtension:
       if atlas.rgba is None or atlas.rgba.size == 0:
         self._atlas_tex_ids.append(0)
         continue
-      data = atlas.rgba.tobytes() if atlas.rgba.flags["C_CONTIGUOUS"] \
+      data = (
+        atlas.rgba.tobytes()
+        if atlas.rgba.flags["C_CONTIGUOUS"]
         else np.ascontiguousarray(atlas.rgba).tobytes()
+      )
       try:
         tex_id = _upload_rgba(
           data, atlas.width, atlas.height, mipmaps=False, flip_y=False
@@ -186,22 +195,46 @@ class SprExtension:
 
     aw = max(1, atlas.width)
     ah = max(1, atlas.height)
-    u0 = ref.left   / aw
-    u1 = ref.right  / aw
+    u0 = ref.left / aw
+    u1 = ref.right / aw
     # Texture uploaded with flip_y=False, so image row 0 = v=0 (top).
-    v0 = ref.top    / ah
+    v0 = ref.top / ah
     v1 = ref.bottom / ah
-    hw = ref.width  * 0.5
+    hw = ref.width * 0.5
     hh = ref.height * 0.5
 
     verts = np.array(
       [
-        -hw, -hh, 0.0, u0, v1,
-         hw, -hh, 0.0, u1, v1,
-         hw,  hh, 0.0, u1, v0,
-        -hw, -hh, 0.0, u0, v1,
-         hw,  hh, 0.0, u1, v0,
-        -hw,  hh, 0.0, u0, v0,
+        -hw,
+        -hh,
+        0.0,
+        u0,
+        v1,
+        hw,
+        -hh,
+        0.0,
+        u1,
+        v1,
+        hw,
+        hh,
+        0.0,
+        u1,
+        v0,
+        -hw,
+        -hh,
+        0.0,
+        u0,
+        v1,
+        hw,
+        hh,
+        0.0,
+        u1,
+        v0,
+        -hw,
+        hh,
+        0.0,
+        u0,
+        v0,
       ],
       dtype=np.float32,
     )

@@ -43,7 +43,9 @@ def _matrix_to_quaternion(m: NDArray[np.float64]) -> NDArray[np.float64]:
   return q / np.linalg.norm(q)
 
 
-def decompose_mtx(mtx: NDArray[np.float64]) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
+def decompose_mtx(
+  mtx: NDArray[np.float64],
+) -> Tuple[NDArray[np.float64], NDArray[np.float64], NDArray[np.float64]]:
   """
   Decompose a 4x4 transformation matrix into translation, rotation, and scale.
 
@@ -90,7 +92,9 @@ def decompose_mtx(mtx: NDArray[np.float64]) -> Tuple[NDArray[np.float64], NDArra
     if det_fixed < 0:
       # If still negative (shouldn't happen), use fallback
       print(
-          f"Warning: Could not fix reflection matrix. Det before: {det:.6f}, after: {det_fixed:.6f}")
+        f"Warning: Could not fix reflection matrix. "
+        f"Det before: {det:.6f}, after: {det_fixed:.6f}"
+      )
       print("Using identity rotation as fallback")
       rot_mtx = np.eye(3)
 
