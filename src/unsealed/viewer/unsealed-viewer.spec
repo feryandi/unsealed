@@ -12,14 +12,17 @@ builds the same regardless of the working directory.
 """
 import os
 
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, collect_submodules
 
 _SRC = os.path.abspath(os.path.join(SPECPATH, "..", ".."))  # -> src/
 _ICON = os.path.join(SPECPATH, "..", "icon.ico")  # src/unsealed/icon.ico
 
 datas = []
 binaries = []
-hiddenimports = []
+# The reader's schema catalogue is imported dynamically (its __init__ walks
+# the package), so static analysis misses it: name the modules explicitly or
+# the frozen viewer ships an empty registry. See the reader's spec.
+hiddenimports = collect_submodules("unsealed.reader.schemas")
 
 # Grab everything (python modules, extension binaries, data) from the GPU stack.
 for pkg in ("imgui_bundle", "OpenGL", "OpenGL_accelerate", "pygame"):

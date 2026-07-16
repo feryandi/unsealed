@@ -20,7 +20,7 @@ by FILENAME:
                      i.e. a uniform int32 row
 
 Each file's COLUMNS mean different things, so a per-file `RecordSchema`
-(see `schemas/dat/`) names/types the columns; an untagged file gets a
+(see `reader/schemas/`) names/types the columns; an untagged file gets a
 synthesized `generic_schema(width)` of `field_0..field_N` int32 columns
 (width from the file size) so it still decodes to named rows.
 `field_count` is kept in `unknown` for reference only.
@@ -28,7 +28,7 @@ synthesized `generic_schema(width)` of `field_0..field_N` int32 columns
 
 from ...assets.dat import DatFile
 from ...formats.records import schema_for_filename
-from ...schemas.dat.base import generic_schema
+from ..bytefields import generic_schema
 from ...utils.file import File
 from .registry import DatBody, register
 

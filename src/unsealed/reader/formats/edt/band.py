@@ -32,9 +32,10 @@ from typing import Any, Dict, List, Optional
 
 from ...assets.dat import DatFile
 
-# Imported for its registration side effect: layouts are resolved out of
-# the shared REGISTRY, never imported directly.
-from ...schemas.dat import item as _item_schemas  # noqa: F401
+# Imported for its registration side effect (the ItemFile layouts a band
+# reuses): layouts are resolved out of the shared REGISTRY, never imported
+# directly.
+from ... import schemas as _schemas  # noqa: F401
 from ...utils.file import File
 from ..dat.decoder import parse_header
 from ..records import REGISTRY, RecordSchema

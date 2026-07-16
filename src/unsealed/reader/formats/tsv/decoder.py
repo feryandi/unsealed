@@ -2,7 +2,7 @@ from typing import Union
 
 from ...assets.tsv import Tsv
 from ...utils.file import File
-from ...schemas import tsv as _tsv_schemas  # noqa: F401  (registers .tsv schemas)
+from ... import schemas as _schemas  # noqa: F401  (registers every schema)
 from ..celltable import load_cell_table
 from ..records import RecordSchema
 

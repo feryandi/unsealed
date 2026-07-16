@@ -24,6 +24,8 @@ builds the same regardless of the working directory.
 """
 import os
 
+from PyInstaller.utils.hooks import collect_submodules
+
 _SRC = os.path.abspath(os.path.join(SPECPATH, "..", ".."))  # -> src/
 _ICON = os.path.join(SPECPATH, "..", "icon.ico")  # src/unsealed/icon.ico
 _LOGO = os.path.join(SPECPATH, "..", "logo.png")  # src/unsealed/logo.png
@@ -64,7 +66,12 @@ else:
         "'python -m unsealed.reader.vendor.fetch' before pyinstaller."
     )
 
-hiddenimports = []
+# The schema catalogue (unsealed/reader/schemas/) is imported dynamically:
+# its __init__ walks the package and imports every module for its
+# registration side effect. Static analysis sees none of that, so name them
+# all explicitly or the frozen build silently ships an EMPTY registry --
+# every .dat/.scr/.tsv would fall back to generic field_N rows.
+hiddenimports = collect_submodules("unsealed.reader.schemas")
 
 a = Analysis(
     [os.path.join(SPECPATH, "__main__.py")],

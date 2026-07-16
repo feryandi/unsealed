@@ -9,7 +9,7 @@ scalar leaves (`I32`/`U32`/`F32`), `Column`, `Struct`, `Array`,
 format supplies only its own extra leaf `FieldType`s and a matching cursor:
 
   * `.dat` -> a byte `Cursor` (`File`) + byte-only `FieldType`s (`I64`,
-    `Str`, `Pstr`, ... in `dat/schema/base.py`). It exposes `read_ints`, so
+    `Str`, `Pstr`, ... in `bytefields.py`). It exposes `read_ints`, so
     an all-fixed record is bulk-read and carved in one shot (fast path).
   * `.scr`/`.tsv` -> a `CellCursor` over the row's tokens (+ a `Text` cell
     leaf, in `formats/celltable.py`). It exposes `drain`, so leftover
@@ -53,7 +53,7 @@ class FieldType:
 # `.scr` row -- the leaf decides the type, the cursor decides the substrate.
 # `from_cells` carves the value from pre-read int32 cells (the byte fast
 # path); a cell cursor never calls it. Wider / byte-framed leaves (`I64`,
-# `Str`, `Cstr`, `Pstr`, ...) are `.dat`-only and live in `dat/schema/base`.
+# `Str`, `Cstr`, `Pstr`, ...) are `.dat`-only and live in `bytefields.py`.
 
 
 @dataclass(frozen=True)

@@ -72,7 +72,7 @@ class SchemaBody(DatBody):
   walks the records via `schema.read_record`.
 
   The schema is not held by a registered body -- it lives in the shared
-  `REGISTRY` (registered by `schemas/dat/`), and `for_type` builds a
+  `REGISTRY` (registered by `reader/schemas/`), and `for_type` builds a
   `SchemaBody` around it on demand. Normally exactly `count` records are
   read; a schema with `until_eof=True` (its header `count` is a GLOBAL
   total while the file holds only a leading band, e.g. ItemFile v10) is

@@ -2,7 +2,7 @@ from typing import Union
 
 from ...assets.scr import Scr
 from ...utils.file import File
-from ...schemas import scr as _scr_schemas  # noqa: F401  (registers .scr schemas)
+from ... import schemas as _schemas  # noqa: F401  (registers every schema)
 from ..celltable import load_cell_table
 from ..records import RecordSchema
 
