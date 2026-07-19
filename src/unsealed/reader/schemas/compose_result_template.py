@@ -1,7 +1,4 @@
-"""Compose_Result_Template config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Compose_Result_Template config table."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 

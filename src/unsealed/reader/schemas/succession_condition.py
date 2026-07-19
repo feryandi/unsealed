@@ -1,7 +1,4 @@
-"""Succession_Condition config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Succession_Condition config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,10 +7,10 @@ register_schema(
   RecordSchema(
     name="succession_condition",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
+      Column("id", I32),  # the map key, 1..4
+      Column("range_min", I32),
+      Column("range_max", I32),
+      Column("field_3", I32),  # 3 / 4; copied, never read
     ),
   ),
   patterns=(r"^Succession_Condition$",),

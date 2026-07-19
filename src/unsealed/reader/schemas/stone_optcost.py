@@ -1,7 +1,4 @@
-"""Stone_OptCost config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Stone_OptCost config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,12 +7,12 @@ register_schema(
   RecordSchema(
     name="stone_optcost",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
-      Column("field_5", I32),
+      Column("id", I32),  # the map key
+      Column("field_1", I32),  # a group; 1 in every sample row
+      Column("step", I32),  # 1..N within the group
+      Column("item_id", I32),
+      Column("field_4", I32),  # rises with step; probably a quantity
+      Column("cost", I32),
     ),
   ),
   patterns=(r"^Stone_OptCost$",),

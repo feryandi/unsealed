@@ -1,7 +1,4 @@
-"""Skill_Opt_Gem config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Skill_Opt_Gem config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,20 +7,21 @@ register_schema(
   RecordSchema(
     name="skill_opt_gem",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
-      Column("field_5", I32),
-      Column("field_6", I32),
-      Column("field_7", I32),
-      Column("field_8", I32),
-      Column("field_9", I32),
-      Column("field_10", I32),
-      Column("field_11", I32),
+      Column("id", I32),  # the map key, 0..55
+      Column("gem_type", I32),
+      Column("opt_type", I32),
+      Column("grade", I32),
+      Column("field_4", I32),  # a strict function of grade; money-shaped, unread
+      Column("field_5", I32),  # 0 on every grade-0 gem
+      # three (value, threshold) pairs
+      Column("value_0", I32),
+      Column("threshold_0", I32),  # constant 15
+      Column("value_1", I32),
+      Column("threshold_1", I32),  # constant 40
+      Column("value_2", I32),
+      Column("threshold_2", I32),  # constant 70
       Column("field_12", I32),
-      Column("field_13", I32),
+      Column("field_13", I32),  # constant 8
     ),
   ),
   patterns=(r"^Skill_Opt_Gem$",),

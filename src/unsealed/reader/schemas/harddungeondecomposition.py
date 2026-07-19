@@ -1,7 +1,4 @@
-"""HardDungeonDecomposition config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""HardDungeonDecomposition config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,25 +7,15 @@ register_schema(
   RecordSchema(
     name="harddungeondecomposition",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
-      Column("field_5", I32),
-      Column("field_6", I32),
-      Column("field_7", I32),
-      Column("field_8", I32),
-      Column("field_9", I32),
-      Column("field_10", I32),
-      Column("field_11", I32),
-      Column("field_12", I32),
-      Column("field_13", I32),
-      Column("field_14", I32),
-      Column("field_15", I32),
-      Column("field_16", I32),
-      Column("field_17", I32),
-    ),
+      Column("id", I32),
+      Column("item_id", I32),  # the map key: the item being disassembled
+      Column("field_2", I32),  # constant 26416, item-id band
+      Column("field_3", I32),  # constant 5
+      Column("field_4", I32),  # constant 1
+      Column("cost", I32),
+    )
+    # 6..17 are 0 on every row
+    + tuple(Column(f"field_{i}", I32) for i in range(6, 18)),
   ),
   patterns=(r"^HardDungeonDecomposition$",),
 )

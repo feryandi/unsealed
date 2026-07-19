@@ -1,7 +1,4 @@
-"""mix config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""mix config table."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 

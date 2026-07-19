@@ -9,8 +9,10 @@ A `.dat` record is a sequence of typed fields. Two things describe it:
     `Array(Array(F32))`, `Array(Str(40))`.
   * a `Column` -- a NAMED field in a record = `Column(name, FieldType)`.
 
-A `RecordSchema` is an ordered tuple of `Column`s (+ optional `header_extra`
-int32s to skip after `count`, and an `index_field` to store the row idx).
+A `RecordSchema` is an ordered tuple of `Column`s (+ optional typed
+`headers` for the file-level int32s after `count`, such as the
+`field_count` most types declare there, and an `index_field` to store the
+row idx).
 `read_record(file)` reads one record: if every column is fixed-width it
 bulk-reads the row's int32 cells and carves them (fast path for the big
 tables); otherwise it streams field-by-field (needed for `Pstr`/`Array`).

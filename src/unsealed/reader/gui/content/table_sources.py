@@ -308,5 +308,5 @@ class DatTableAdapter:
     total = schema.total_cells
     if total is None or self._dat.count <= 0:
       return False  # variable width or empty: can't cheaply verify
-    region = len(self._raw) - self._header_size - 4 * schema.header_extra
+    region = len(self._raw) - self._header_size - 4 * schema.header_cells
     return region == self._dat.count * total * 4

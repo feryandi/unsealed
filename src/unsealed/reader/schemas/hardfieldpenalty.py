@@ -1,37 +1,24 @@
-"""HardFieldpenalty config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""HardFieldpenalty config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
+PENALTY_COLUMNS = (
+  Column("id", I32),  # the map key -- but rows are found by (col 1, col 3)
+  Column("penalty_group", I32),
+  Column("field_2", I32),
+  Column("job_id", I32),
+  # an 11-slot penalty array
+  *(Column(f"penalty_{i}", I32) for i in range(11)),
+  Column("option_id_0", I32),  # 83 -- the option-id space Rank uses
+  Column("message_id_0", I32),  # 3099 -- string-table id
+  Column("option_id_1", I32),  # 84
+  Column("message_id_1", I32),  # 3100
+  Column("field_19", I32),
+  Column("field_20", I32),
+)
+
 register_schema(
   "dat",
-  RecordSchema(
-    name="hardfieldpenalty",
-    columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
-      Column("field_5", I32),
-      Column("field_6", I32),
-      Column("field_7", I32),
-      Column("field_8", I32),
-      Column("field_9", I32),
-      Column("field_10", I32),
-      Column("field_11", I32),
-      Column("field_12", I32),
-      Column("field_13", I32),
-      Column("field_14", I32),
-      Column("field_15", I32),
-      Column("field_16", I32),
-      Column("field_17", I32),
-      Column("field_18", I32),
-      Column("field_19", I32),
-      Column("field_20", I32),
-    ),
-  ),
+  RecordSchema(name="hardfieldpenalty", columns=PENALTY_COLUMNS),
   patterns=(r"^HardFieldpenalty$",),
 )

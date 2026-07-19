@@ -1,7 +1,4 @@
-"""Pet_Food config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Pet_Food config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,9 +7,9 @@ register_schema(
   RecordSchema(
     name="pet_food",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
+      Column("id", I32),  # the map key; <- pet_ingest_condition.pet_food_id
+      Column("item_id", I32),
+      Column("field_2", I32),  # 5/15/30 potency; no observed reader
     ),
   ),
   patterns=(r"^Pet_Food$",),

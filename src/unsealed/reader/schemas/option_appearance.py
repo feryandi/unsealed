@@ -1,7 +1,4 @@
-"""Option_Appearance config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Option_Appearance config table."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 

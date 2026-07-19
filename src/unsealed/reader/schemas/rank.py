@@ -1,7 +1,4 @@
-"""Rank config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Rank config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,22 +7,23 @@ register_schema(
   RecordSchema(
     name="rank",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
-      Column("field_5", I32),
-      Column("field_6", I32),
-      Column("field_7", I32),
-      Column("field_8", I32),
-      Column("field_9", I32),
-      Column("field_10", I32),
-      Column("field_11", I32),
-      Column("field_12", I32),
-      Column("field_13", I32),
-      Column("field_14", I32),
-      Column("field_15", I32),
+      Column("id", I32),  # 0..5
+      Column("rank", I32),  # the map key
+      Column("range_min", I32),
+      Column("range_max", I32),
+      Column("effect_id", I32),  # -> the buff descriptor's first field
+      # values, keyed by the option-id table at 0x11a8d68 (scrambled order)
+      Column("opt_79", I32),
+      Column("opt_80", I32),
+      Column("opt_81", I32),
+      Column("opt_82", I32),
+      Column("opt_78", I32),
+      Column("opt_83", I32),
+      Column("opt_84", I32),
+      Column("opt_1349", I32),
+      Column("opt_1350", I32),
+      Column("opt_1351", I32),
+      Column("field_15", I32),  # used against 0x628; not identified
     ),
   ),
   patterns=(r"^Rank$",),

@@ -1,7 +1,4 @@
-"""Opt_Gem_Cmps_Rst_Grp config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Opt_Gem_Cmps_Rst_Grp config table."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 

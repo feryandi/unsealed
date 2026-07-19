@@ -1,7 +1,4 @@
-"""Stone_LevelStatus config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Stone_LevelStatus config table."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 

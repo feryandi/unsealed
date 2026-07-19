@@ -1,7 +1,4 @@
-"""exbox_exchange config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""exbox_exchange config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,10 +7,10 @@ register_schema(
   RecordSchema(
     name="exbox_exchange",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
+      Column("id", I32),  # the map key; both rows are fetched by a literal id
+      Column("cost_item_id", I32),
+      Column("cost_count", I32),
+      Column("item_id", I32),
       Column("field_4", I32),
     ),
   ),

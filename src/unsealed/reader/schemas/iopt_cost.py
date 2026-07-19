@@ -1,7 +1,4 @@
-"""iopt_cost config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""iopt_cost config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,9 +7,9 @@ register_schema(
   RecordSchema(
     name="iopt_cost",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
+      Column("index", I32),  # the key: IdentifyItemClass(), 0..4
+      Column("ref_money", I32),
+      Column("sale", I32),  # percent discount: final = ref_money * (1 - sale/100)
     ),
   ),
   patterns=(r"^iopt_cost$",),

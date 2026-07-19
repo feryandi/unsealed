@@ -1,7 +1,4 @@
-"""Hard_Constant config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Hard_Constant config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,11 +7,11 @@ register_schema(
   RecordSchema(
     name="hard_constant",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
+      Column("id", I32),  # the map key
+      Column("field_1", I32),  # unread
+      Column("field_2", I32),  # unread
+      Column("field_3", I32),  # unread
+      Column("field_4", I32),  # the one value that is read
     ),
   ),
   patterns=(r"^Hard_Constant$",),

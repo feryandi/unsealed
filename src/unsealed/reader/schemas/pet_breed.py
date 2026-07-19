@@ -1,7 +1,4 @@
-"""Pet_Breed config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Pet_Breed config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,8 +7,8 @@ register_schema(
   RecordSchema(
     name="pet_breed",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
+      Column("id", I32),  # the map key, 1..10
+      Column("value", I32),  # meaning differs per row
     ),
   ),
   patterns=(r"^Pet_Breed$",),

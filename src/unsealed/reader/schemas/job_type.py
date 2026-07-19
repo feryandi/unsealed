@@ -7,9 +7,9 @@ register_schema(
   RecordSchema(
     name="job_type",
     columns=(
-      Column("job_id", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
+      Column("id", I32),  # sequential row id; 0 = the skipped dummy row
+      Column("job_id", I32),  # the map key: a class id
+      Column("combat_power_type", I32),  # 1..9 -> Combat_power.job_type
     ),
   ),
   patterns=(r"^Job_type$",),

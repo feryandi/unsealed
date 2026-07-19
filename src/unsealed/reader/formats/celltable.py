@@ -183,6 +183,14 @@ def _partition(
     if not stripped or stripped.startswith("#"):
       continue
     content.append(stripped)
+    # A leading count line may carry a trailing delimiter (`buffdesc` opens
+    # `511|`, unlike drop/npc's bare `3588`). Before any real row, a line
+    # that is a single integer once trailing delimiters are stripped is a
+    # header, not a one-cell row -- otherwise the count leaks in as record 0.
+    body = stripped.rstrip(delimiter)
+    if not seen_row and delimiter not in body and _is_int(body):
+      header_lines.append(body)
+      continue
     if delimiter in line:
       rows.append(line.rstrip(delimiter).split(delimiter))
       seen_row = True

@@ -1,7 +1,4 @@
-"""Option_Grade config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Option_Grade config table."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 

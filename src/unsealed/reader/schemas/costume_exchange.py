@@ -1,7 +1,4 @@
-"""costume_exchange config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""costume_exchange config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,11 +7,11 @@ register_schema(
   RecordSchema(
     name="costume_exchange",
     columns=(
-      Column("field_0", I32),
+      Column("id", I32),  # 1..136, sequential -- NOT the lookup key
       Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
+      Column("item_id", I32),
+      Column("result_item_id", I32),
+      Column("result_count", I32),
     ),
   ),
   patterns=(r"^costume_exchange$",),

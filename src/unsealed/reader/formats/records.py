@@ -187,20 +187,20 @@ class Column:
 class RecordSchema:
   """An ordered tuple of `Column`s describing one record.
 
-  `index_field` stores the row index under that name. `header_extra`
-  (`.dat`) is a count of int32s to skip after the element count; `headers`
-  (`.scr`) are typed `Column`s for the leading non-row lines (one value per
-  line, e.g. `Column("row_count", I32)`); `until_eof` (`.dat`) walks records
-  to end-of-file instead of trusting the header count (formats whose count
-  is a global total but the file holds only a leading band, e.g. ItemFile
-  v10) -- all three are consumed by the format's decoder, not by
-  `read_record`.
+  `index_field` stores the row index under that name. `headers` are typed
+  `Column`s for the file-level values that precede the rows -- for `.scr`
+  the leading non-row lines (one value per line), for `.dat` the extra
+  int32s after the element count (e.g. `Column("field_count", I32)`, the
+  fields per record that most `.dat` types declare there). `until_eof`
+  (`.dat`) walks records to end-of-file instead of trusting the header
+  count (formats whose count is a global total but the file holds only a
+  leading band, e.g. ItemFile v10) -- both are consumed by the format's
+  decoder, not by `read_record`.
   """
 
   name: str
   columns: Tuple[Column, ...] = ()
   index_field: Optional[str] = None
-  header_extra: int = 0
   headers: Tuple[Column, ...] = ()
   until_eof: bool = False
 
@@ -215,6 +215,11 @@ class RecordSchema:
   def total_cells(self) -> Optional[int]:
     """Int32 cells per record, or None if the record is variable-length."""
     return self._ncells if self._fixed else None
+
+  @property
+  def header_cells(self) -> int:
+    """Int32 cells the `headers` occupy ahead of the rows (`.dat`)."""
+    return sum(c.type.cells or 0 for c in self.headers)
 
   def read_record(self, cursor: Any, index: int = 0) -> Dict[str, Any]:
     rec: Dict[str, Any] = {}

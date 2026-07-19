@@ -1,7 +1,4 @@
-"""Bonus_Result config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Bonus_Result config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,13 +7,14 @@ register_schema(
   RecordSchema(
     name="bonus_result",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
-      Column("field_5", I32),
-      Column("field_6", I32),
+      Column("field_0", I32),  # unread; == 1 on the only row
+      # any-of, scanned against the inventory; -1 = empty slot
+      Column("accepted_item_id_0", I32),
+      Column("accepted_item_id_1", I32),
+      Column("accepted_item_id_2", I32),
+      Column("item_id", I32),
+      Column("field_5", I32),  # read -> sent to the server as packet 0x647c3's arg
+      Column("required_count", I32),
       Column("field_7", I32),
       Column("field_8", I32),
       Column("field_9", I32),

@@ -1,7 +1,4 @@
-"""Stone_StatusGroup config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Stone_StatusGroup config table."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 

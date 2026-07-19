@@ -1,7 +1,4 @@
-"""Option_bit config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Option_bit config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,9 +7,9 @@ register_schema(
   RecordSchema(
     name="option_bit",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
+      Column("id", I32),  # 1..13, sequential -- NOT the lookup key
+      Column("option_bit", I32),  # the map key, 0..12
+      Column("enabled", I32),
     ),
   ),
   patterns=(r"^Option_bit$",),

@@ -183,3 +183,6 @@ src/unsealed/reader/vendor/bkcrack/bkcrack-*
 # Claude Code (local)
 .claude/
 CLAUDE.md
+
+# Local RE tooling + scratch (tools/re/redump.py; see memory so3d-memorydump-re)
+/tools/re/

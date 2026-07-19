@@ -67,9 +67,10 @@ class DatBody(ABC):
 
 class SchemaBody(DatBody):
   """A `DatBody` that decodes a self-describing `.dat` type from a
-  declarative `RecordSchema` instead of bespoke code. Reads
-  `header_extra` int32s after the count (stored in `dat.unknown`), then
-  walks the records via `schema.read_record`.
+  declarative `RecordSchema` instead of bespoke code. Reads the schema's
+  typed `headers` -- the file-level int32s that follow the count, named by
+  the schema (stored in `dat.unknown`) -- then walks the records via
+  `schema.read_record`.
 
   The schema is not held by a registered body -- it lives in the shared
   `REGISTRY` (registered by `reader/schemas/`), and `for_type` builds a
@@ -85,10 +86,8 @@ class SchemaBody(DatBody):
     self.schema = schema
 
   def decode(self, file: "File", dat: "DatFile") -> None:
-    if self.schema.header_extra:
-      dat.unknown["header_extra"] = [
-        file.read_int() for _ in range(self.schema.header_extra)
-      ]
+    for col in self.schema.headers:
+      dat.unknown[col.name] = col.type.read(file, {})
     dat.unknown["schema"] = self.schema.name
     if self.schema.until_eof:
       records = []

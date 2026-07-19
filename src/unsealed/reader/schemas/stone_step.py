@@ -1,7 +1,4 @@
-"""Stone_Step config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Stone_Step config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,16 +7,16 @@ register_schema(
   RecordSchema(
     name="stone_step",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
-      Column("field_5", I32),
-      Column("field_6", I32),
-      Column("field_7", I32),
-      Column("field_8", I32),
-      Column("field_9", I32),
+      Column("id", I32),  # the map key
+      Column("stone_type", I32),  # 1-BASED in the file
+      Column("step", I32),  # 1-BASED in the file
+      Column("material_0_item_id", I32),
+      Column("material_0_count", I32),
+      Column("material_1_item_id", I32),
+      Column("material_1_count", I32),
+      Column("field_7", I32),  # 10000; rate-shaped, unread
+      Column("field_8", I32),  # 1; unread
+      Column("cost", I32),
     ),
   ),
   patterns=(r"^Stone_Step$",),

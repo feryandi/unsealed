@@ -1,7 +1,4 @@
-"""Combat_power config table.
-
-A `Seal Online Data` container; columns are not yet identified.
-"""
+"""Combat_power config table (`Seal Online Data` container)."""
 
 from ..formats.bytefields import Column, RecordSchema, I32, register_schema
 
@@ -10,20 +7,20 @@ register_schema(
   RecordSchema(
     name="combat_power",
     columns=(
-      Column("field_0", I32),
-      Column("field_1", I32),
-      Column("field_2", I32),
-      Column("field_3", I32),
-      Column("field_4", I32),
-      Column("field_5", I32),
-      Column("field_6", I32),
-      Column("field_7", I32),
-      Column("field_8", I32),
-      Column("field_9", I32),
-      Column("field_10", I32),
-      Column("field_11", I32),
-      Column("field_12", I32),
-      Column("field_13", I32),
+      Column("id", I32),  # 0 = the skipped dummy row
+      Column("job_type", I32),  # the map key; <- Job_type.combat_power_type
+      Column("attack_weight", I32),
+      Column("hit_weight", I32),
+      Column("magic_weight", I32),
+      Column("eva_weight", I32),
+      Column("defence_weight", I32),
+      Column("critical_weight", I32),
+      Column("speed_weight", I32),
+      Column("move_weight", I32),
+      Column("stat_8_divisor", I32),
+      Column("stat_9_divisor", I32),
+      Column("dmgup_weight", I32),
+      Column("dmgdown_weight", I32),
       Column("field_14", I32),
     ),
   ),
