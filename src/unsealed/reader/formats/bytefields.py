@@ -36,6 +36,7 @@ from __future__ import annotations
 import struct
 from dataclasses import dataclass
 from functools import lru_cache
+from typing import Optional
 
 from .records import Array, Column, Struct  # noqa: F401  (re-exported for schemas)
 from .records import F32, I32, U32  # noqa: F401  (shared scalars, re-exported)
@@ -100,16 +101,20 @@ class _F64(FieldType):
 
 @dataclass(frozen=True)
 class Str(FieldType):
-  """Fixed-length EUC-KR string of `size` bytes (a multiple of 4), read
-  up to the first null (trailing DB-dump garbage is dropped)."""
+  """Fixed-length EUC-KR string of `size` bytes, read up to the first null
+  (trailing DB-dump garbage is dropped). `size` is usually a multiple of 4
+  (the byte fast path carves it from whole int32 cells); an off-alignment
+  size (e.g. `skill.py`'s 255-byte name buffer) just opts that column out
+  of the fast path -- `cells` is None, so `RecordSchema` streams the whole
+  record field-by-field instead, which reads any size correctly."""
 
   size: int
 
   @property
-  def cells(self) -> int:
-    if self.size <= 0 or self.size % 4:
-      raise ValueError("Str size must be a positive multiple of 4 bytes")
-    return self.size // 4
+  def cells(self) -> Optional[int]:
+    if self.size <= 0:
+      raise ValueError("Str size must be a positive number of bytes")
+    return self.size // 4 if self.size % 4 == 0 else None
 
   def read(self, cursor, record=None):
     return _kr(cursor.read(self.size).split(b"\x00", 1)[0])

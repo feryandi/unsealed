@@ -93,6 +93,51 @@ _STAT_MAP = {
 # Per-refine stat increments are float-encoded.
 _STAT_FLOATS = frozenset({57, 59, 61, 63, 65, 67})
 
+# --- item.scr (plain-text pipe-delimited script) option-scale columns -----
+#
+# NOT the same coordinate system as `_STAT_MAP` above. `_STAT_MAP` indexes
+# stat *cells* inside the compiled binary `.dat`/`.edt` ItemFile record
+# (`byte_offset = 4 * stat_index`, after the `id`+`name` header). `item.scr`
+# is a completely separate, plain-text server script -- one pipe-delimited
+# line per item (`line_number == item_id + 1`; field 0 repeats the item id
+# as a sanity check) -- with its own field layout that has to be derived
+# independently; there is currently no schema/registry wiring for `.scr`
+# files in this codebase (they decode as a raw `CellTable`, see
+# `formats/scr/format.py` / `assets/scr.py`), so this map is reference-only
+# for now, not consumed by a decoder.
+#
+# These are the per-item "Magic/Spring Option Appraiser" scale columns for
+# `GC_ITEM_CONFIRM_NPC_SUCC` (see the sibling `OpenShiltz` repo's
+# `game/handlers/gc_item_confirm_npc_succ.py`): that packet's `option_bits`
+# packs 10 gates x 3-bit tiers (baseline tier 2), and the displayed bonus
+# is `(tier - 2) * item.scr[item_id][field]` -- i.e. the "scale" is a
+# per-item, per-gate value read straight out of item.scr, NOT a fixed
+# constant (an earlier pass wrongly assumed a universal per-gate constant
+# because each gate had only ever been tested against a single item;
+# confirmed wrong 2026-08-06 once one item -- id 7938 -- was tested against
+# every gate at once and showed scale=1 uniformly instead of the
+# previously-"confirmed" x5/x2/x3 values).
+#
+# Found by brute-forcing all 86 pipe-delimited fields of items
+# 150/4527/4530/5953/7938/99/16682 against known (item, gate, real
+# displayed scale) pairs from real packet captures. All 10 gates are now
+# CONFIRMED against at least two independent real items each.
+# gate index (as packed in GC_ITEM_CONFIRM_NPC_SUCC's option_bits) ->
+# (name, item.scr pipe-field index).
+ITEM_SCR_OPTION_SCALE_FIELD = {
+  0: ("damage", 10),          # CONFIRMED: item 150 field=5, item 7938 field=1
+  1: ("magic_power", 16),     # CONFIRMED: item 5953 field=5, item 7938 field=1
+  2: ("defense", 21),         # CONFIRMED: item 7938 field=1 (only sample so far)
+  3: ("attack_speed", 24),    # CONFIRMED: item 99 field=3, item 16682 field=2
+  4: ("accuracy", 26),        # CONFIRMED: item 99 field=2, item 16682 field=2
+  5: ("critical_rate", 28),   # CONFIRMED: item 99 field=2, item 16682 field=2
+  6: ("evasion_rate", 30),    # CONFIRMED: item 4527 field=1, item 7938 field=1
+  7: ("movement_speed", 32),  # CONFIRMED: item 4530 field=3, item 7938 field=1
+                               # -- the ONLY field of all 86 that fits both
+  8: ("hp_percent", 38),      # CONFIRMED: item 99 field=2, item 16682 field=2
+  9: ("ap_percent", 40),      # CONFIRMED: item 5953 field=1, item 7938 field=1
+}
+
 
 def _stat_columns(count: int) -> Tuple[Column, ...]:
   """The first `count` stat cells. An index nobody has identified yet
